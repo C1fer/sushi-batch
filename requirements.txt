@@ -1,0 +1,2 @@
+colorama==0.4.6
+sushi_sub==0.6.2
