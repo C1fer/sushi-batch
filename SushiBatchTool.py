@@ -38,7 +38,7 @@ def get_paths():
 
 
 # Handle job queue
-def job_queue(src_files, dst_files, sub_files = None):
+def job_queue(src_files, dst_files, sub_files):
 
     # Show Job Queue
     clear_screen()
@@ -58,31 +58,37 @@ def job_queue(src_files, dst_files, sub_files = None):
     if choice.upper() == "Y":
         print(f"{Fore.LIGHTMAGENTA_EX}Processing Queue...\n")
         return True
+
     return False
 
 
 # Validate search results
 def check_files(src_files_len, dst_files_len, sub_files_len):
 
-    # Check if source and destination files contain the same number of elements
-    if src_files_len == 0 or dst_files_len == 0: 
+    # Check if source or destination folders are empty
+    if not src_files_len or not dst_files_len:
         if option == "1":
             print(f"{Fore.LIGHTRED_EX}No audio files found in source or destination directories.")
         else:
             print(f"{Fore.LIGHTRED_EX}No video files found in source or destination directories.")
         return False
-        
+
+    return True
+
     # Check if source and destination files contain the same number of elements
     if src_files_len != dst_files_len:
         print(f"{Fore.LIGHTRED_EX}Number of source files does not match the number of destination files!")
         print(f"(Source: {src_files_len} files, Destination: {dst_files_len} files){Style.RESET_ALL}")
         return False
 
+    return True
+
     # Check if source and subtitle files contain the same number of elements (video-sync only)
     if option == "1" and src_files_len != sub_files_len:
         print(f"{Fore.LIGHTRED_EX}Number of source files does not match the number of subtitle files!")
         print(f"(Source: {src_files_len} files, Subtitles: {sub_files_len} files){Style.RESET_ALL}")
         return False
+
     return True
 
 
@@ -97,7 +103,7 @@ def find_files(src_path, dst_path, formats):
         for name in files:
             if name.endswith(formats):
                 src_files.append(os.path.join(root, name))
-            if name.endswith(".ass"):
+            if option == "1" and name.endswith(".ass"):
                 sub_files.append(os.path.join(root, name))
 
     # Search for tracks in the destination directory
@@ -108,11 +114,11 @@ def find_files(src_path, dst_path, formats):
     
     # Perform validations on search results
     if check_files(len(src_files), len(dst_files), len(sub_files)):
-
         # Process the queue if user accepts
-        if job_queue(src_files,dst_files,sub_files):
+        if job_queue(src_files,dst_files, sub_files):
             return src_files, dst_files, sub_files
-        return None, None, None
+
+    return None, None, None
 
 
 # Shift timing using audio tracks as reference
@@ -166,6 +172,7 @@ def check_filepaths(src_filepath, dst_filepath, sub_filepath):
 
 # Get files for single-file modes
 def get_filenames():
+    sub_filepath = ''
 
     # Use Tkinter file select dialog if GUI option is enabled
     if folder_select_gui:
@@ -183,17 +190,15 @@ def get_filenames():
     else:
         src_filepath = input("\nSource File Path: ").strip('"')
         dst_filepath = input("Destination File Path: ").strip('"')
+
         # Accept subtitle filepath only on audio single mode
         if option == "3":
             sub_filepath = input("Subtitle File Path: ").strip('"')
 
     #if check_filepaths(src_filepath, dst_filepath, sub_filepath):
     # Pass each filepath arg as a list to avoid
-    print(f"src: {src_filepath}")
-    print(f"dst: {dst_filepath}")
-    print(f"sub: {sub_filepath}")
     
-    if job_queue(list(src_filepath), list(dst_filepath), list(sub_filepath)): 
+    if job_queue([src_filepath], [dst_filepath], [sub_filepath]): 
         return src_filepath, dst_filepath, sub_filepath
     return None, None, None
         
@@ -213,7 +218,7 @@ def main():
         clear_screen()
 
         if option == "1":
-            print(f"{Fore.CYAN}Directory Audio-based Sync")
+            print(f"{Fore.CYAN}Audio-based Sync (Directory mode)")
             # Get paths and filenames (only execute the shifting if they are valid)
             src_path, dst_path = get_paths()
             if src_path is not None and dst_path is not None:
@@ -222,22 +227,22 @@ def main():
                     shift_subs_audio(src_files, dst_files, sub_files)
 
         elif option == "2":
-            print(f"{Fore.CYAN}Directory Video-based Sync")
+            print(f"{Fore.CYAN}Video-based Sync (Directory mode)")
             # Get paths and filenames (only execute the shifting if they are valid)
             src_path, dst_path = get_paths()
             if src_path is not None and dst_path is not None:
-                src_files, dst_files, _ = find_files(src_path, dst_path, ".mkv")
+                src_files, dst_files, sub_files = find_files(src_path, dst_path, ".mkv")
                 if src_files is not None and dst_files is not None:
                     shift_subs_mkv(src_files, dst_files)
 
         elif option =="3":
-            print(f"{Fore.CYAN}Single-file Audio-based Sync")
+            print(f"{Fore.CYAN}Audio-based Sync (Single-file mode)")
             src_filename, dst_filename, sub_filename = get_filenames()
             if src_filename is not None and dst_filename is not None and sub_filename is not None:
                 shift_subs_audio(src_filename, dst_filename, sub_filename)
                 
         elif option =="4":
-            print(f"{Fore.CYAN}Single-file Video-based Sync")
+            print(f"{Fore.CYAN}Video-based Sync (Single-file mode)")
             src_filename, dst_filename, _ = get_filenames()
             if src_filename is not None and dst_filename is not None:
                 shift_subs_mkv(src_filename, dst_filename)
@@ -247,3 +252,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+ # Test
