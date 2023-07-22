@@ -9,8 +9,19 @@ import files
 def main():
     init(autoreset=True)  # Set Colorama to reset style after every line
 
-    enable_gui = True
-    
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="Sushi Batch Tool")
+    parser.add_argument(
+        "--no-gui",
+        dest="no_gui",
+        action="store_true",
+        help="Disable all GUI functionality",
+    )
+    args = parser.parse_args()
+
+    # If the --no-gui flag is provided, set the toggle to False
+    enable_gui = False if args.no_gui else True
+
     while True:
         print(f"""\n{Fore.CYAN}Sushi Batch Tool{Style.RESET_ALL}
         1) Audio-based Sync  (Directory mode)
@@ -57,6 +68,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
-
- # Test
+    main() 
