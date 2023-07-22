@@ -7,7 +7,7 @@ import job_queue
 # Get folder paths for Directory modes
 def get_paths(gui_toggle):
 
-    # Use Tkinter folder select dialog if GUI option is enabled
+    # Launch a File Picker Dialog if GUI option is enabled
     if gui_toggle:
         src_path = filedialog.askdirectory(title="Select Source Folder")
         print(f"Source Folder Path: {src_path}")
@@ -17,10 +17,11 @@ def get_paths(gui_toggle):
         src_path = input("\nSource Folder Path: ").strip('"')
         dst_path = input("Destination Folder Path: ").strip('"')
     
-    # Check if selected folders exist
+    # Check if specified folders exist
     if not os.path.exists(src_path):
         print(f"{Fore.LIGHTRED_EX}Source Path {src_path} does not exist!")
         return None, None
+
     if not os.path.exists(dst_path):
         print(f"{Fore.LIGHTRED_EX}Destination Path {dst_path} does not exist!")
         return None, None
@@ -28,13 +29,13 @@ def get_paths(gui_toggle):
     return src_path, dst_path
 
 
-# Search for files that match the specified formats
+# Find files in the paths that match the specified formats
 def search_paths(src_path, dst_path, formats, mode):
     src_files = []
     dst_files = []
     sub_files = []
 
-    # Search for tracks and subtitles in the source directory
+    # Find source files and subtitles
     for root, _, files in os.walk(src_path):
         for name in files:
             if name.endswith(formats):
@@ -42,7 +43,7 @@ def search_paths(src_path, dst_path, formats, mode):
             if mode == "1" and name.endswith(".ass"):
                 sub_files.append(os.path.join(root, name))
 
-    # Search for tracks in the destination directory
+    # Find destination files
     for root, _, files in os.walk(dst_path):
         for name in files:
             if name.endswith(formats):
@@ -50,7 +51,7 @@ def search_paths(src_path, dst_path, formats, mode):
     
     # Perform validations on search results
     if check_files(len(src_files), len(dst_files), len(sub_files), mode):
-        # Process the queue if user accepts
+        # Process the jobs on user confirmation
         if job_queue.show_queue(src_files,dst_files, sub_files, mode):
             return src_files, dst_files, sub_files
 
@@ -63,7 +64,7 @@ def get_files(mode, gui_toggle):
     dst_files = []
     sub_files = []
 
-    # Use Tkinter file select dialog if GUI option is enabled
+    # Launch a File Picker Dialog if GUI option is enabled
     if gui_toggle:
         src_filepath = filedialog.askopenfilename(title="Select Source File")
         print(f"Source File Path: {src_filepath}")
