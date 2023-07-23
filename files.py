@@ -2,34 +2,46 @@ import os
 from tkinter import filedialog
 from colorama import Fore, Style
 import job_queue
+import file_formats as ff
 
 
-# Get folder paths for Directory modes
-def get_paths(gui_toggle):
+# Check if specified file/folder path exists
+def check_path_exists(file_list):
+    for name in file_list:
+        if not os.path.exists(name):
+            print(f"{Fore.LIGHTRED_EX}Path {name} does not exist!")
+            return False
+    return True
 
-    # Launch a File Picker Dialog if GUI option is enabled
-    if gui_toggle:
-        src_path = filedialog.askdirectory(title="Select Source Folder")
-        print(f"Source Folder Path: {src_path}")
-        dst_path = filedialog.askdirectory(title="Select Destination Folder")
-        print(f"Destination Folder Path: {dst_path}")
-    else:
-        src_path = input("\nSource Folder Path: ").strip('"')
-        dst_path = input("Destination Folder Path: ").strip('"')
+
+# Get folder paths (Directory modes)
+def get_paths(gui_enabled):
     
-    # Check if specified folders exist
-    if not os.path.exists(src_path):
-        print(f"{Fore.LIGHTRED_EX}Source Path {src_path} does not exist!")
-        return None, None
+    def get_directory_gui(title):
+        return filedialog.askdirectory(title=title)
 
-    if not os.path.exists(dst_path):
-        print(f"{Fore.LIGHTRED_EX}Destination Path {dst_path} does not exist!")
-        return None, None
+    def get_directory_cli(prompt):
+        return input(prompt).strip('"')
+
+    if gui_enabled:
+        src_path = get_directory_gui("Select Source Folder")
+        dst_path = get_directory_gui("Select Destination Folder")
+    else:
+        src_path = get_directory_cli("\nSource Folder Path: ")
+        dst_path = get_directory_cli("Destination Folder Path: ")
+    
+    # Only check if selected path exist  CLI mode
+    if not gui_enabled:
+        if not check_path_exists([src_path]):
+            return None, None
+
+        if not check_path_exists([dst_path]):
+            return None, None
 
     return src_path, dst_path
 
 
-# Find files in the paths that match the specified formats
+# Search for files in the specified folders that match the formats
 def search_paths(src_path, dst_path, formats, mode):
     src_files = []
     dst_files = []
@@ -49,93 +61,102 @@ def search_paths(src_path, dst_path, formats, mode):
             if name.endswith(formats):
                 dst_files.append(os.path.join(root, name))
     
+    a = check_files(src_files, dst_files, sub_files, mode)
     # Perform validations on search results
-    if check_files(len(src_files), len(dst_files), len(sub_files), mode):
+    if check_files(src_files, dst_files, sub_files, mode):
         # Process the jobs on user confirmation
         if job_queue.show_queue(src_files,dst_files, sub_files, mode):
             return src_files, dst_files, sub_files
-
+    
     return None, None, None
 
 
-# Get files for File-Select modes
-def get_files(mode, gui_toggle):
+# Get files (File-Select modes)
+def get_files(mode, gui_enabled):
     src_files = []
     dst_files = []
     sub_files = []
 
-    # Launch a File Picker Dialog if GUI option is enabled
-    if gui_toggle:
-        src_filepath = filedialog.askopenfilename(title="Select Source File")
-        print(f"Source File Path: {src_filepath}")
-        dst_filepath = filedialog.askopenfilename(title="Select Destination File")
-        print(f"Destination File Path: {dst_filepath}") 
+    # Get file paths via file select dialog (GUI Mode)  
+    def get_files_gui(title, filetypes):
+        return filedialog.askopenfilenames(title=title, filetypes=filetypes)
 
-        # Accept subtitle filepath only on audio single mode
+    # Get file paths via user input (CLI Mode)
+    def get_files_cli(prompt):
+        file_paths = []
+        while True:
+            file_path = input(prompt).strip('"')
+            file_paths.append(file_path)
+            add_another = input("Do you want to add another path? (Y/N): ")
+            if add_another.upper() != 'Y': break
+        return file_paths
+
+    # Check if GUI mode is enabled
+    if gui_enabled:
         if mode == "3":
-            sub_filepath = filedialog.askopenfilename(title="Select Subtitle File")
-            print(f"Subtitle File Path: {sub_filepath}") 
+            src_files = get_files_gui("Select Source Audio Files", ff.audio_filetypes)
+            sub_files = get_files_gui("Select Source Subtitle Files", ff.sub_filetypes)
+            dst_files = get_files_gui("Select Destination Audio Files", ff.audio_filetypes)
 
-    # CLI user input 
+        elif mode == "4":
+            src_files = get_files_gui("Select Source Video Files", ff.video_filetypes)
+            dst_files = get_files_gui("Select Destination Video Files", ff.video_filetypes)
     else:
-        src_filepath = input("\nSource File Path: ").strip('"')
-        dst_filepath = input("Destination File Path: ").strip('"')
-
-        # Accept subtitle filepath only on audio single mode
+        src_files = get_files_cli("\nSource File Path: ")
+        dst_files = get_files_cli("\nDestination File Path: ")
+        
         if mode == "3":
-            sub_filepath = input("Subtitle File Path: ").strip('"')
+            sub_files = get_files_cli("\nSubtitle File Path: ")
 
-    #if check_filepaths(src_filepath, dst_filepath, sub_filepath):
-    # Pass each filepath arg as a list to avoid
+    # Perform validations on selected files
+    if check_files(src_files, dst_files, sub_files, mode, gui_enabled):
+        if job_queue.show_queue(src_files, dst_files, sub_files, mode):
+            return src_files, dst_files, sub_files
     
-    if job_queue.show_queue([src_filepath], [dst_filepath], [sub_filepath], mode): 
-        return src_filepath, dst_filepath, sub_filepath
     return None, None, None
 
 
-# Validate search results
-def check_files(src_files_len, dst_files_len, sub_files_len, mode):
+# Validate found or selected files
+def check_files(src_files, dst_files, sub_files, mode, gui_enabled=True):
 
-    # Check if source or destination folders are empty
-    if not src_files_len or not dst_files_len:
-        if mode == "1":
-            print(f"{Fore.LIGHTRED_EX}No audio files found in source or destination directories.")
-        else:
-            print(f"{Fore.LIGHTRED_EX}No video files found in source or destination directories.")
+    # Check if selected files have valid paths (CLI Mode only)
+    if (not gui_enabled) and (mode == "3" or mode == "4"):
+        if not check_path_exists(src_files):
+            return False
+
+        if not check_path_exists(dst_files):
+            return False
+
+        if not check_path_exists(sub_files):
+            return False
+
+    # Get length of arrays
+    src_files_len = len(src_files)
+    dst_files_len = len(dst_files)
+    sub_files_len = len(sub_files)
+
+    # Check if source files array is empty
+    if not src_files_len:
+        print(f"{Fore.LIGHTRED_EX}No source files found!")
         return False
 
-    return True
+    # Check if destination files array is empty
+    if not dst_files_len:
+        print(f"{Fore.LIGHTRED_EX}No destination files found!")
+        return False
 
     # Check if source and destination files contain the same number of elements
     if src_files_len != dst_files_len:
         print(f"{Fore.LIGHTRED_EX}Number of source files does not match the number of destination files!")
-        print(f"(Source: {src_files_len} files, Destination: {dst_files_len} files){Style.RESET_ALL}")
+        print(f"({src_files_len} source files, {dst_files_len} destination files){Style.RESET_ALL}")
         return False
 
-    return True
+    # Check if source and subtitle files contain the same number of elements (audio-based sync)
+    if mode == "1"  or mode == "3":
+        if src_files_len != sub_files_len:
+            print(f"{Fore.LIGHTRED_EX}Number of source files does not match the number of subtitle files!")
+            print(f"({src_files_len} source files, {sub_files_len} subtitle files){Style.RESET_ALL}")
+            return False
 
-    # Check if source and subtitle files contain the same number of elements (video-sync only)
-    if mode == "1" and src_files_len != sub_files_len:
-        print(f"{Fore.LIGHTRED_EX}Number of source files does not match the number of subtitle files!")
-        print(f"(Source: {src_files_len} files, Subtitles: {sub_files_len} files){Style.RESET_ALL}")
-        return False
-
-    return True
-
-
-# INCOMPLETE FUNC
-def check_filepaths(src_filepath, dst_filepath, sub_filepath):
-    # Validate if files exist
-    if not os.path.exists(src_filepath):
-        print(f"{Fore.LIGHTRED_EX}Source File {src_filepath} does not exist!")
-        return False
-
-    if not os.path.exists(dst_filepath):
-        print(f"{Fore.LIGHTRED_EX}Destination File {dst_filepath} does not exist!")
-        return False
-
-    if mode == "3" and not os.path.exists(sub_filepath):
-        print(f"{Fore.LIGHTRED_EX}Subtitle File {sub_filepath} does not exist!")
-        return False
-
+    # If all checks pass, return True
     return True
