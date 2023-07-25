@@ -7,6 +7,7 @@ import console_utils as cu
 
 # Handle actions when running directory-select tasks
 def run_dir_modes_tasks(task, gui_enabled):
+    cu.clear_screen()
     src, dst = files.get_directories(gui_enabled)
     if src is not None and dst is not None:
         job_list = files.search_directories(src, dst, task)
@@ -16,13 +17,26 @@ def run_dir_modes_tasks(task, gui_enabled):
 
 # Handle actions when running file-select tasks
 def run_file_modes_tasks(task, gui_enabled):
+    cu.clear_screen()
     job_list = files.select_files(gui_enabled, task)
     if job_list is not None:
         jm.show_job_queue(job_list, task)
 
 
-def main():
-    # Parse command-line arguments
+def print_menu():
+    return print(
+        f"""\n{cu.fore.CYAN}Sushi Batch Tool{cu.style_reset}
+        1) Audio-based Sync  (Directory Select)
+        2) Video-based Sync  (Directory Select) 
+        3) Audio-based Sync  (Files Select)
+        4) Video-based Sync  (Files Select) 
+        5) Job Queue
+        6) Exit"""
+    )
+
+
+# Parse command-line arguments
+def parse_args():
     parser = argparse.ArgumentParser(description="Sushi Batch Tool")
     parser.add_argument(
         "--no-gui",
@@ -31,24 +45,25 @@ def main():
         help="Disable all GUI functionality",
     )
     args = parser.parse_args()
+    return args.no_gui
+
+
+def main():
+    # Exit with error message if FFmpeg is not found
+    if not cu.is_ffmpeg_installed():
+        print(
+            f"{cu.fore.LIGHTRED_EX}FFmpeg is not installed! \nAdd FFmpeg to PATH or copy the binary to this folder."
+        )
+        sys.exit()
 
     # Set toggle to False if --no-gui flag is provided
-    gui_enabled = False if args.no_gui else True
+    gui_enabled = not parse_args()
 
     while True:
-        print(
-            f"""\n{cu.fore.CYAN}Sushi Batch Tool{cu.style_reset}
-        1) Audio-based Sync  (Directory Select)
-        2) Video-based Sync  (Directory Select) 
-        3) Audio-based Sync  (Files Select)
-        4) Video-based Sync  (Files Select) 
-        5) Job Queue
-        6) Exit"""
-        )
-        choice = cu.get_choice(range(1, 7))
-        cu.clear_screen()
-
-        match choice:
+        # Allow mode selection only if FFmpeg is found
+        print_menu()
+        sel_option = cu.get_choice(range(1, 7))
+        match sel_option:
             case 1:
                 print(f"{cu.fore.CYAN}Audio-based Sync (Directory mode)")
                 run_dir_modes_tasks("aud-sync-dir", gui_enabled)

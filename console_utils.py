@@ -39,4 +39,18 @@ def get_choice(options_range):
                 print(f"{fore.LIGHTRED_EX}Invalid choice! Please select a valid option.\n")
         except ValueError:
             print(f"{fore.LIGHTRED_EX}Invalid choice! Please select a valid option.\n")
+
+
+# Look for ffmpeg binary in PATH env var and working directory
+def is_ffmpeg_installed():
+    # Check if FFmpeg is set on PATH
+    if os.environ.get("PATH").find("ffmpeg") != -1:
+        return True
     
+    # If FFmpeg is not an env var, look for the binary in working directory
+    ffmpeg_bin = "ffmpeg.exe" if os.name == "nt" else "ffmpeg" # Set binary name depending on OS
+    if os.path.exists(os.join(os.getcwd(), ffmpeg_bin)):
+        return True
+    
+    # If FFmpeg is not found, return false
+    return False
