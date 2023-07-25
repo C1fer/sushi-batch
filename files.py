@@ -2,7 +2,7 @@ import os
 from tkinter import filedialog
 from colorama import Fore, Style
 import file_formats as ff
-
+import console_utils as cu
 
 # Check if specified file or folder path exists
 def check_path_exists(file_list):
@@ -15,11 +15,11 @@ def check_path_exists(file_list):
 
 # Get folder paths (Directory modes)
 def get_directories(gui_enabled):
-    # Input folder paths via command line
+    # Enter folder paths via command line
     def get_directory_cli(prompt):
         return input(prompt).strip('"')
 
-    # Input folder paths via folder select dialog
+    # Enter folder paths via folder select dialog
     def get_directory_gui(title):
         return filedialog.askdirectory(title=title)
 
@@ -30,12 +30,13 @@ def get_directories(gui_enabled):
         src_path = get_directory_cli("\nSource Folder Path: ")
         dst_path = get_directory_cli("Destination Folder Path: ")
 
+    # Validate selected folders
     if not check_path_exists([src_path]):
         return None, None
 
     if not check_path_exists([dst_path]):
         return None, None
-    
+
     if src_path == dst_path:
         print(f"{Fore.LIGHTRED_EX}Source and destination folders are the same!")
         return None, None
@@ -49,7 +50,7 @@ def search_directories(src_path, dst_path, task):
     dst_files = []
     sub_files = []
 
-    # Set file formats to search for
+    # Set formats to filter by based on current task
     if task == "aud-sync-dir":
         formats = ff.audio_formats
     else:
@@ -71,30 +72,33 @@ def search_directories(src_path, dst_path, task):
 
     src_len = len(src_files)
 
-    # Fill subtitle list to avoid passing empty sublist to job queue
+    # Fill subtitle list with None values if task is video sync
     if task == "vid-sync-dir":
-        sub_files.extend([""] * src_len)
+        sub_files.extend([None] * src_len)
 
     # Perform validations on search results
     if check_files(src_files, dst_files, sub_files, task):
-        return [src_files, dst_files, sub_files, [task] * src_len]
+        # Fill remaining sublists if files pass validation
+        tasks = [task] * src_len
+        audio_tracks_id = [None] * src_len
+        sub_tracks_id = [None] * src_len
+        return [src_files, dst_files, sub_files, tasks, audio_tracks_id, sub_tracks_id]
     return None
 
 
 # Select files
 def select_files(gui_enabled, task):
-    # Input file paths via command line
+    # Enter file paths via command line
     def select_files_cli(prompt):
         file_paths = []
         while True:
             file_path = input(prompt).strip('"')
             file_paths.append(file_path)
-            add_another = input("Do you want to add another path? (Y/N): ")
-            if add_another.upper() != "Y":
+            if not confirm_action("Do you want to add another path? (Y/N): "):
                 break
         return file_paths
 
-    # Input file paths via file select dialog
+    # Enter file paths via file select dialog
     def select_files_gui(title, filetypes):
         return filedialog.askopenfilenames(title=title, filetypes=filetypes)
 
@@ -102,7 +106,7 @@ def select_files(gui_enabled, task):
     dst_files = []
     sub_files = []
 
-    # Launch file select dialog if GUI mode is enabled
+    # Open file select dialog if GUI mode is enabled
     if gui_enabled:
         if task == "aud-sync-fil":
             src_files = select_files_gui(
@@ -128,16 +132,20 @@ def select_files(gui_enabled, task):
 
         if task == "aud-sync-fil":
             sub_files = select_files_cli("\nSubtitle File Path: ")
- 
-    src_len = len(src_files)
+
+    src_files_len = len(src_files)
 
     # Fill subtitle list to avoid passing empty sublist to job queue
     if task == "vid-sync-fil":
-        sub_files.extend([""] * src_len)
+        sub_files.extend([""] * src_files_len)
 
     # Return job list if selected files pass validation
     if check_files(src_files, dst_files, sub_files, task, gui_enabled):
-        return [src_files, dst_files, sub_files, [task] * len(src_files)] # Add task info to all jobs
+        # Fill remaining sublists if files pass validation
+        tasks = [task] * src_files_len
+        audio_tracks_id = [None] * src_files_len
+        sub_tracks_id = [None] * src_files_len
+        return [src_files, dst_files, sub_files, tasks, audio_tracks_id, sub_tracks_id]
     return None
 
 
@@ -154,6 +162,7 @@ def check_files(src_files, dst_files, sub_files, task, gui_enabled=True):
         if not check_path_exists(sub_files):
             return False
 
+    # Get lengths of each list
     src_files_len = len(src_files)
     dst_files_len = len(dst_files)
     sub_files_len = len(sub_files)
@@ -183,7 +192,7 @@ def check_files(src_files, dst_files, sub_files, task, gui_enabled=True):
         )
         return False
 
-    # Check if source and subtitle files contain the same number of elements
+    # Check if source and subtitle files contain the same number of elements (audio sync tasks)
     if task in ("aud-sync-dir", "aud-sync-fil") and src_files_len != sub_files_len:
         print(
             f"{Fore.LIGHTRED_EX}Number of source files does not match the number of subtitle files!"

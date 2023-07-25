@@ -35,7 +35,7 @@ def main():
     )
     args = parser.parse_args()
 
-    # St toggle to False if --no-gui flag is provided
+    # Set toggle to False if --no-gui flag is provided
     gui_enabled = False if args.no_gui else True
 
     while True:

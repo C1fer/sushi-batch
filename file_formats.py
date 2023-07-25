@@ -15,7 +15,8 @@ audio_filetypes = [
 ]
 
 video_filetypes = [
-    (   "Video formats (*.avi, *.mp4, *.mkv, *.webm)", 
+    (
+        "Video formats (*.avi, *.mp4, *.mkv, *.webm)",
         "avi .mp4 .mkv .webm"
     )
 ]
