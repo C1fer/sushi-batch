@@ -1,6 +1,6 @@
-from colorama import init, Fore
 import sub_sync
 import console_utils as cu
+
 
 # Initialize queue with sublists:
 # Source files, Destination files, Subtitle files, Tasks, Audio ID, Sub ID,
@@ -10,23 +10,23 @@ job_queue = [[], [], [], [], [], []]
 # Show Job Queue
 def show_job_queue(job_list=job_queue, task="job-queue"):
     if task == "job-queue":
-        print(f"{Fore.LIGHTMAGENTA_EX}Job Queue")
+        print(f"{cu.fore.LIGHTMAGENTA_EX}Job Queue")
 
     # Zip iterables and get the number of the iteration
     for idx, (src, dst, sub, _, aud_id, sub_id) in enumerate(zip(*job_list), start=1):
-        print(f"\n{Fore.LIGHTBLACK_EX}Job {idx}")
-        print(f"{Fore.LIGHTBLUE_EX}Source file: {src}")
-        print(f"{Fore.LIGHTYELLOW_EX}Destination file: {dst}")
+        print(f"\n{cu.fore.LIGHTBLACK_EX}Job {idx}")
+        print(f"{cu.fore.LIGHTBLUE_EX}Source file: {src}")
+        print(f"{cu.fore.LIGHTYELLOW_EX}Destination file: {dst}")
 
-        # Don't show values fields for jobs that v
+        # Don't show values if None
         if sub is not None:
-            print(f"{Fore.LIGHTRED_EX}Subtitle file: {sub}")
+            print(f"{cu.fore.LIGHTRED_EX}Subtitle file: {sub}")
 
         if aud_id is not None:
-            print(f"{Fore.LIGHTWHITE_EX}Audio Track ID: {aud_id}")
+            print(f"{cu.fore.LIGHTWHITE_EX}Audio Track ID: {aud_id}")
 
         if sub_id is not None:
-            print(f"{Fore.LIGHTGREEN_EX}Subtitle Track ID: {sub_id}")
+            print(f"{cu.fore.LIGHTGREEN_EX}Subtitle Track ID: {sub_id}")
 
     # Show queue options
     handle_queue_options(job_list, task)
@@ -104,7 +104,7 @@ def add_jobs(job_list, task):
             for item in range(6):
                 job_queue[item].append(job_list[item][job_idx - 1])
         cu.clear_screen()
-        print(f"{Fore.LIGHTGREEN_EX}{len(jobs_to_add)} job(s) added to queue.")
+        print(f"{cu.fore.LIGHTGREEN_EX}{len(jobs_to_add)} job(s) added to queue.")
 
 
 # Remove selected jobs from queue
@@ -119,7 +119,7 @@ def remove_jobs():
                 # Reduce input index by 1 to match real queue index
                 job_queue[item].pop(job_idx - 1)
         cu.clear_screen()  
-        print(f"{Fore.LIGHTGREEN_EX}{len(jobs_to_remove)} job(s) removed from queue.")
+        print(f"{cu.fore.LIGHTGREEN_EX}{len(jobs_to_remove)} job(s) removed from queue.")
 
 
 # Validate jobs selected by user
@@ -147,7 +147,7 @@ def validate_selected_jobs(user_input, job_list=job_queue):
 
     # Return valid indexes list if not empty
     if not valid_job_indexes:
-        print(f"{Fore.LIGHTRED_EX}Invalid choice! Please select valid jobs.")
+        print(f"{cu.fore.LIGHTRED_EX}Invalid choice! Please select valid jobs.")
         return None
     else:
         print(f"Selected jobs: {valid_job_indexes}")
@@ -186,7 +186,7 @@ def set_tracks_id(job_list, task):
         else:
             # Set track indexes for every job
             for idx in range(jbl_len):
-                print(f"{Fore.LIGHTBLUE_EX}Source file: {job_list[0][idx]}")
+                print(f"{cu.fore.LIGHTBLUE_EX}Source file: {job_list[0][idx]}")
                 src_audio_id = get_track_id("Audio Track ID: ")
                 src_sub_id = get_track_id("Subtitle Track ID: ")
                 audio_tracks_id.append(src_audio_id)

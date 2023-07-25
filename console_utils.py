@@ -1,5 +1,12 @@
 import os
-from colorama import Fore, Style
+from colorama import init, Fore, Style
+
+
+
+init(autoreset=True)
+# Store colorama objects to enable direct access from other modules
+fore = Fore
+style_reset = Style.RESET_ALL
 
 
 # Clear command line screen
@@ -8,17 +15,16 @@ def clear_screen():
 
 
 # Ask for user confirmation
-def confirm_action(prompt = f"{Fore.LIGHTWHITE_EX}Are you sure? (Y/N): "):
+def confirm_action(prompt = f"{fore.LIGHTWHITE_EX}Are you sure? (Y/N): "):
     while True:
         confirm = input(prompt).upper()
         match confirm:
             case "Y":
                 return True
-
             case "N":
                 return False
             case others:
-                print(f"{Fore.LIGHTRED_EX}Wrong input!\n")
+                print(f"{fore.LIGHTRED_EX}Wrong input!\n")
     return True
 
 
@@ -26,12 +32,11 @@ def confirm_action(prompt = f"{Fore.LIGHTWHITE_EX}Are you sure? (Y/N): "):
 def get_choice(options_range):
     while True:
         try:
-            choice = int(input(f"\n{Fore.LIGHTBLACK_EX}Select an option: "))
+            choice = int(input(f"\n{fore.LIGHTBLACK_EX}Select an option: "))
             if choice in options_range:
-                Style.RESET_ALL
                 return choice
             else:
-                print(f"{Fore.LIGHTRED_EX}Invalid choice! Please select a valid option.\n")
+                print(f"{fore.LIGHTRED_EX}Invalid choice! Please select a valid option.\n")
         except ValueError:
-            print(f"{Fore.LIGHTRED_EX}Invalid choice! Please select a valid option.\n")
+            print(f"{fore.LIGHTRED_EX}Invalid choice! Please select a valid option.\n")
     

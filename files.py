@@ -1,14 +1,14 @@
 import os
 from tkinter import filedialog
-from colorama import Fore, Style
 import file_formats as ff
 import console_utils as cu
+
 
 # Check if specified file or folder path exists
 def check_path_exists(file_list):
     for name in file_list:
         if not os.path.exists(name):
-            print(f"{Fore.LIGHTRED_EX}Path {name} does not exist!")
+            print(f"{cu.fore.LIGHTRED_EX}Path {name} does not exist!")
             return False
     return True
 
@@ -38,7 +38,7 @@ def get_directories(gui_enabled):
         return None, None
 
     if src_path == dst_path:
-        print(f"{Fore.LIGHTRED_EX}Source and destination folders are the same!")
+        print(f"{cu.fore.LIGHTRED_EX}Source and destination folders are the same!")
         return None, None
 
     return src_path, dst_path
@@ -137,7 +137,7 @@ def select_files(gui_enabled, task):
 
     # Fill subtitle list to avoid passing empty sublist to job queue
     if task == "vid-sync-fil":
-        sub_files.extend([""] * src_files_len)
+        sub_files.extend([None] * src_files_len)
 
     # Return job list if selected files pass validation
     if check_files(src_files, dst_files, sub_files, task, gui_enabled):
@@ -169,36 +169,36 @@ def check_files(src_files, dst_files, sub_files, task, gui_enabled=True):
 
     # Check if there are no source files
     if not src_files_len:
-        print(f"{Fore.LIGHTRED_EX}No source files found!")
+        print(f"{cu.fore.LIGHTRED_EX}No source files found!")
         return False
 
     # Check if there are no destination files
     if not dst_files_len:
-        print(f"{Fore.LIGHTRED_EX}No destination files found!")
+        print(f"{cu.fore.LIGHTRED_EX}No destination files found!")
         return False
 
      # Check if there are no destination files
     if not sub_files_len:
-        print(f"{Fore.LIGHTRED_EX}No subtitles found!")
+        print(f"{cu.fore.LIGHTRED_EX}No subtitles found!")
         return False
 
     # Check if source and destination files contain the same number of elements
     if src_files_len != dst_files_len:
         print(
-            f"{Fore.LIGHTRED_EX}Number of source files does not match the number of destination files!"
+            f"{cu.fore.LIGHTRED_EX}Number of source files does not match the number of destination files!"
         )
         print(
-            f"({src_files_len} source files, {dst_files_len} destination files){Style.RESET_ALL}"
+            f"({src_files_len} source files, {dst_files_len} destination files)"
         )
         return False
 
     # Check if source and subtitle files contain the same number of elements (audio sync tasks)
     if task in ("aud-sync-dir", "aud-sync-fil") and src_files_len != sub_files_len:
         print(
-            f"{Fore.LIGHTRED_EX}Number of source files does not match the number of subtitle files!"
+            f"{cu.fore.LIGHTRED_EX}Number of source files does not match the number of subtitle files!"
         )
         print(
-            f"({src_files_len} source files, {sub_files_len} subtitle files){Style.RESET_ALL}"
+            f"({src_files_len} source files, {sub_files_len} subtitle files)"
         )
         return False
 

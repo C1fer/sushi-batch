@@ -1,6 +1,5 @@
 import sys
 import argparse
-from colorama import init, Fore, Style
 import files
 import job_manager as jm
 import console_utils as cu
@@ -14,6 +13,7 @@ def run_dir_modes_tasks(task, gui_enabled):
         if job_list is not None:
             job_queue = jm.show_job_queue(job_list, task)
 
+
 # Handle actions when running file-select tasks
 def run_file_modes_tasks(task, gui_enabled):
     job_list = files.select_files(gui_enabled, task)
@@ -22,9 +22,6 @@ def run_file_modes_tasks(task, gui_enabled):
 
 
 def main():
-    # Initialize Colorama with auto style reset option
-    init(autoreset=True)
-
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Sushi Batch Tool")
     parser.add_argument(
@@ -40,7 +37,7 @@ def main():
 
     while True:
         print(
-            f"""\n{Fore.CYAN}Sushi Batch Tool{Style.RESET_ALL}
+            f"""\n{cu.fore.CYAN}Sushi Batch Tool{cu.style_reset}
         1) Audio-based Sync  (Directory Select)
         2) Video-based Sync  (Directory Select) 
         3) Audio-based Sync  (Files Select)
@@ -53,20 +50,20 @@ def main():
 
         match choice:
             case 1:
-                print(f"{Fore.CYAN}Audio-based Sync (Directory mode)")
+                print(f"{cu.fore.CYAN}Audio-based Sync (Directory mode)")
                 run_dir_modes_tasks("aud-sync-dir", gui_enabled)
             case 2:
-                print(f"{Fore.CYAN}Video-based Sync (Directory mode)")
+                print(f"{cu.fore.CYAN}Video-based Sync (Directory mode)")
                 run_dir_modes_tasks("vid-sync-dir", gui_enabled)
             case 3:
-                print(f"{Fore.CYAN}Audio-based Sync (Single-file mode)")
+                print(f"{cu.fore.CYAN}Audio-based Sync (Single-file mode)")
                 run_file_modes_tasks("aud-sync-fil", gui_enabled)
             case 4:
-                print(f"{Fore.CYAN}Video-based Sync (Single-file mode)")
+                print(f"{cu.fore.CYAN}Video-based Sync (Single-file mode)")
                 run_file_modes_tasks("vid-sync-fil", gui_enabled)
             case 5:
                 if len(jm.job_queue[0]) == 0:
-                    print(f"{Fore.LIGHTRED_EX}No jobs queued!")
+                    print(f"{cu.fore.LIGHTRED_EX}No jobs queued!")
                 else:
                     jm.show_job_queue(task="job-queue")
             case 6:
