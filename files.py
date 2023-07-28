@@ -94,7 +94,7 @@ def select_files(gui_enabled, task):
         while True:
             file_path = input(prompt).strip('"')
             file_paths.append(file_path)
-            if not confirm_action("Do you want to add another path? (Y/N): "):
+            if not cu.confirm_action("Do you want to add another path? (Y/N): "):
                 break
         return file_paths
 
