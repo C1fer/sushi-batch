@@ -15,9 +15,9 @@ def clear_screen():
 
 
 # Ask for user confirmation
-def confirm_action(prompt = f"{fore.LIGHTWHITE_EX}Are you sure? (Y/N): "):
+def confirm_action(prompt = "Are you sure? (Y/N): "):
     while True:
-        confirm = input(prompt).upper()
+        confirm = input(f"{fore.LIGHTWHITE_EX}{prompt}").upper()
         match confirm:
             case "Y":
                 return True
@@ -36,10 +36,10 @@ def get_choice(options_range):
             if choice in options_range:
                 return choice
             else:
-                print(f"{fore.LIGHTRED_EX}Invalid choice! Please select a valid option.\n")
+                print(f"{fore.LIGHTRED_EX}Invalid choice! Please select a valid option.")
         except ValueError:
-            print(f"{fore.LIGHTRED_EX}Invalid choice! Please select a valid option.\n")
-
+            print(f"{fore.LIGHTRED_EX}Invalid choice! Please select a valid option.")
+            
 
 # Look for ffmpeg binary in PATH env var and working directory
 def is_ffmpeg_installed():

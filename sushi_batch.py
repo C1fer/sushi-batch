@@ -7,7 +7,6 @@ import console_utils as cu
 
 # Handle actions when running directory-select tasks
 def run_dir_modes_tasks(task, gui_enabled):
-    cu.clear_screen()
     src, dst = files.get_directories(gui_enabled)
     if src is not None and dst is not None:
         job_list = files.search_directories(src, dst, task)
@@ -17,7 +16,6 @@ def run_dir_modes_tasks(task, gui_enabled):
 
 # Handle actions when running file-select tasks
 def run_file_modes_tasks(task, gui_enabled):
-    cu.clear_screen()
     job_list = files.select_files(gui_enabled, task)
     if job_list is not None:
         jm.show_job_queue(job_list, task)
@@ -63,6 +61,7 @@ def main():
         # Allow mode selection only if FFmpeg is found
         print_menu()
         sel_option = cu.get_choice(range(1, 7))
+        cu.clear_screen()
         match sel_option:
             case 1:
                 print(f"{cu.fore.CYAN}Audio-based Sync (Directory mode)")
@@ -78,16 +77,17 @@ def main():
                 run_file_modes_tasks("vid-sync-fil", gui_enabled)
             case 5:
                 if len(jm.job_queue[0]) == 0:
-                    print(f"{cu.fore.LIGHTRED_EX}No jobs queued!")
+                    print(f"{cu.fore.LIGHTRED_EX}No jobs queued.")
                 else:
                     jm.show_job_queue(task="job-queue")
             case 6:
                 # Check if queue is empty before exiting
-                if len(jm.job_queue[0]) == 0:
-                    sys.exit()
-                else:
-                    if cu.confirm_action("Exiting will clear the job queue. Are you sure? (Y/N): "):
+                if len(jm.job_queue[0]) > 0:
+                    if cu.confirm_action(f"{cu.fore.LIGHTYELLOW_EX}Exiting will clear the job queue. Are you sure? (Y/N): "):
                         sys.exit()
+                    cu.clear_screen()
+                else:
+                    sys.exit()
 
 
 if __name__ == "__main__":
