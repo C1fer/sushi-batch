@@ -6,4 +6,5 @@ class Job:
         self.task = task
         self.aud_track_id = aud_track_id
         self.sub_track_id = sub_track_id
-        self.status = "Not Started"
+        self.status = "Pending"
+        self.error_message = None

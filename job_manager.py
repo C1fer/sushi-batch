@@ -5,6 +5,7 @@ import job
 # Initialize queue with sublists: Source files, Destination files, Subtitle files, Tasks, Audio ID, Sub ID
 job_queue = []
 
+
 # Show Job Queue
 def show_job_queue(job_list=job_queue, task="job-queue"):
     # Clear command line output before showing jobs
@@ -21,13 +22,25 @@ def show_job_queue(job_list=job_queue, task="job-queue"):
 
         # Don't show values if None
         if job.sub_file is not None:
-            print(f"{cu.fore.LIGHTRED_EX}Subtitle file: {job.sub_file}")
+            print(f"{cu.fore.LIGHTCYAN_EX }Subtitle file: {job.sub_file}")
 
         if job.aud_track_id is not None:
             print(f"{cu.fore.LIGHTMAGENTA_EX}Audio Track ID: {job.aud_track_id}")
 
         if job.sub_track_id is not None:
-            print(f"{cu.fore.LIGHTGREEN_EX}Subtitle Track ID: {job.sub_track_id}")
+            print(f"{cu.fore.LIGHTCYAN_EX}Subtitle Track ID: {job.sub_track_id}")
+
+        if task == "job-queue":
+            match job.status:
+                case "Pending":
+                    print(f"{cu.fore.LIGHTBLACK_EX}Status: Not Started")
+                case "Completed":
+                    print(f"{cu.fore.LIGHTGREEN_EX}Status: Completed") 
+                case "Failed":
+                    print(f"{cu.fore.LIGHTRED_EX}Status: Failed")
+                    print(f"{cu.fore.LIGHTRED_EX}Error: {job.error_message}")
+                case other:
+                    print(job.status)
 
     # Show queue options
     handle_queue_options(job_list, task)
@@ -54,8 +67,8 @@ def handle_queue_options(job_list, task):
             case 1:
                 sub_sync.shift_subs(job_list)
                 # Don't clear job list if running jobs without adding to queue
-                if task == "job-queue":
-                    clear_job_queue()
+                # if task == "job-queue":
+                #     clear_job_queue()
             case 2:
                 run_selected_jobs(job_list, task)
             case 3:
@@ -87,9 +100,6 @@ def run_selected_jobs(job_list, task):
         for job_idx in selected_jobs:
             jobs_to_run.append(job_list[job_idx - 1]) # Decrease job index by 1 to match real queue index
         sub_sync.shift_subs(jobs_to_run)
-        # Remove selected jobs from queue
-        if task == "job-queue":
-            remove_jobs_queue(selected_jobs)
 
 
 # Add selected jobs to queue

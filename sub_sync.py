@@ -1,32 +1,33 @@
 import sushi.__main__ as sh
-
+from sushi.common import SushiError
 
 # Run sync based on job task
 def shift_subs(jobs):
     for job in jobs:
-        if job.task in ("aud-sync-dir", "aud-sync-fil"):
-            shift_by_audio(job.src_file, job.dst_file, job.sub_file)
-        elif job.task in ("vid-sync-dir", "vid-sync-fil"):
-            shift_by_video(job.src_file, job.dst_file, job.aud_track_id, job.sub_track_id)
-        job.status = "Completed"
+        args = set_args(job)
+        try:
+            sh.parse_args_and_run(args)
+            job.status = "Completed"
+        except SushiError as e:
+            job.status = "Failed"
+            job.error_message = e.args[0]
+    
 
+def set_args(job):
+    args = []
 
-# Shift timing using audio tracks as reference
-def shift_by_audio(src_file, dst_file, sub_file):
-    args = ["--sample-rate", "24000", "--src", src_file, "--dst", dst_file, "--script", sub_file]
-    sh.parse_args_and_run(args)
+    if job.task in ("aud-sync-dir", "aud-sync-fil"):
+        args = ["--sample-rate", "24000", "--src", job.src_file, "--dst", job.dst_file, "--script", job.sub_file]
 
+    elif job.task in ("vid-sync-dir", "vid-sync-fil"):
+        args = ["--sample-rate", "24000", "--src", job.src_file, "--dst", job.dst_file]
 
-# Shift timing using videos as reference
-def shift_by_video(src_file, dst_file, src_audio_id, src_sub_id):
-    args = ["--sample-rate", "24000", "--src", src_file, "--dst", dst_file]
+        # Sushi defaults to first audio and sub track if index is not provided
+        # Use custom track indexes if specified
+        if src_audio_id is not None:
+            args.extend(["--src-audio", job.src_audio_id])
 
-    # Sushi defaults to first audio and sub track if index is not provided
-    # Use custom track indexes if specified
-    if src_audio_id is not None:
-        args.extend(["--src-audio", src_audio_id])
+        if src_sub_id is not None:
+            args.extend(["--src-script", job.src_sub_id])
 
-    if src_sub_id is not None:
-        args.extend(["--src-script", src_sub_id])
-
-    sh.parse_args_and_run(args)
+    return args 
