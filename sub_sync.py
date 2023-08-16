@@ -3,11 +3,12 @@ import sushi.__main__ as sh
 
 # Run sync based on job task
 def shift_subs(jobs):
-    for src_file, dst_file, sub_file, task, src_audio_id, src_sub_id in zip(*jobs):
-        if task in ("aud-sync-dir", "aud-sync-fil"):
-            shift_by_audio(src_file, dst_file, sub_file)
-        elif task in ("vid-sync-dir", "vid-sync-fil"):
-            shift_by_video(src_file, dst_file, src_audio_id, src_sub_id)
+    for job in jobs:
+        if job.task in ("aud-sync-dir", "aud-sync-fil"):
+            shift_by_audio(job.src_file, job.dst_file, job.sub_file)
+        elif job.task in ("vid-sync-dir", "vid-sync-fil"):
+            shift_by_video(job.src_file, job.dst_file, job.aud_track_id, job.sub_track_id)
+        job.status = "Completed"
 
 
 # Shift timing using audio tracks as reference

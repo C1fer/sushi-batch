@@ -60,29 +60,29 @@ def main():
     while True:
         # Allow mode selection only if FFmpeg is found
         print_menu()
-        sel_option = cu.get_choice(range(1, 7))
+        selected_option = cu.get_choice(range(1, 7))
         cu.clear_screen()
-        match sel_option:
+        match selected_option:
             case 1:
                 print(f"{cu.fore.CYAN}Audio-based Sync (Directory mode)")
                 run_dir_modes_tasks("aud-sync-dir", gui_enabled)
-            case 2:
+            case 2: 
                 print(f"{cu.fore.CYAN}Video-based Sync (Directory mode)")
                 run_dir_modes_tasks("vid-sync-dir", gui_enabled)
             case 3:
-                print(f"{cu.fore.CYAN}Audio-based Sync (Single-file mode)")
+                print(f"{cu.fore.CYAN}Audio-based Sync (File-select mode)")
                 run_file_modes_tasks("aud-sync-fil", gui_enabled)
             case 4:
-                print(f"{cu.fore.CYAN}Video-based Sync (Single-file mode)")
+                print(f"{cu.fore.CYAN}Video-based Sync (File-select mode)")
                 run_file_modes_tasks("vid-sync-fil", gui_enabled)
             case 5:
-                if len(jm.job_queue[0]) == 0:
+                if len(jm.job_queue) == 0:
                     print(f"{cu.fore.LIGHTRED_EX}No jobs queued.")
                 else:
                     jm.show_job_queue(task="job-queue")
             case 6:
                 # Check if queue is empty before exiting
-                if len(jm.job_queue[0]) > 0:
+                if len(jm.job_queue) > 0:
                     if cu.confirm_action(f"{cu.fore.LIGHTYELLOW_EX}Exiting will clear the job queue. Are you sure? (Y/N): "):
                         sys.exit()
                     cu.clear_screen()

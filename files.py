@@ -1,5 +1,6 @@
 import os
 from tkinter import filedialog
+import job
 import file_formats as ff
 import console_utils as cu
 
@@ -70,19 +71,18 @@ def search_directories(src_path, dst_path, task):
             if name.endswith(formats):
                 dst_files.append(os.path.join(root, name))
 
-    src_len = len(src_files)
-
     # Fill subtitle list with None values if task is video sync
     if task == "vid-sync-dir":
-        sub_files.extend([None] * src_len)
+        sub_files.extend([None] * len(src_files))
 
     # Perform validations on search results
     if check_files(src_files, dst_files, sub_files, task):
-        # Fill remaining sublists if files pass validation
-        tasks = [task] * src_len
-        audio_tracks_id = [None] * src_len
-        sub_tracks_id = [None] * src_len
-        return [src_files, dst_files, sub_files, tasks, audio_tracks_id, sub_tracks_id]
+        # Split the elements into job objects if files pass validation
+        jobs = []
+        for src, dst, sub in zip(src_files, dst_files, sub_files):
+            new_job = job.Job(src, dst, sub, task) # Add current task to job
+            jobs.append(new_job)
+        return jobs
     return None
 
 
@@ -141,16 +141,22 @@ def select_files(gui_enabled, task):
 
     # Return job list if selected files pass validation
     if check_files(src_files, dst_files, sub_files, task, gui_enabled):
-        # Fill remaining sublists if files pass validation
-        tasks = [task] * src_files_len
-        audio_tracks_id = [None] * src_files_len
-        sub_tracks_id = [None] * src_files_len
-        return [src_files, dst_files, sub_files, tasks, audio_tracks_id, sub_tracks_id]
+        # Split the elements into job objects if files pass validation
+        jobs = []
+        for src, dst, sub in zip(src_files, dst_files, sub_files):
+            new_job = job.Job(src, dst, sub, task) # Add current task to job
+            jobs.append(new_job)
+        return jobs
     return None
 
 
 # Validate files found on the specified paths or selected by user
 def check_files(src_files, dst_files, sub_files, task, gui_enabled=True):
+    # Get length of lists
+    src_files_len = len(src_files)
+    dst_files_len = len(dst_files)
+    sub_files_len = len(sub_files)
+
     # Check if selected files have valid paths (Command line mode only)
     if not gui_enabled and task in ("aud-sync-fil", "vid-sync-fil"):
         if not check_path_exists(src_files):
@@ -162,11 +168,6 @@ def check_files(src_files, dst_files, sub_files, task, gui_enabled=True):
         if not check_path_exists(sub_files):
             return False
 
-    # Get lengths of each list
-    src_files_len = len(src_files)
-    dst_files_len = len(dst_files)
-    sub_files_len = len(sub_files)
-
     # Check if there are no source files
     if not src_files_len:
         print(f"{cu.fore.LIGHTRED_EX}No source files found!")
@@ -175,11 +176,6 @@ def check_files(src_files, dst_files, sub_files, task, gui_enabled=True):
     # Check if there are no destination files
     if not dst_files_len:
         print(f"{cu.fore.LIGHTRED_EX}No destination files found!")
-        return False
-
-     # Check if there are no destination files
-    if not sub_files_len:
-        print(f"{cu.fore.LIGHTRED_EX}No subtitles found!")
         return False
 
     # Check if source and destination files contain the same number of elements
