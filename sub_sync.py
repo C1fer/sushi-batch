@@ -4,13 +4,14 @@ from sushi.common import SushiError
 # Run sync based on job task
 def shift_subs(jobs):
     for job in jobs:
-        args = set_args(job)
-        try:
-            sh.parse_args_and_run(args)
-            job.status = "Completed"
-        except SushiError as e:
-            job.status = "Failed"
-            job.error_message = e.args[0]
+        if job.status == "Pending":
+            args = set_args(job)
+            try:
+                sh.parse_args_and_run(args)
+                job.status = "Completed"
+            except SushiError as e:
+                job.status = "Failed"
+                job.error_message = e.args[0]
     
 
 def set_args(job):
@@ -24,10 +25,10 @@ def set_args(job):
 
         # Sushi defaults to first audio and sub track if index is not provided
         # Use custom track indexes if specified
-        if src_audio_id is not None:
-            args.extend(["--src-audio", job.src_audio_id])
+        if job.src_aud_track_id is not None:
+            args.extend(["--src-audio", job.src_aud_track_id])
 
-        if src_sub_id is not None:
-            args.extend(["--src-script", job.src_sub_id])
+        if job.src_sub_track_id is not None:
+            args.extend(["--src-script", job.src_sub_track_id])
 
     return args 

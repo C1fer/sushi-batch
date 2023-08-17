@@ -11,14 +11,14 @@ def run_dir_modes_tasks(task, gui_enabled):
     if src is not None and dst is not None:
         job_list = files.search_directories(src, dst, task)
         if job_list is not None:
-            job_queue = jm.show_job_queue(job_list, task)
+            jm.show_job_list(job_list, task)
 
 
 # Handle actions when running file-select tasks
 def run_file_modes_tasks(task, gui_enabled):
     job_list = files.select_files(gui_enabled, task)
     if job_list is not None:
-        jm.show_job_queue(job_list, task)
+        jm.show_job_list(job_list, task)
 
 
 def print_menu():
@@ -79,7 +79,7 @@ def main():
                 if len(jm.job_queue) == 0:
                     print(f"{cu.fore.LIGHTRED_EX}No jobs queued.")
                 else:
-                    jm.show_job_queue(task="job-queue")
+                    jm.show_job_list(task="job-queue")
             case 6:
                 # Check if queue is empty before exiting
                 if len(jm.job_queue) > 0:
