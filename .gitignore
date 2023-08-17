@@ -4,3 +4,6 @@ __pycache__/
 
 #FFMPEG binary
 ffmpeg.exe
+
+# Queue contents used for testing
+queue_data.json

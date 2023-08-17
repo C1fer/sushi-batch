@@ -57,6 +57,13 @@ def main():
     # Set toggle to False if --no-gui flag is provided
     gui_enabled = not parse_args()
 
+    # Load queue contents if found
+    try:
+        jm.load_queue_contents()
+        print(f"{cu.fore.LIGHTGREEN_EX}Queue restored from file")
+    except FileNotFoundError:
+        cu.print_error("Queue file could not be found")
+
     while True:
         # Allow mode selection only if FFmpeg is found
         print_menu()
@@ -81,16 +88,8 @@ def main():
                 else:
                     jm.show_job_list(task="job-queue")
             case 6:
-                # Check if queue is empty before exiting
-                if len(jm.job_queue) > 0:
-                    if cu.confirm_action(
-                        f"{cu.fore.LIGHTYELLOW_EX}Exiting will clear the job queue. Are you sure? (Y/N): "
-                    ):
-                        sys.exit()
-                    cu.clear_screen()
-                else:
                     sys.exit()
-
+                    
 
 if __name__ == "__main__":
     main()

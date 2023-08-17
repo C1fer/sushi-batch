@@ -1,6 +1,8 @@
+import json
 import sub_sync
 import console_utils as cu
 import job
+
 
 # Initialize empty queue
 job_queue = []
@@ -8,9 +10,7 @@ job_queue = []
 
 # Show Job List
 def show_job_list(job_list=job_queue, task="job-queue"):
-    # Clear command line output before showing jobs
-    cu.clear_screen()
-
+    # Show title based on current task
     if task == "job-queue":
         print(f"{cu.fore.LIGHTCYAN_EX}Job Queue")
     else:
@@ -44,6 +44,7 @@ def show_job_list(job_list=job_queue, task="job-queue"):
                 case other:
                     print(job.status)
 
+    # Show options based on current task
     if task == "job-queue":
         handle_queue_options(task)  # Show queue options
     else:
@@ -53,63 +54,69 @@ def show_job_list(job_list=job_queue, task="job-queue"):
 # Handle queue options
 def handle_queue_options(task):
     while True:
-        # Show options based on current task
         print(
             "\n1) Start queue \n2) Run selected jobs \n3) Remove selected jobs \n4) Clear queue \n5) Clear completed and failed jobs \n6) Return to main menu"
         )
 
         # Get and confirm selected option (limit choice to range 1-5)
-        choice = cu.get_choice(range(1, 6))
+        choice = cu.get_choice(range(1, 7))
 
         # Clear output and show job queue if option is not confirmed
         if not cu.confirm_action():
+            cu.clear_screen()
             show_job_list()
 
-        # Handle user-selected options
-        match choice:
-            case 1:
-                # Run all pending jobs on queue
-                sub_sync.shift_subs(job_queue)
-            case 2:
-                # Run selected jobs
-                selected_jobs = select_jobs(
-                    "Select jobs to run (e.g: 1, 5-10): ", job_queue
-                )
-                if selected_jobs is not None and cu.confirm_action():
-                    run_selected_jobs(selected_jobs, job_queue)
-            case 3:
-                # Remove selected jobs from queue
-                selected_jobs = select_jobs(
-                    "Select jobs to remove from queue (e.g: 1, 5-10): ", job_queue
-                )
-                if selected_jobs is not None and cu.confirm_action():
-                    remove_jobs_queue(selected_jobs)
+        else:
+            # Handle user-selected options
+            match choice:
+                case 1:
+                    # Run all pending jobs on queue
+                    sub_sync.shift_subs(job_queue)
                     cu.clear_screen()
-                    print(
-                        f"{cu.fore.LIGHTGREEN_EX}{len(selected_jobs)} job(s) removed from queue."
+                case 2:
+                    # Run selected jobs
+                    selected_jobs = select_jobs(
+                        "Select jobs to run (e.g: 1, 5-10): ", job_queue
                     )
-            case 4:
-                # Clear queue
-                job_queue.clear()
-                cu.clear_screen()
-                print(f"{cu.fore.LIGHTGREEN_EX}Queue cleared.")
-            case 5:
-                # Remove failed and completed jobs from queue
-                jobs_to_remove = []
-                for idx, (job) in enumerate(job_queue, start=1):
-                    # Add job to list if status is not Pending
-                    if job.status != "Pending":
-                        jobs_to_remove.append(idx)
-                remove_jobs_queue(jobs_to_remove)
-            case others:
-                cu.clear_screen()
-        break
+                    if selected_jobs is not None and cu.confirm_action():
+                        run_selected_jobs(selected_jobs, job_queue)
+                    cu.clear_screen()
+                case 3:
+                    # Remove selected jobs from queue
+                    selected_jobs = select_jobs(
+                        "Select jobs to remove from queue (e.g: 1, 5-10): ", job_queue
+                    )
+                    if selected_jobs is not None and cu.confirm_action():
+                        remove_jobs_queue(selected_jobs)
+                        cu.clear_screen()
+                        print(
+                            f"{cu.fore.LIGHTGREEN_EX}{len(selected_jobs)} job(s) removed from queue."
+                        )
+                case 4:
+                    # Clear queue
+                    job_queue.clear()
+                    cu.clear_screen()
+                    print(f"{cu.fore.LIGHTGREEN_EX}Queue cleared.")
+                case 5:
+                    # Remove jobs without Pending status
+                    jobs_to_remove = []
+                    for idx, (job) in enumerate(job_queue, start=1):
+                        # Add job to list if status is not Pending
+                        if job.status != "Pending":
+                            jobs_to_remove.append(idx)
+                    remove_jobs_queue(jobs_to_remove)
+                    cu.clear_screen()
+                    print(f"{cu.fore.LIGHTGREEN_EX}Completed jobs cleared from queued.")
+                case others:
+                    cu.clear_screen()
+                    break
+            save_queue_contents()
+            break
 
 
 # Handle queue options
 def handle_details_options(jobs_detail, task):
     while True:
-        # Show options based on current task
         print(
             "\n1) Run all jobs \n2) Run selected jobs \n3) Add all jobs to queue \n4) Add selected jobs to queue \n5) Return to main menu"
         )
@@ -119,6 +126,7 @@ def handle_details_options(jobs_detail, task):
 
         # Clear output and show job queue if option is not confirmed
         if not cu.confirm_action():
+            cu.clear_screen()
             show_job_list(jobs_detail, task)
 
         # Handle user-selected options
@@ -127,6 +135,7 @@ def handle_details_options(jobs_detail, task):
                 # Queue all jobs and start automatically
                 add_jobs_queue("all", jobs_detail, task)
                 sub_sync.shift_subs(jobs_detail)
+                cu.clear_screen()
             case 2:
                 # Queue selected jobs and start automatically
                 selected_jobs = select_jobs(
@@ -135,9 +144,11 @@ def handle_details_options(jobs_detail, task):
                 if selected_jobs is not None and cu.confirm_action():
                     add_jobs_queue(selected_jobs, jobs_detail, task)
                     run_selected_jobs(selected_jobs, jobs_detail)
+                cu.clear_screen()
             case 3:
                 # Queue all jobs without starting them
                 add_jobs_queue("all", jobs_detail, task)
+                cu.clear_screen
                 print(
                     f"{cu.fore.LIGHTGREEN_EX}{len(jobs_detail)} job(s) added to queue."
                 )
@@ -155,6 +166,8 @@ def handle_details_options(jobs_detail, task):
                     )
             case others:
                 cu.clear_screen()
+                break
+        save_queue_contents()
         break
 
 
@@ -235,7 +248,7 @@ def select_jobs(prompt, job_list):
 
 # Set custom track id for re-synchronization process
 def set_tracks_id(job_list, task):
-    # Ask for user to input track index
+    # Get track index from user input
     def get_track_id(prompt):
         while True:
             track_id = input(prompt)
@@ -260,3 +273,41 @@ def set_tracks_id(job_list, task):
             print(f"{cu.fore.LIGHTBLUE_EX}Source file: {job.src_file}")
             job.src_aud_track_id = get_track_id("Audio Track ID: ")
             job.src_sub_track_id = get_track_id("Subtitle Track ID: ")
+
+
+# Save queue contents to JSON file
+def save_queue_contents():
+    # Set JSON file path
+    file_path = cu.os.path.join(cu.os.path.dirname(__file__), "queue_data.json")
+
+    with open(file_path, "w") as json_file:
+        json.dump(job_queue, json_file, default=lambda obj: obj.__dict__, indent=4)
+    print(f"{cu.fore.LIGHTGREEN_EX}Queue updated")
+
+
+# Load queue contents from JSON file
+def load_queue_contents():
+    # Set JSON file path
+    file_path = cu.os.path.join(cu.os.path.dirname(__file__), "queue_data.json")
+
+    with open(file_path, "r") as json_file:
+        # Read JSON file
+        queued_jobs = json.load(json_file)
+
+        # Create objects for each array element
+        job_list = [
+            job.Job(
+                queued_job["src_file"],
+                queued_job["dst_file"],
+                queued_job["sub_file"],
+                queued_job["task"],
+                queued_job["src_aud_track_id"],
+                queued_job["src_sub_track_id"],
+                queued_job["status"],
+                queued_job["error_message"],
+            )
+            for queued_job in queued_jobs
+        ]
+
+    # Add created instances to job queue
+    job_queue.extend(job_list)
