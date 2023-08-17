@@ -13,9 +13,12 @@ style_reset = Style.RESET_ALL
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear') 
 
+def print_error(message):
+    return print(f"{fore.LIGHTRED_EX}{message}")
+
 
 # Ask for user confirmation
-def confirm_action(prompt = "Are you sure? (Y/N): "):
+def confirm_action(prompt= "Are you sure? (Y/N): "):
     while True:
         confirm = input(f"{fore.LIGHTWHITE_EX}{prompt}").upper()
         match confirm:
@@ -24,7 +27,7 @@ def confirm_action(prompt = "Are you sure? (Y/N): "):
             case "N":
                 return False
             case others:
-                print(f"{fore.LIGHTRED_EX}Wrong input!\n")
+                print_error("Wrong input!\n")
     return True
 
 
@@ -36,9 +39,9 @@ def get_choice(options_range):
             if choice in options_range:
                 return choice
             else:
-                print(f"{fore.LIGHTRED_EX}Invalid choice! Please select a valid option.")
+                print_error("Invalid choice! Please select a valid option.")
         except ValueError:
-            print(f"{fore.LIGHTRED_EX}Invalid choice! Please select a valid option.")
+            print_error("Invalid choice! Please select a valid option.")
             
 
 # Look for ffmpeg binary in PATH env var and working directory

@@ -39,7 +39,7 @@ def get_directories(gui_enabled):
         return None, None
 
     if src_path == dst_path:
-        print(f"{cu.fore.LIGHTRED_EX}Source and destination folders are the same!")
+        cu.print_error("Source and destination folders are the same!")
         return None, None
 
     return src_path, dst_path
@@ -170,19 +170,17 @@ def check_files(src_files, dst_files, sub_files, task, gui_enabled=True):
 
     # Check if there are no source files
     if not src_files_len:
-        print(f"{cu.fore.LIGHTRED_EX}No source files found!")
+        cu.print_error("No source files found!")
         return False
 
     # Check if there are no destination files
     if not dst_files_len:
-        print(f"{cu.fore.LIGHTRED_EX}No destination files found!")
+        cu.print_error("No destination files found!")
         return False
 
     # Check if source and destination files contain the same number of elements
     if src_files_len != dst_files_len:
-        print(
-            f"{cu.fore.LIGHTRED_EX}Number of source files does not match the number of destination files!"
-        )
+        cu.print_error("Number of source files does not match the number of destination files!")
         print(
             f"({src_files_len} source files, {dst_files_len} destination files)"
         )
@@ -190,9 +188,7 @@ def check_files(src_files, dst_files, sub_files, task, gui_enabled=True):
 
     # Check if source and subtitle files contain the same number of elements (audio sync tasks)
     if task in ("aud-sync-dir", "aud-sync-fil") and src_files_len != sub_files_len:
-        print(
-            f"{cu.fore.LIGHTRED_EX}Number of source files does not match the number of subtitle files!"
-        )
+        cu.print_error("Number of source files does not match the number of subtitle files!")
         print(
             f"({src_files_len} source files, {sub_files_len} subtitle files)"
         )

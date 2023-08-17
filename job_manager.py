@@ -39,8 +39,8 @@ def show_job_list(job_list=job_queue, task="job-queue"):
                 case "Completed":
                     print(f"{cu.fore.LIGHTGREEN_EX}Status: Completed") 
                 case "Failed":
-                    print(f"{cu.fore.LIGHTRED_EX}Status: Failed")
-                    print(f"{cu.fore.LIGHTRED_EX}Error: {job.error_message}")
+                    print(f"{cu.fore.LIGHTRED_EX}Status: Status: Failed") 
+                    print(f"{cu.fore.LIGHTRED_EX}Status: Error: {job.error_message}") 
                 case other:
                     print(job.status)
         
@@ -200,7 +200,7 @@ def select_jobs(prompt, job_list):
 
     # Return valid indexes list if not empty
     if not valid_job_indexes:
-        print(f"{cu.fore.LIGHTRED_EX}Invalid choice! Please select valid jobs.")
+        cu.print_error("Invalid choice! Please select valid jobs.")
         return None
     else:
         valid_job_indexes.sort() # Sort indexes
@@ -216,7 +216,7 @@ def set_tracks_id(job_list, task):
             track_id = input(prompt)
             if track_id.isnumeric():
                 return track_id
-            print(f"{cu.fore.LIGHTRED_EX}Please input a number!")
+            cu.print_error("Please input a number!")
 
     jbl_len = len(job_list)
 
@@ -235,22 +235,22 @@ def set_tracks_id(job_list, task):
             job.src_sub_track_id = get_track_id("Subtitle Track ID: ")
             
 
-jobs=[]
+# jobs=[]
 
-# TEST SETUP
-job1 = job.Job('C:\\Users\\rusbe\\Documents\\Test\\audio_src\\[QaS] Fullmetal Alchemist Brotherhood - 01 [BD 1080p HEVC x265 10bit Opus 5.1][Dual Audio]_track3_[jpn]_DELAY 0ms.opus', 'C:\\Users\\rusbe\\Documents\\Test\\audio_dst\\FMA - 01_track2_[jpn]_DELAY 0ms.flac', 'C:\\Users\\rusbe\\Documents\\Test\\audio_src\\[QaS] Fullmetal Alchemist Brotherhood - 01 [BD 1080p HEVC x265 10bit Opus 5.1][Dual Audio]_track6_[eng].ass','aud-sync-dir')
-job2 = job.Job('C:\\Users\\rusbe\\Documents\\Test\\audio_src\\[QaS] Fullmetal Alchemist Brotherhood - 02 [BD 1080p HEVC x265 10bit Opus 5.1][Dual Audio]_track3_[jpn]_DELAY 0ms.opus','C:\\Users\\rusbe\\Documents\\Test\\audio_dst\\FMA - 02_track2_[jpn]_DELAY 0ms.flac', 'C:\\Users\\rusbe\\Documents\\Test\\audio_src\\[QaS] Fullmetal Alchemist Brotherhood - 02 [BD 1080p HEVC x265 10bit Opus 5.1][Dual Audio]_track5_[eng].ass', 'aud-sync-dir')
-corrError = job.Job('C:\\Users\\rusbe\\Documents\\Test\\audio_src\\[QaS] Fullmetal Alchemist Brotherhood - 39 [BD 1080p HEVC x265 10bit Opus 5.1][Dual Audio]_track3_[jpn]_DELAY 0ms.opus','C:\\Users\\rusbe\\Documents\\Test\\audio_dst\\FMA - 39_track2_[jpn]_DELAY 0ms.flac','', 'aud-sync-dir')
+# # TEST SETUP
+# job1 = job.Job('C:\\Users\\rusbe\\Documents\\Test\\audio_src\\[QaS] Fullmetal Alchemist Brotherhood - 01 [BD 1080p HEVC x265 10bit Opus 5.1][Dual Audio]_track3_[jpn]_DELAY 0ms.opus', 'C:\\Users\\rusbe\\Documents\\Test\\audio_dst\\FMA - 01_track2_[jpn]_DELAY 0ms.flac', 'C:\\Users\\rusbe\\Documents\\Test\\audio_src\\[QaS] Fullmetal Alchemist Brotherhood - 01 [BD 1080p HEVC x265 10bit Opus 5.1][Dual Audio]_track6_[eng].ass','aud-sync-dir')
+# job2 = job.Job('C:\\Users\\rusbe\\Documents\\Test\\audio_src\\[QaS] Fullmetal Alchemist Brotherhood - 02 [BD 1080p HEVC x265 10bit Opus 5.1][Dual Audio]_track3_[jpn]_DELAY 0ms.opus','C:\\Users\\rusbe\\Documents\\Test\\audio_dst\\FMA - 02_track2_[jpn]_DELAY 0ms.flac', 'C:\\Users\\rusbe\\Documents\\Test\\audio_src\\[QaS] Fullmetal Alchemist Brotherhood - 02 [BD 1080p HEVC x265 10bit Opus 5.1][Dual Audio]_track5_[eng].ass', 'aud-sync-dir')
+# corrError = job.Job('C:\\Users\\rusbe\\Documents\\Test\\audio_src\\[QaS] Fullmetal Alchemist Brotherhood - 39 [BD 1080p HEVC x265 10bit Opus 5.1][Dual Audio]_track3_[jpn]_DELAY 0ms.opus','C:\\Users\\rusbe\\Documents\\Test\\audio_dst\\FMA - 39_track2_[jpn]_DELAY 0ms.flac','', 'aud-sync-dir')
 
 
-vid_task1 = job.Job('C:\\Users\\rusbe\\Documents\\Test\\wx2\\FMA - 39 QaS.mkv', 'C:\\Users\\rusbe\\Documents\\Test\\wx\\FMA - 39 VCB.mkv', None, 'vid-sync-fil')
-jobs.append(vid_task1)
-# # job_queue.append(job1)
-# # job_queue.append(corrError)
-# # job_queue.append(job2)
+# vid_task1 = job.Job('C:\\Users\\rusbe\\Documents\\Test\\wx2\\FMA - 39 QaS.mkv', 'C:\\Users\\rusbe\\Documents\\Test\\wx\\FMA - 39 VCB.mkv', None, 'vid-sync-fil')
+# jobs.append(vid_task1)
+# # # job_queue.append(job1)
+# # # job_queue.append(corrError)
+# # # job_queue.append(job2)
 
-# # jobs = job_queue
+# # # jobs = job_queue
 
-# # #TEST
-show_job_list(jobs, 'vid-sync-fil')
-show_job_list()
+# # # #TEST
+# show_job_list(jobs, 'vid-sync-fil')
+# show_job_list()

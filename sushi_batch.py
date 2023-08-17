@@ -49,9 +49,7 @@ def parse_args():
 def main():
     # Exit with error message if FFmpeg is not found
     if not cu.is_ffmpeg_installed():
-        print(
-            f"{cu.fore.LIGHTRED_EX}FFmpeg is not installed! \nAdd FFmpeg to PATH or copy the binary to this folder."
-        )
+        print_error("FFmpeg is not installed! \nAdd FFmpeg to PATH or copy the binary to this folder.")
         sys.exit()
 
     # Set toggle to False if --no-gui flag is provided
@@ -77,7 +75,7 @@ def main():
                 run_file_modes_tasks("vid-sync-fil", gui_enabled)
             case 5:
                 if len(jm.job_queue) == 0:
-                    print(f"{cu.fore.LIGHTRED_EX}No jobs queued.")
+                    cu.print_error("No jobs queued!")
                 else:
                     jm.show_job_list(task="job-queue")
             case 6:
