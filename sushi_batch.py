@@ -49,7 +49,9 @@ def parse_args():
 def main():
     # Exit with error message if FFmpeg is not found
     if not cu.is_ffmpeg_installed():
-        print_error("FFmpeg is not installed! \nAdd FFmpeg to PATH or copy the binary to this folder.")
+        print_error(
+            "FFmpeg is not installed! \nAdd FFmpeg to PATH or copy the binary to this folder."
+        )
         sys.exit()
 
     # Set toggle to False if --no-gui flag is provided
@@ -64,7 +66,7 @@ def main():
             case 1:
                 print(f"{cu.fore.CYAN}Audio-based Sync (Directory mode)")
                 run_dir_modes_tasks("aud-sync-dir", gui_enabled)
-            case 2: 
+            case 2:
                 print(f"{cu.fore.CYAN}Video-based Sync (Directory mode)")
                 run_dir_modes_tasks("vid-sync-dir", gui_enabled)
             case 3:
@@ -81,7 +83,9 @@ def main():
             case 6:
                 # Check if queue is empty before exiting
                 if len(jm.job_queue) > 0:
-                    if cu.confirm_action(f"{cu.fore.LIGHTYELLOW_EX}Exiting will clear the job queue. Are you sure? (Y/N): "):
+                    if cu.confirm_action(
+                        f"{cu.fore.LIGHTYELLOW_EX}Exiting will clear the job queue. Are you sure? (Y/N): "
+                    ):
                         sys.exit()
                     cu.clear_screen()
                 else:

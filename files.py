@@ -80,7 +80,7 @@ def search_directories(src_path, dst_path, task):
         # Split the elements into job objects if files pass validation
         jobs = []
         for src, dst, sub in zip(src_files, dst_files, sub_files):
-            new_job = job.Job(src, dst, sub, task) # Add current task to job
+            new_job = job.Job(src, dst, sub, task)  # Add current task to job
             jobs.append(new_job)
         return jobs
     return None
@@ -144,7 +144,7 @@ def select_files(gui_enabled, task):
         # Split the elements into job objects if files pass validation
         jobs = []
         for src, dst, sub in zip(src_files, dst_files, sub_files):
-            new_job = job.Job(src, dst, sub, task) # Add current task to job
+            new_job = job.Job(src, dst, sub, task)  # Add current task to job
             jobs.append(new_job)
         return jobs
     return None
@@ -180,18 +180,18 @@ def check_files(src_files, dst_files, sub_files, task, gui_enabled=True):
 
     # Check if source and destination files contain the same number of elements
     if src_files_len != dst_files_len:
-        cu.print_error("Number of source files does not match the number of destination files!")
-        print(
-            f"({src_files_len} source files, {dst_files_len} destination files)"
+        cu.print_error(
+            "Number of source files does not match the number of destination files!"
         )
+        print(f"({src_files_len} source files, {dst_files_len} destination files)")
         return False
 
     # Check if source and subtitle files contain the same number of elements (audio sync tasks)
     if task in ("aud-sync-dir", "aud-sync-fil") and src_files_len != sub_files_len:
-        cu.print_error("Number of source files does not match the number of subtitle files!")
-        print(
-            f"({src_files_len} source files, {sub_files_len} subtitle files)"
+        cu.print_error(
+            "Number of source files does not match the number of subtitle files!"
         )
+        print(f"({src_files_len} source files, {sub_files_len} subtitle files)")
         return False
 
     # If all checks pass, return True
