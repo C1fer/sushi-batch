@@ -52,7 +52,7 @@ def is_ffmpeg_installed():
 
     # If FFmpeg is not an env var, look for the binary in working directory
     ffmpeg_bin = ("ffmpeg.exe" if os.name == "nt" else "ffmpeg")  # Set binary name depending on OS
-    if os.path.exists(os.join(os.getcwd(), ffmpeg_bin)):
+    if os.path.exists(os.path.join(os.getcwd(), ffmpeg_bin)):
         return True
 
     # If FFmpeg is not found, return false
