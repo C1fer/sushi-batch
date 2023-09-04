@@ -6,8 +6,8 @@ import console_utils as cu
 
 
 # Handle actions when running directory-select tasks
-def run_dir_modes_tasks(task, gui_enabled):
-    src, dst = files.get_directories(gui_enabled)
+def run_dir_modes_tasks(task):
+    src, dst = files.get_directories(task)
     if src is not None and dst is not None:
         job_list = files.search_directories(src, dst, task)
         if job_list is not None:
@@ -15,8 +15,8 @@ def run_dir_modes_tasks(task, gui_enabled):
 
 
 # Handle actions when running file-select tasks
-def run_file_modes_tasks(task, gui_enabled):
-    job_list = files.select_files(gui_enabled, task)
+def run_file_modes_tasks(task):
+    job_list = files.select_files(task)
     if job_list is not None:
         jm.show_job_list(job_list, task)
 
@@ -31,19 +31,6 @@ def print_menu():
         5) Job Queue
         6) Exit"""
     )
-
-
-# Parse command-line arguments
-def parse_args():
-    parser = argparse.ArgumentParser(description="Sushi Batch Tool")
-    parser.add_argument(
-        "--no-gui",
-        dest="no_gui",
-        action="store_true",
-        help="Disable all GUI functionality",
-    )
-    args = parser.parse_args()
-    return args.no_gui
 
 
 def main():
@@ -61,9 +48,6 @@ def main():
         )
         sys.exit(1)
 
-    # Set toggle to False if --no-gui flag is provided
-    gui_enabled = not parse_args()
-
     # Load queue contents if found
     try:
         jm.load_queue_contents()
@@ -80,16 +64,16 @@ def main():
         match selected_option:
             case 1:
                 print(f"{cu.fore.CYAN}Audio-based Sync (Directory mode)")
-                run_dir_modes_tasks("aud-sync-dir", gui_enabled)
+                run_dir_modes_tasks("aud-sync-dir")
             case 2:
                 print(f"{cu.fore.CYAN}Video-based Sync (Directory mode)")
-                run_dir_modes_tasks("vid-sync-dir", gui_enabled)
+                run_dir_modes_tasks("vid-sync-dir")
             case 3:
                 print(f"{cu.fore.CYAN}Audio-based Sync (File-select mode)")
-                run_file_modes_tasks("aud-sync-fil", gui_enabled)
+                run_file_modes_tasks("aud-sync-fil")
             case 4:
                 print(f"{cu.fore.CYAN}Video-based Sync (File-select mode)")
-                run_file_modes_tasks("vid-sync-fil", gui_enabled)
+                run_file_modes_tasks("vid-sync-fil")
             case 5:
                 if len(jm.job_queue) == 0:
                     cu.print_error("No jobs queued!")
