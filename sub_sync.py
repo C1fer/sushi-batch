@@ -8,7 +8,7 @@ from yaspin import yaspin
 # Run sync based on job task
 def shift_subs(jobs):
     for job in jobs:
-        if job.status != "aPending":
+        if job.status != "Pending":
             args = set_args(job)
             exit_code, err_msg = run_shift(args, job)
             # Check if task completed succesfully
@@ -75,8 +75,8 @@ def run_shift(args, job):
             sp.fail("❌")
             lines = stderr.strip().splitlines()
             error_message = "\n".join(lines[1:])
-            
-    return stderr, error_message
+
+    return sushi.returncode, error_message
 
 
 # Set file path to log
