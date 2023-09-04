@@ -79,12 +79,12 @@ def search_directories(src_path, dst_path, task):
     if check_files(src_files, dst_files, sub_files, task):
         # Split the elements into job objects if files pass validation
         jobs = []
-        for src, dst, sub in zip(src_files, dst_files, sub_files):
-            new_job = job.Job(src, dst, sub, task)  # Add current task to job
+        for idx, (src, dst, sub) in enumerate(zip(src_files, dst_files, sub_files), start=1):
+            new_job = job.Job(idx, src, dst, sub, task)
             jobs.append(new_job)
         return jobs
     return None
-
+ 
 
 # Select files
 def select_files(gui_enabled, task):
@@ -143,8 +143,8 @@ def select_files(gui_enabled, task):
     if check_files(src_files, dst_files, sub_files, task, gui_enabled):
         # Split the elements into job objects if files pass validation
         jobs = []
-        for src, dst, sub in zip(src_files, dst_files, sub_files):
-            new_job = job.Job(src, dst, sub, task)  # Add current task to job
+        for idx, (src, dst, sub) in enumerate(zip(src_files, dst_files, sub_files), start=1):
+            new_job = job.Job(idx, src, dst, sub, task)
             jobs.append(new_job)
         return jobs
     return None

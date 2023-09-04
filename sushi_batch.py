@@ -47,12 +47,19 @@ def parse_args():
 
 
 def main():
+    try:
+        import sushi
+    except ImportError:
+        cu.print_error("Sushi is not installed. Install all requirements before running the tool")
+        sys.exit(1)
+
+
     # Exit with error message if FFmpeg is not found
     if not cu.is_ffmpeg_installed():
-        print_error(
+        cu.print_error(
             "FFmpeg is not installed! \nAdd FFmpeg to PATH or copy the binary to this folder."
         )
-        sys.exit()
+        sys.exit(1)
 
     # Set toggle to False if --no-gui flag is provided
     gui_enabled = not parse_args()
@@ -60,7 +67,8 @@ def main():
     # Load queue contents if found
     try:
         jm.load_queue_contents()
-        print(f"{cu.fore.LIGHTGREEN_EX}Queue restored from file")
+        if len(jm.job_queue) > 0:
+            print(f"{cu.fore.LIGHTGREEN_EX}Queue restored from file")
     except FileNotFoundError:
         cu.print_error("Queue file could not be found")
 
@@ -88,7 +96,7 @@ def main():
                 else:
                     jm.show_job_list(task="job-queue")
             case 6:
-                    sys.exit()
+                    sys.exit(0)
                     
 
 if __name__ == "__main__":

@@ -17,8 +17,9 @@ def show_job_list(job_list=job_queue, task="job-queue"):
         print(f"{cu.fore.LIGHTCYAN_EX}Job Details")
 
     # Enumerate job list and get the number of the iteration
-    for idx, (job) in enumerate(job_list, start=1):
-        print(f"\n{cu.fore.LIGHTBLACK_EX}Job {idx}")
+    for job in job_list:
+        job.idx = job_list.index(job) + 1
+        print(f"\n{cu.fore.LIGHTBLACK_EX}Job {job.idx}")
         print(f"{cu.fore.LIGHTBLUE_EX}Source file: {job.src_file}")
         print(f"{cu.fore.LIGHTYELLOW_EX}Destination file: {job.dst_file}")
 
@@ -39,10 +40,8 @@ def show_job_list(job_list=job_queue, task="job-queue"):
                 case "Completed":
                     print(f"{cu.fore.LIGHTGREEN_EX}Status: Completed")
                 case "Failed":
-                    print(f"{cu.fore.LIGHTRED_EX}Status: Status: Failed")
-                    print(f"{cu.fore.LIGHTRED_EX}Status: Error: {job.error_message}")
-                case other:
-                    print(job.status)
+                    print(f"{cu.fore.LIGHTRED_EX}Status: Failed")
+                    print(f"{cu.fore.LIGHTRED_EX}Error: {job.error_message}")
 
     # Show options based on current task
     if task == "job-queue":
@@ -148,7 +147,7 @@ def handle_details_options(jobs_detail, task):
             case 3:
                 # Queue all jobs without starting them
                 add_jobs_queue("all", jobs_detail, task)
-                cu.clear_screen
+                cu.clear_screen()
                 print(
                     f"{cu.fore.LIGHTGREEN_EX}{len(jobs_detail)} job(s) added to queue."
                 )
@@ -282,7 +281,6 @@ def save_queue_contents():
 
     with open(file_path, "w") as json_file:
         json.dump(job_queue, json_file, default=lambda obj: obj.__dict__, indent=4)
-    print(f"{cu.fore.LIGHTGREEN_EX}Queue updated")
 
 
 # Load queue contents from JSON file
@@ -297,6 +295,7 @@ def load_queue_contents():
         # Create objects for each array element
         job_list = [
             job.Job(
+                queued_job["idx"],
                 queued_job["src_file"],
                 queued_job["dst_file"],
                 queued_job["sub_file"],

@@ -1,5 +1,17 @@
 class Job:
-    def __init__(self, src_file, dst_file, sub_file=None, task=None, src_aud_track_id=None, src_sub_track_id=None, status="Pending", error_message=None):
+    def __init__(
+        self,
+        idx,
+        src_file,
+        dst_file,
+        sub_file=None,
+        task=None,
+        src_aud_track_id=None,
+        src_sub_track_id=None,
+        status="Pending",
+        error_message=None,
+    ):
+        self.idx = idx
         self.src_file = src_file
         self.dst_file = dst_file
         self.sub_file = sub_file
