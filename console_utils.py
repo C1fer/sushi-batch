@@ -1,5 +1,6 @@
 import os
 from colorama import init, Fore, Style
+from time import sleep
 
 
 init(autoreset=True)
@@ -14,13 +15,19 @@ def clear_screen():
 
 
 def print_error(message):
-    return print(f"{fore.LIGHTRED_EX}{message}")
+    print(f"{fore.LIGHTRED_EX}{message}")
+    sleep(1)
+
+
+def print_success(message):
+    print(f"\n{fore.LIGHTGREEN_EX}{message}")
+    sleep(1)
 
 
 # Ask for user confirmation
 def confirm_action(prompt="Are you sure? (Y/N): "):
     while True:
-        confirm = input(f"{fore.LIGHTWHITE_EX}{prompt}").upper()
+        confirm = input(f"{fore.CYAN}{prompt}").upper()
         match confirm:
             case "Y":
                 return True

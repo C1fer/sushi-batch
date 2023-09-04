@@ -1,45 +1,40 @@
 import sys
-import argparse
 import files
 import job_manager as jm
 import console_utils as cu
 
+try:
+    import sushi
+    from art import text2art
+except ImportError:
+    cu.print_error("Install all requirements before running the tool")
+    sys.exit(1)
+
 
 # Handle actions when running directory-select tasks
 def run_dir_modes_tasks(task):
-    src, dst = files.get_directories(task)
+    src, dst = files.get_directories()
     if src is not None and dst is not None:
         job_list = files.search_directories(src, dst, task)
         if job_list is not None:
-            jm.show_job_list(job_list, task)
+            jm.handle_details_options(job_list, task)
 
 
 # Handle actions when running file-select tasks
 def run_file_modes_tasks(task):
     job_list = files.select_files(task)
     if job_list is not None:
-        jm.show_job_list(job_list, task)
+        jm.handle_details_options(job_list, task)
 
 
 def print_menu():
-    return print(
-        f"""\n{cu.fore.CYAN}Sushi Batch Tool{cu.style_reset}
-        1) Audio-based Sync  (Directory Select)
-        2) Video-based Sync  (Directory Select) 
-        3) Audio-based Sync  (Files Select)
-        4) Video-based Sync  (Files Select) 
-        5) Job Queue
-        6) Exit"""
-    )
+    cu.clear_screen()
+    header = text2art("Sushi  Batch   Tool") 
+    print(f"{cu.fore.CYAN}{header}")
+    print("1) Audio-based Sync  (Directory Select) \n2) Video-based Sync  (Directory Select) \n3) Audio-based Sync  (Files Select) \n4) Video-based Sync  (Files Select) \n5) Job Queue \n6) Exit  ")
 
 
 def main():
-    try:
-        import sushi
-    except ImportError:
-        cu.print_error("Sushi is not installed. Install all requirements before running the tool")
-        sys.exit(1)
-
 
     # Exit with error message if FFmpeg is not found
     if not cu.is_ffmpeg_installed():
@@ -78,7 +73,7 @@ def main():
                 if len(jm.job_queue) == 0:
                     cu.print_error("No jobs queued!")
                 else:
-                    jm.show_job_list(task="job-queue")
+                   jm.handle_queue_options()
             case 6:
                     sys.exit(0)
                     

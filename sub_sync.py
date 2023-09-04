@@ -1,14 +1,13 @@
 import os
 import subprocess
 from datetime import datetime
-from halo import Halo
 from yaspin import yaspin
 
 
 # Run sync based on job task
 def shift_subs(jobs):
     for job in jobs:
-        if job.status != "Pending":
+        if job.status == "Pending":
             args = set_args(job)
             exit_code, err_msg = run_shift(args, job)
             # Check if task completed succesfully
@@ -59,7 +58,7 @@ def run_shift(args, job):
     )
 
     # Initialize and start spinner
-    with yaspin(text=f"Running Job {job.idx}", color="yellow") as sp:
+    with yaspin(text=f"Running Job {job.idx}", color="yellow", timer=True) as sp:
         # Get subprocess output
         _, stderr = sushi.communicate()
 

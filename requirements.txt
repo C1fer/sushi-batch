@@ -1,3 +1,4 @@
+art==6.0
 colorama==0.4.6
-halo==0.0.31
 sushi_sub==0.6.2
+yaspin==3.0.0

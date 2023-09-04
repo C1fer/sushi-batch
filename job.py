@@ -8,6 +8,7 @@ class Job:
         task=None,
         src_aud_track_id=None,
         src_sub_track_id=None,
+        dst_aud_track_id=None,
         status="Pending",
         error_message=None,
     ):
@@ -18,5 +19,6 @@ class Job:
         self.task = task
         self.src_aud_track_id = src_aud_track_id
         self.src_sub_track_id = src_sub_track_id
+        self.dst_aud_track_id = dst_aud_track_id
         self.status = status
         self.error_message = error_message

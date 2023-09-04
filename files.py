@@ -1,4 +1,5 @@
 import os
+import time
 from tkinter import filedialog
 import job
 import file_formats as ff
@@ -17,8 +18,8 @@ def check_path_exists(file_list):
 # Get folder paths (Directory modes)
 def get_directories():
     # Enter folder paths via folder select dialog
-    src_path = filedialog.askdirectory("Select Source Folder")
-    dst_path = filedialog.askdirectory("Select Destination Folder")
+    src_path = filedialog.askdirectory(title="Select Source Folder")
+    dst_path = filedialog.askdirectory(title="Select Destination Folder")
 
     # Validate selected folders
     if not check_path_exists([src_path]):
@@ -119,14 +120,14 @@ def check_files(src_files, dst_files, sub_files, task):
 
     # Check if source and destination files contain the same number of elements
     if src_files_len != dst_files_len:
-        cu.print_error("Number of source files does not match the number of destination files!")
         print(f"({src_files_len} source files, {dst_files_len} destination files)")
+        cu.print_error("Number of source files does not match the number of destination files!")
         return False
 
     # Check if source and subtitle files contain the same number of elements (audio sync tasks)
     if task in ("aud-sync-dir", "aud-sync-fil") and src_files_len != sub_files_len:
-        cu.print_error("Number of source files does not match the number of subtitle files!")
         print(f"({src_files_len} source files, {sub_files_len} subtitle files)")
+        cu.print_error("Number of source files does not match the number of subtitle files!")
         return False
 
     # If all checks pass, return True
