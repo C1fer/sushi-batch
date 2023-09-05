@@ -1,6 +1,7 @@
 import os
 import subprocess
 from datetime import datetime
+import re
 from yaspin import yaspin
 
 
@@ -61,7 +62,7 @@ def run_shift(args, job):
         _, stderr = sushi.communicate()
 
         # Write output to file
-        with open(log_path, "w") as fil:
+        with open(log_path, "w", encoding="utf-8") as fil:
             fil.write(stderr)
 
         # If Sushi exits with error, get error message
@@ -84,6 +85,8 @@ def set_log_path(src_file):
     # Set logs directory path
     output_dirpath = os.path.join(os.getcwd(), "Logs")
     os.makedirs(output_dirpath, exist_ok=True)
+    
+    # No
 
     # Get job date and time
     current_datetime = datetime.now().strftime("%Y-%m-%d - %H.%M.%S")

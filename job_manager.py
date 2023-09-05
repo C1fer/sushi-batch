@@ -297,7 +297,7 @@ def save_queue_contents():
     # Set JSON file path
     file_path = path.join(path.dirname(__file__), "queue_data.json")
 
-    with open(file_path, "w") as json_file:
+    with open(file_path, "w", encoding="utf-8") as json_file:
         json.dump(job_queue, json_file, default=lambda obj: obj.__dict__, indent=4)
 
 
@@ -308,7 +308,7 @@ def load_queue_contents():
 
     if path.exists(file_path):
         try:
-            with open(file_path, "r") as json_file:
+            with open(file_path, "r", encoding="utf-8") as json_file:
             # Read JSON file
                 queued_jobs = json.load(json_file)
 
