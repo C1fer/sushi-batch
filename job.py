@@ -10,7 +10,7 @@ class Job:
         src_sub_track_id=None,
         dst_aud_track_id=None,
         status="Pending",
-        error_message=None,
+        result=None,
     ):
         self.idx = idx
         self.src_file = src_file
@@ -21,4 +21,4 @@ class Job:
         self.src_sub_track_id = src_sub_track_id
         self.dst_aud_track_id = dst_aud_track_id
         self.status = status
-        self.error_message = error_message
+        self.result = result

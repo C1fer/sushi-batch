@@ -7,15 +7,9 @@ from yaspin import yaspin
 # Run sync based on job task
 def shift_subs(jobs):
     for job in jobs:
-        if job.status == "Pending":
+        if job.status != "Pending":
             args = set_args(job)
-            exit_code, err_msg = run_shift(args, job)
-            # Check if task completed succesfully
-            if exit_code == 0:
-                job.status = "Completed"
-            else:
-                job.status = "Failed"
-                job.error_message = err_msg  # Store error message
+            run_shift(args, job)
 
 
 # Set arguments for job execution
@@ -43,7 +37,7 @@ def set_args(job):
         args.extend(["--src-script", job.src_sub_track_id])
 
     if job.dst_aud_track_id is not None:
-        args.extend(["--dst-audio", job.src_aud_track_id])
+        args.extend(["--dst-audio", job.dst_aud_track_id])
 
     return args
 
@@ -62,7 +56,7 @@ def run_shift(args, job):
     )
 
     # Initialize and start spinner
-    with yaspin(text=f"Running Job {job.idx}", color="yellow", timer=True) as sp:
+    with yaspin(text=f"Job {job.idx}", color="cyan", timer=True) as sp:
         # Get subprocess output
         _, stderr = sushi.communicate()
 
@@ -72,14 +66,17 @@ def run_shift(args, job):
 
         # If Sushi exits with error, get error message
         error_message = None
+        lines = stderr.strip().splitlines()
+        
+        # Check if task completed succesfully
         if sushi.returncode == 0:
+            job.status = "Completed"
+            job.result = calc_avg_shift(lines)
             sp.ok("✅")
         else:
+            job.status = "Failed"
+            job.result = "\n".join(lines[1:])
             sp.fail("❌")
-            lines = stderr.strip().splitlines()
-            error_message = "\n".join(lines[1:])
-
-    return sushi.returncode, error_message
 
 
 # Set file path to log
@@ -96,3 +93,23 @@ def set_log_path(src_file):
     output_filepath = os.path.join(output_dirpath, f"{current_datetime} - {base_name}")
 
     return output_filepath
+
+
+# Calculate average sub shift
+def calc_avg_shift(output):
+    # Keep track of total and count for averaging
+    total_shift = 0
+    shift_count = 0
+
+    for line in output:
+        if "shift:" in line:
+            parts = line.split()
+        # Extract the numeric part of the shift value (excluding the comma)
+            shift_val = parts[2].removesuffix(",")
+            # Convert the shift value to an integer and add it to the total
+            total_shift += float(shift_val)
+            # Increment the shift count
+            shift_count += 1
+
+    avg_shift = round(total_shift/shift_count, 3)
+    return str(avg_shift) if shift_count > 0 else 0

@@ -44,9 +44,10 @@ def show_jobs(job_list, task):
                     print(f"{cu.fore.LIGHTBLACK_EX}Status: Pending")
                 case "Completed":
                     print(f"{cu.fore.LIGHTGREEN_EX}Status: Completed")
+                    print(f"{cu.fore.GREEN}Average Shift: {job.result} sec")
                 case "Failed":
                     print(f"{cu.fore.LIGHTRED_EX}Status: Failed")
-                    print(f"{cu.fore.RED}Error: {job.error_message}")
+                    print(f"{cu.fore.RED}Error: {job.result}")
 
 
 # Handle queue options
@@ -169,7 +170,7 @@ def add_jobs_queue(selected_jobs_indexes, unqueued_jobs, task):
     # Set audio and subtitle track id for video-sync tasks
     if task in ("vid-sync-dir", "vid-sync-fil"):
         if cu.confirm_action("\nSpecify audio and sub track indexes for job(s)? (Y/N): "):
-            set_tracks_id(unqueued_jobs, task)
+            set_track_indexes(unqueued_jobs, task)
 
     # Queue all jobs
     if selected_jobs_indexes == "all":
@@ -323,7 +324,7 @@ def load_queue_contents():
                         queued_job["src_sub_track_id"],
                         queued_job["dst_aud_track_id"],
                         queued_job["status"],
-                        queued_job["error_message"],
+                        queued_job["result"],
                     )
                     for queued_job in queued_jobs
                 ]
