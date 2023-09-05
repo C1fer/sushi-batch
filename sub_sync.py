@@ -1,16 +1,19 @@
 import os
 import subprocess
 from datetime import datetime
-import re
 from yaspin import yaspin
+import queue_data as qd
 
 
 # Run sync based on job task
-def shift_subs(jobs):
+def shift_subs(jobs, queue):
     for job in jobs:
         if job.status == "Pending":
             args = set_args(job)
             run_shift(args, job)
+            
+            # Update JSON file afer job execution
+            qd.save_list_data(queue)
 
 
 # Set arguments for job execution
@@ -65,8 +68,6 @@ def run_shift(args, job):
         with open(log_path, "w", encoding="utf-8") as fil:
             fil.write(stderr)
 
-        # If Sushi exits with error, get error message
-        error_message = None
         lines = stderr.strip().splitlines()
         
         # Check if task completed succesfully
@@ -86,8 +87,6 @@ def set_log_path(src_file):
     output_dirpath = os.path.join(os.getcwd(), "Logs")
     os.makedirs(output_dirpath, exist_ok=True)
     
-    # No
-
     # Get job date and time
     current_datetime = datetime.now().strftime("%Y-%m-%d - %H.%M.%S")
     base_name = os.path.basename(src_file.replace(".mkv", ".txt"))

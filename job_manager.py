@@ -5,6 +5,7 @@ import sub_sync
 import console_utils as cu
 import job
 import streams
+import queue_data as qd
 
 
 # Initialize empty list
@@ -150,16 +151,13 @@ def run_selected_jobs(selected_jobs_indexes, job_list):
 
     # Run all jobs
     if selected_jobs_indexes == "all":
-        sub_sync.shift_subs(job_list)
+        jobs_to_run = job_list.copy()
     else:
-        jobs_to_run = []
         # Add selected jobs to a new list
-        for job_idx in selected_jobs_indexes:
-            jobs_to_run.append(job_list[job_idx - 1])  # Decrease job index by 1 to match real queue index
-        sub_sync.shift_subs(jobs_to_run)
-
-    # Update JSON data file
-    save_queue_contents()
+        jobs_to_run = [job_list[job_idx - 1] for job_idx in selected_jobs_indexes]
+    
+    # Run sync on selected jobs
+    sub_sync.shift_subs(jobs_to_run, job_queue)
 
     # Freeze thread to allow viewing job execution results
     time.sleep(1)
@@ -177,12 +175,11 @@ def add_jobs_queue(selected_jobs_indexes, unqueued_jobs, task):
         job_queue.extend(unqueued_jobs)
     else:
         # Queue jobs selected by user
-        for job_idx in selected_jobs_indexes:
-            job = unqueued_jobs[job_idx - 1]
-            job_queue.append(job)
+        jobs_to_queue = [unqueued_jobs[job_idx - 1] for job_idx in selected_jobs_indexes]
+        job_queue.extend(jobs_to_queue)
 
     # Update JSON data file
-    save_queue_contents()
+    qd.save_list_data(job_queue)
 
 
 # Remove selected jobs from queue
@@ -192,7 +189,7 @@ def remove_jobs_queue(selected_jobs_indexes):
         del job_queue[job_idx - 1]  # Decrease index by 1 to match real queue index
 
     # Update JSON data file
-    save_queue_contents()
+    qd.save_list_data(job_queue)
 
 
 # Remove jobs that dont have Pending status
@@ -209,7 +206,7 @@ def clear_completed_jobs():
 # Clear queue contents
 def clear_queue():
     job_queue.clear()
-    save_queue_contents()
+    qd.save_list_data(job_queue)
     cu.print_success("Queue cleared.")
 
 
@@ -290,45 +287,3 @@ def set_track_indexes(job_list, task):
             # Limit user input to one of the streams shown
             streams.show_streams(dst_aud_streams, 'audio')
             job.dst_aud_track_id= str(cu.get_choice(dst_aud_indexes,"Select a destination audio stream: "))
-
-
-# Save queue contents to JSON file
-def save_queue_contents():
-    # Set JSON file path
-    file_path = path.join(path.dirname(__file__), "queue_data.json")
-
-    with open(file_path, "w", encoding="utf-8") as json_file:
-        json.dump(job_queue, json_file, default=lambda obj: obj.__dict__, indent=4)
-
-
-# Load queue contents from JSON file
-def load_queue_contents():
-    # Set JSON file path
-    file_path = path.join(path.dirname(__file__), "queue_data.json")
-
-    if path.exists(file_path):
-        try:
-            with open(file_path, "r", encoding="utf-8") as json_file:
-            # Read JSON file
-                queued_jobs = json.load(json_file)
-
-                # Create objects for each array element
-                job_list = [
-                    job.Job(
-                        queued_job["idx"],
-                        queued_job["src_file"],
-                        queued_job["dst_file"],
-                        queued_job["sub_file"],
-                        queued_job["task"],
-                        queued_job["src_aud_track_id"],
-                        queued_job["src_sub_track_id"],
-                        queued_job["dst_aud_track_id"],
-                        queued_job["status"],
-                        queued_job["result"],
-                    )
-                    for queued_job in queued_jobs
-                ]
-                
-                return job_list
-        except json.JSONDecodeError:
-            cu.print_error("An error ocurred while loading the queue contents")

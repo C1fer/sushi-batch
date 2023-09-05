@@ -2,6 +2,7 @@ import sys
 import files
 import job_manager as jm
 import console_utils as cu
+import queue_data as qd
 
 try:
     import sushi
@@ -42,7 +43,7 @@ def main():
         sys.exit(1)
 
     # Load queue contents on startup
-    jm.job_queue = jm.load_queue_contents()
+    jm.job_queue = qd.load_list_data()
 
     while True:
         # Allow mode selection only if FFmpeg is found
