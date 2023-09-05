@@ -7,7 +7,7 @@ from yaspin import yaspin
 # Run sync based on job task
 def shift_subs(jobs):
     for job in jobs:
-        if job.status != "Pending":
+        if job.status == "Pending":
             args = set_args(job)
             run_shift(args, job)
 

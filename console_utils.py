@@ -14,9 +14,10 @@ def clear_screen():
     os.system("cls" if os.name == "nt" else "clear")
 
 
-def print_error(message):
+def print_error(message , wait=True):
     print(f"{fore.LIGHTRED_EX}{message}")
-    sleep(1)
+    if wait: 
+        sleep(1)
 
 
 def print_success(message):
@@ -34,7 +35,7 @@ def confirm_action(prompt="Are you sure? (Y/N): "):
             case "N":
                 return False
             case others:
-                print_error("Wrong input!\n")
+                print_error("Wrong input!\n", False)
 
 
 # Get option selected by user
@@ -45,9 +46,9 @@ def get_choice(options_range, prompt="Select an option: "):
             if choice in options_range:
                 return choice
             else:
-                print_error("Invalid choice! Please select a valid option.")
+                print_error("Invalid choice! Please select a valid option.", False)
         except ValueError:
-            print_error("Invalid choice! Please select a valid option.")
+            print_error("Invalid choice! Please select a valid option.", False)
 
 
 # Look for ffmpeg binary in PATH env var and working directory

@@ -162,7 +162,7 @@ def run_selected_jobs(selected_jobs_indexes, job_list):
     save_queue_contents()
 
     # Freeze thread to allow viewing job execution results
-    time.sleep(2)
+    time.sleep(1)
 
 
 # Add selected jobs to queue
@@ -255,13 +255,13 @@ def get_track_id(prompt):
         track_id = input(f"{cu.style_reset}{cu.fore.LIGHTBLACK_EX}{prompt}")
         if track_id.isnumeric():
             return track_id
-        cu.print_error("Invalid index! Please input a number!")
+        cu.print_error("Invalid index! Please input a number!", False)
 
 
 # Set custom track indexes for 
 def set_track_indexes(job_list, task):
     # Allow setting default track indexes only if job list contains more than one job
-    if len(job_list) > 1 and cu.confirm_action("\nSet a default audio and sub track index for all jobs? (Y/N): "):
+    if len(job_list) > 1 and cu.confirm_action("\nSet a default audio and sub track index for all jobs? (Only useful when all files have the same number of tracks) (Y/N): "):
         src_audio_id = get_track_id("\nSource Audio Track ID: ")
         src_sub_id = get_track_id("Source Subtitle Track ID: ")
         dst_audio_id = get_track_id("Destination Audio Track ID: ")
@@ -279,15 +279,15 @@ def set_track_indexes(job_list, task):
             src_sub_streams, src_sub_indexes = streams.get_streams(job.src_file, "sub")
             dst_aud_streams, dst_aud_indexes = streams.get_streams(job.dst_file, "audio")
 
-            # Show source audio streams    
+            # Limit user input to one of the streams shown
             streams.show_streams(src_aud_streams, 'audio')
             job.src_aud_track_id = str(cu.get_choice(src_aud_indexes,"Select a source audio stream: "))
 
-            # Show source subtitle streams
+            # Limit user input to one of the streams shown
             streams.show_streams(src_sub_streams, 'sub')
             job.src_sub_track_id = str(cu.get_choice(src_sub_indexes, "Select a source subtitle stream: "))
 
-            # Show destination audio_streams
+            # Limit user input to one of the streams shown
             streams.show_streams(dst_aud_streams, 'audio')
             job.dst_aud_track_id= str(cu.get_choice(dst_aud_indexes,"Select a destination audio stream: "))
 
@@ -328,8 +328,7 @@ def load_queue_contents():
                     )
                     for queued_job in queued_jobs
                 ]
-
-                # Add instances to queue
-                job_queue.extend(job_list)
+                
+                return job_list
         except json.JSONDecodeError:
             cu.print_error("An error ocurred while loading the queue contents")

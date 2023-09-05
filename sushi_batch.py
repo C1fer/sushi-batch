@@ -42,7 +42,7 @@ def main():
         sys.exit(1)
 
     # Load queue contents on startup
-    jm.load_queue_contents()
+    jm.job_queue = jm.load_queue_contents()
 
     while True:
         # Allow mode selection only if FFmpeg is found
@@ -66,7 +66,7 @@ def main():
                 if len(jm.job_queue) == 0:
                     cu.print_error("No jobs queued!")
                 else:
-                   jm.handle_queue_options()
+                    jm.handle_queue_options()
             case 6:
                     sys.exit(0)
                     
