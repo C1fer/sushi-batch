@@ -6,15 +6,6 @@ import file_formats as ff
 import console_utils as cu
 
 
-# Check if specified file or folder path exists
-def check_path_exists(file_list):
-    for name in file_list:
-        if not os.path.exists(name):
-            print(f"{cu.fore.LIGHTRED_EX}Path {name} does not exist!")
-            return False
-    return True
-
-
 # Get folder paths (Directory modes)
 def get_directories():
     # Enter folder paths via folder select dialog
@@ -22,10 +13,12 @@ def get_directories():
     dst_path = filedialog.askdirectory(title="Select Destination Folder")
 
     # Validate selected folders
-    if not check_path_exists([src_path]):
+    if not os.path.exists(src_path):
+        cu.print_error(f"Source Path {src_path} does not exist!")
         return None, None
 
-    if not check_path_exists([dst_path]):
+    if not os.path.exists(dst_path):
+        cu.print_error(f"Destination Path {dst_path} does not exist!")
         return None, None
 
     if src_path == dst_path:

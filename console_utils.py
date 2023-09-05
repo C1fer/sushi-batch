@@ -35,7 +35,6 @@ def confirm_action(prompt="Are you sure? (Y/N): "):
                 return False
             case others:
                 print_error("Wrong input!\n")
-    return True
 
 
 # Get option selected by user

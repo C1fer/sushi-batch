@@ -1,4 +1,5 @@
 import time
+from os import path
 import json
 import sub_sync
 import console_utils as cu
@@ -293,7 +294,7 @@ def set_track_indexes(job_list, task):
 # Save queue contents to JSON file
 def save_queue_contents():
     # Set JSON file path
-    file_path = cu.os.path.join(cu.os.path.dirname(__file__), "queue_data.json")
+    file_path = path.join(path.dirname(__file__), "queue_data.json")
 
     with open(file_path, "w") as json_file:
         json.dump(job_queue, json_file, default=lambda obj: obj.__dict__, indent=4)
@@ -302,28 +303,32 @@ def save_queue_contents():
 # Load queue contents from JSON file
 def load_queue_contents():
     # Set JSON file path
-    file_path = cu.os.path.join(cu.os.path.dirname(__file__), "queue_data.json")
+    file_path = path.join(path.dirname(__file__), "queue_data.json")
 
-    with open(file_path, "r") as json_file:
-        # Read JSON file
-        queued_jobs = json.load(json_file)
+    if path.exists(file_path):
+        try:
+            with open(file_path, "r") as json_file:
+            # Read JSON file
+                queued_jobs = json.load(json_file)
 
-        # Create objects for each array element
-        job_list = [
-            job.Job(
-                queued_job["idx"],
-                queued_job["src_file"],
-                queued_job["dst_file"],
-                queued_job["sub_file"],
-                queued_job["task"],
-                queued_job["src_aud_track_id"],
-                queued_job["src_sub_track_id"],
-                queued_job["dst_aud_track_id"],
-                queued_job["status"],
-                queued_job["error_message"],
-            )
-            for queued_job in queued_jobs
-        ]
+                # Create objects for each array element
+                job_list = [
+                    job.Job(
+                        queued_job["idx"],
+                        queued_job["src_file"],
+                        queued_job["dst_file"],
+                        queued_job["sub_file"],
+                        queued_job["task"],
+                        queued_job["src_aud_track_id"],
+                        queued_job["src_sub_track_id"],
+                        queued_job["dst_aud_track_id"],
+                        queued_job["status"],
+                        queued_job["error_message"],
+                    )
+                    for queued_job in queued_jobs
+                ]
 
-    # Add created instances to job queue
-    job_queue.extend(job_list)
+                # Add instances to queue
+                job_queue.extend(job_list)
+        except json.JSONDecodeError:
+            cu.print_error("An error ocurred while loading the queue contents")

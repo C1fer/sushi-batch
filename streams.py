@@ -9,14 +9,12 @@ SubtitleStreamInfo = namedtuple("SubtitlesStreamInfo", ["id", "lang", "info", "t
 
 # Get file media info
 def get_file_info(path):
-    # text=True is an alias for universal_newlines since 3.7
     process = subprocess.Popen(
         ["ffmpeg", "-hide_banner", "-i", path],
         stderr=subprocess.PIPE,
         universal_newlines=True,
-        
     )
-    out, err = process.communicate()
+    _, err = process.communicate()
     return err
 
 

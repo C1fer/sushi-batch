@@ -29,7 +29,7 @@ def run_file_modes_tasks(task):
 
 def print_menu():
     cu.clear_screen()
-    header = text2art("Sushi  Batch   Tool") 
+    header = text2art("Sushi   Batch   Tool") 
     print(f"{cu.fore.CYAN}{header}")
     print("1) Audio-based Sync  (Directory Select) \n2) Video-based Sync  (Directory Select) \n3) Audio-based Sync  (File Select) \n4) Video-based Sync  (File Select) \n5) Job Queue \n6) Exit  ")
 
@@ -38,18 +38,11 @@ def main():
 
     # Exit with error message if FFmpeg is not found
     if not cu.is_ffmpeg_installed():
-        cu.print_error(
-            "FFmpeg is not installed! \nAdd FFmpeg to PATH or copy the binary to this folder."
-        )
+        cu.print_error("FFmpeg is not installed! \nAdd FFmpeg to PATH or copy the binary to this folder.")
         sys.exit(1)
 
-    # Load queue contents if found
-    try:
-        jm.load_queue_contents()
-        if len(jm.job_queue) > 0:
-            print(f"{cu.fore.LIGHTGREEN_EX}Queue restored from file")
-    except FileNotFoundError:
-        cu.print_error("Queue file could not be found")
+    # Load queue contents on startup
+    jm.load_queue_contents()
 
     while True:
         # Allow mode selection only if FFmpeg is found
