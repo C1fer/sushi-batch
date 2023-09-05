@@ -1,8 +1,10 @@
+import time
 import json
 import sub_sync
 import console_utils as cu
 import job
-import time
+import streams
+
 
 # Initialize empty list
 job_queue = []
@@ -33,7 +35,7 @@ def show_jobs(job_list, task):
             print(f"{cu.fore.LIGHTCYAN_EX}Source Subtitle Track ID: {job.src_sub_track_id}")
         
         if job.dst_aud_track_id is not None:
-            print(f"{cu.fore.LIGHTWHITE_EX}Destination Audio Track ID: {job.dst_aud_track_id}")
+            print(f"{cu.fore.YELLOW}Destination Audio Track ID: {job.dst_aud_track_id}")
 
         if task == "job-queue":
             match job.status:
@@ -52,9 +54,7 @@ def handle_queue_options():
         # Show menu
         cu.clear_screen()
         show_jobs(job_queue, "job-queue")
-        print(
-            "\n1) Start queue \n2) Run selected jobs \n3) Remove selected jobs \n4) Clear queue \n5) Clear completed and failed jobs \n6) Return to main menu"
-        )
+        print("\n1) Start queue \n2) Run selected jobs \n3) Remove selected jobs \n4) Clear queue \n5) Clear completed and failed jobs \n6) Return to main menu")
 
         # Get and confirm selected options
         choice = cu.get_choice(range(1, 7))
@@ -103,9 +103,7 @@ def handle_details_options(unqueued_jobs, task):
         # Show menu
         cu.clear_screen()
         show_jobs(unqueued_jobs, task)
-        print(
-            "\n1) Run all jobs \n2) Run selected jobs \n3) Add all jobs to queue \n4) Add selected jobs to queue \n5) Return to main menu"
-        )
+        print("\n1) Run all jobs \n2) Run selected jobs \n3) Add all jobs to queue \n4) Add selected jobs to queue \n5) Return to main menu")
 
         # Get and confirm selected option (limit choice to range 1-5)
         choice = cu.get_choice(range(1, 6))
@@ -120,9 +118,7 @@ def handle_details_options(unqueued_jobs, task):
                     break
                 case 2:
                     # Queue selected jobs and start automatically
-                    selected_jobs = select_jobs(
-                        "Select jobs to run (e.g: 1, 5-10): ", unqueued_jobs
-                    )
+                    selected_jobs = select_jobs("Select jobs to run (e.g: 1, 5-10): ", unqueued_jobs)
                     if selected_jobs is not None and cu.confirm_action():
                         add_jobs_queue(selected_jobs, unqueued_jobs, task)
                         run_selected_jobs(selected_jobs, unqueued_jobs)
@@ -134,10 +130,7 @@ def handle_details_options(unqueued_jobs, task):
                     break
                 case 4:
                     # Queue selected jobs without starting them
-                    selected_jobs = select_jobs(
-                        "Select jobs to add to the queue (e.g: all OR 1, 5-10): ",
-                        unqueued_jobs,
-                    )
+                    selected_jobs = select_jobs("Select jobs to add to the queue (e.g: all, 1, 5-10): ",unqueued_jobs,)
                     if selected_jobs is not None and cu.confirm_action():
                         add_jobs_queue(selected_jobs, unqueued_jobs, task)
                         cu.print_success(f"{len(selected_jobs)} job(s) added to queue.")
@@ -160,9 +153,7 @@ def run_selected_jobs(selected_jobs_indexes, job_list):
         jobs_to_run = []
         # Add selected jobs to a new list
         for job_idx in selected_jobs_indexes:
-            jobs_to_run.append(
-                job_list[job_idx - 1]
-            )  # Decrease job index by 1 to match real queue index
+            jobs_to_run.append(job_list[job_idx - 1])  # Decrease job index by 1 to match real queue index
         sub_sync.shift_subs(jobs_to_run)
 
     # Update JSON data file
@@ -176,9 +167,7 @@ def run_selected_jobs(selected_jobs_indexes, job_list):
 def add_jobs_queue(selected_jobs_indexes, unqueued_jobs, task):
     # Set audio and subtitle track id for video-sync tasks
     if task in ("vid-sync-dir", "vid-sync-fil"):
-        if cu.confirm_action(
-            "\nSpecify audio and sub track indexes for job(s)? (Y/N): "
-        ):
+        if cu.confirm_action("\nSpecify audio and sub track indexes for job(s)? (Y/N): "):
             set_tracks_id(unqueued_jobs, task)
 
     # Queue all jobs
@@ -198,9 +187,7 @@ def add_jobs_queue(selected_jobs_indexes, unqueued_jobs, task):
 def remove_jobs_queue(selected_jobs_indexes):
     # Remove jobs from queue in reverse order to avoid out of bounds error
     for job_idx in sorted(selected_jobs_indexes, reverse=True):
-        del job_queue[
-            job_idx - 1
-        ]  # Delete job object (decrease index by 1 to match real queue index)
+        del job_queue[job_idx - 1]  # Decrease index by 1 to match real queue index
 
     # Update JSON data file
     save_queue_contents()
@@ -208,9 +195,7 @@ def remove_jobs_queue(selected_jobs_indexes):
 
 # Remove jobs that dont have Pending status
 def clear_completed_jobs():
-    jobs_to_remove = [
-        idx for idx, (job) in enumerate(job_queue, start=1) if job.status != "Pending"
-    ]
+    jobs_to_remove = [idx for idx, (job) in enumerate(job_queue, start=1) if job.status != "Pending"]
 
     if jobs_to_remove:
         remove_jobs_queue(jobs_to_remove)
@@ -262,34 +247,47 @@ def select_jobs(prompt, job_list):
         return None
 
 
-# Set custom track id for re-synchronization process
-def set_tracks_id(job_list, task):
-    # Get track index from user input
-    def get_track_id(prompt):
-        while True:
-            track_id = input(f"{cu.style_reset}{prompt}")
-            if track_id.isnumeric():
-                return track_id
-            cu.print_error("Invalid index! Please input a number!")
+# Get track index from user input
+def get_track_id(prompt):
+    while True:
+        track_id = input(f"{cu.style_reset}{cu.fore.LIGHTBLACK_EX}{prompt}")
+        if track_id.isnumeric():
+            return track_id
+        cu.print_error("Invalid index! Please input a number!")
 
+
+# Set custom track indexes for 
+def set_track_indexes(job_list, task):
     # Allow setting default track indexes only if job list contains more than one job
-    if len(job_list) > 1 and cu.confirm_action(
-        "\nSet a default audio and sub track index for all jobs? (Y/N): "
-    ):
+    if len(job_list) > 1 and cu.confirm_action("\nSet a default audio and sub track index for all jobs? (Y/N): "):
         src_audio_id = get_track_id("\nSource Audio Track ID: ")
         src_sub_id = get_track_id("Source Subtitle Track ID: ")
-        src_audio_id = get_track_id("Destination Audio Track ID: ")
+        dst_audio_id = get_track_id("Destination Audio Track ID: ")
         for job in job_list:
             job.src_aud_track_id = src_audio_id
             job.src_sub_track_id = src_sub_id
+            job.dst_aud_track_id = dst_audio_id
     else:
         # Set track indexes per job
         for job in job_list:
             print(f"\n{cu.fore.LIGHTBLACK_EX}Job {job.idx}")
-            #print(f"{cu.fore.LIGHTBLUE_EX}Source file: {job.src_file}")
-            job.src_aud_track_id = get_track_id("\nSource File Audio Track ID: ")
-            job.src_sub_track_id = get_track_id("Source File Subtitle Track ID: ")
-            job.dst_aud_track_id= get_track_id("Destination File Audio Track ID: ")
+
+            # Get source and destination media streams
+            src_aud_streams, src_aud_indexes = streams.get_streams(job.src_file, "audio")
+            src_sub_streams, src_sub_indexes = streams.get_streams(job.src_file, "sub")
+            dst_aud_streams, dst_aud_indexes = streams.get_streams(job.dst_file, "audio")
+
+            # Show source audio streams    
+            streams.show_streams(src_aud_streams, 'audio')
+            job.src_aud_track_id = str(cu.get_choice(src_aud_indexes,"Select a source audio stream: "))
+
+            # Show source subtitle streams
+            streams.show_streams(src_sub_streams, 'sub')
+            job.src_sub_track_id = str(cu.get_choice(src_sub_indexes, "Select a source subtitle stream: "))
+
+            # Show destination audio_streams
+            streams.show_streams(dst_aud_streams, 'audio')
+            job.dst_aud_track_id= str(cu.get_choice(dst_aud_indexes,"Select a destination audio stream: "))
 
 
 # Save queue contents to JSON file
@@ -299,8 +297,6 @@ def save_queue_contents():
 
     with open(file_path, "w") as json_file:
         json.dump(job_queue, json_file, default=lambda obj: obj.__dict__, indent=4)
-
-    # cu.print_success("Queue updated")
 
 
 # Load queue contents from JSON file

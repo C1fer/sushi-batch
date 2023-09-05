@@ -31,7 +31,7 @@ def print_menu():
     cu.clear_screen()
     header = text2art("Sushi  Batch   Tool") 
     print(f"{cu.fore.CYAN}{header}")
-    print("1) Audio-based Sync  (Directory Select) \n2) Video-based Sync  (Directory Select) \n3) Audio-based Sync  (Files Select) \n4) Video-based Sync  (Files Select) \n5) Job Queue \n6) Exit  ")
+    print("1) Audio-based Sync  (Directory Select) \n2) Video-based Sync  (Directory Select) \n3) Audio-based Sync  (File Select) \n4) Video-based Sync  (File Select) \n5) Job Queue \n6) Exit  ")
 
 
 def main():

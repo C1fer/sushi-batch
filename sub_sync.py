@@ -42,6 +42,9 @@ def set_args(job):
     if job.src_sub_track_id is not None:
         args.extend(["--src-script", job.src_sub_track_id])
 
+    if job.dst_aud_track_id is not None:
+        args.extend(["--dst-audio", job.src_aud_track_id])
+
     return args
 
 
@@ -55,6 +58,7 @@ def run_shift(args, job):
         args=args,
         stderr=subprocess.PIPE,
         text=True,
+        encoding="utf-8",
     )
 
     # Initialize and start spinner

@@ -39,10 +39,10 @@ def confirm_action(prompt="Are you sure? (Y/N): "):
 
 
 # Get option selected by user
-def get_choice(options_range):
+def get_choice(options_range, prompt="Select an option: "):
     while True:
         try:
-            choice = int(input(f"\n{fore.LIGHTBLACK_EX}Select an option: "))
+            choice = int(input(f"\n{fore.LIGHTBLACK_EX}{prompt}"))
             if choice in options_range:
                 return choice
             else:
