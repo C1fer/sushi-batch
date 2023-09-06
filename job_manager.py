@@ -82,9 +82,9 @@ def handle_queue_options():
                     )
                     if selected_jobs is not None and cu.confirm_action():
                         remove_jobs_queue(selected_jobs)
-                        cu.print_success(
-                            f"{len(selected_jobs)} job(s) removed from queue."
-                        )
+                        cu.print_success(f"{len(selected_jobs)} job(s) removed from queue.")
+                        if len(job_queue) == 0:
+                            break
                 case 4:
                     # Clear queue and return to main menu
                     clear_queue()
@@ -167,7 +167,7 @@ def run_selected_jobs(selected_jobs_indexes, job_list):
 def add_jobs_queue(selected_jobs_indexes, unqueued_jobs, task):
     # Set audio and subtitle track id for video-sync tasks
     if task in ("vid-sync-dir", "vid-sync-fil"):
-        if cu.confirm_action("\nSpecify audio and sub track indexes for job(s)? (Y/N): "):
+        if cu.confirm_action("\nSpecify audio and sub track indexes for job(s)? [If not, sushi will use the first audio and sub track found]  (Y/N): "):
             set_track_indexes(unqueued_jobs, task)
 
     # Queue all jobs
@@ -258,7 +258,7 @@ def get_track_id(prompt):
 # Set custom track indexes for 
 def set_track_indexes(job_list, task):
     # Allow setting default track indexes only if job list contains more than one job
-    if len(job_list) > 1 and cu.confirm_action("\nSet a default audio and sub track index for all jobs? (Only useful when all files have the same number of tracks) (Y/N): "):
+    if len(job_list) > 1 and cu.confirm_action("\nSet a default audio and sub track index for all jobs? [Only useful when all files have the same number of tracks] (Y/N): "):
         src_audio_id = get_track_id("\nSource Audio Track ID: ")
         src_sub_id = get_track_id("Source Subtitle Track ID: ")
         dst_audio_id = get_track_id("Destination Audio Track ID: ")
