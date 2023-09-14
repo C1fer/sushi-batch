@@ -1,8 +1,7 @@
 import os
-import time
 from tkinter import filedialog
-import job
-import file_formats as ff
+from enums import Task, FileTypes, Formats
+from job import Job
 import console_utils as cu
 
 
@@ -35,14 +34,16 @@ def search_directories(src_path, dst_path, task):
     sub_files = []
 
     # Set formats to filter by based on current task
-    formats = ff.audio_formats if task == "aud-sync-dir" else ff.video_formats
+    formats = (
+        Formats.AUDIO.value if task == Task.AUDIO_SYNC_DIR else Formats.VIDEO.value
+    )
 
     # Find source files and subtitles
     for root, _, files in os.walk(src_path):
         for name in files:
             if name.endswith(formats):
                 src_files.append(os.path.join(root, name))
-            if task == "aud-sync-dir" and name.endswith(ff.sub_formats):
+            if task == Task.AUDIO_SYNC_DIR and name.endswith(Formats.SUBTITLE.value):
                 sub_files.append(os.path.join(root, name))
 
     # Find destination files
@@ -52,18 +53,18 @@ def search_directories(src_path, dst_path, task):
                 dst_files.append(os.path.join(root, name))
 
     # Fill subtitle list with None values if task is video sync
-    if task == "vid-sync-dir":
+    if task == Task.VIDEO_SYNC_DIR:
         sub_files.extend([None] * len(src_files))
 
     # Perform validations on search results
-    if check_files(src_files, dst_files, sub_files, task):
+    if validate_files(src_files, dst_files, sub_files, task):
         # Split the elements into job objects if files pass validation
         job_list = create_jobs(zip(src_files, dst_files, sub_files), task)
         return job_list
     return None
 
 
-# Select files
+# Select files via Tkinter dialog
 def select_files(task):
     # Enter file paths via file select dialog
     def select_files_gui(title, filetypes):
@@ -74,40 +75,40 @@ def select_files(task):
     sub_files = []
 
     # Open file select dialogs based on task
-    if task == "aud-sync-fil":
-        src_files = select_files_gui("Select Source Audio Files", ff.audio_filetypes)
-        sub_files = select_files_gui("Select Source Subtitle Files", ff.sub_filetypes)
-        dst_files = select_files_gui("Select Destination Audio Files", ff.audio_filetypes)
+    if task == Task.AUDIO_SYNC_FIL:
+        src_files = select_files_gui("Select Source Audio Files", FileTypes.AUDIO.value)
+        sub_files = select_files_gui("Select Source Subtitle Files", FileTypes.SUBTITLE.value)
+        dst_files = select_files_gui("Select Destination Audio Files", FileTypes.AUDIO.value)
 
-    elif task == "vid-sync-fil":
-        src_files = select_files_gui("Select Source Video Files", ff.video_filetypes)
-        dst_files = select_files_gui("Select Destination Video Files", ff.video_filetypes)
+    elif task == Task.VIDEO_SYNC_FIL:
+        src_files = select_files_gui("Select Source Video Files", FileTypes.VIDEO.value)
+        dst_files = select_files_gui("Select Destination Video Files", FileTypes.VIDEO.value)
 
         # Fill subtitle list with None values to avoid passing empty sublist to job queue
         sub_files.extend([None] * len(src_files))
 
     # Return job list if selected files pass validation
-    if check_files(src_files, dst_files, sub_files, task):
+    if validate_files(src_files, dst_files, sub_files, task):
         # Split the elements into job objects if files pass validation
         job_list = create_jobs(zip(src_files, dst_files, sub_files), task)
         return job_list
     return None
 
 
-# Validate files found on the specified paths or selected by user
-def check_files(src_files, dst_files, sub_files, task):
-    # Get length of lists
+# Perform validations on selected or found files
+def validate_files(src_files, dst_files, sub_files, task):
+    # Get lists length
     src_files_len = len(src_files)
     dst_files_len = len(dst_files)
     sub_files_len = len(sub_files)
 
     # Check if there are no source files
-    if not src_files_len:
+    if not src_files:
         cu.print_error("No source files found!")
         return False
 
     # Check if there are no destination files
-    if not dst_files_len:
+    if not dst_files:
         cu.print_error("No destination files found!")
         return False
 
@@ -118,22 +119,23 @@ def check_files(src_files, dst_files, sub_files, task):
         return False
 
     # Check if source and subtitle files contain the same number of elements (audio sync tasks)
-    if task in ("aud-sync-dir", "aud-sync-fil") and src_files_len != sub_files_len:
+    if (
+        task in (Task.AUDIO_SYNC_DIR, Task.AUDIO_SYNC_FIL)
+        and src_files_len != sub_files_len
+    ):
         print(f"({src_files_len} source files, {sub_files_len} subtitle files)")
-        cu.print_error("Number of source files does not match the number of subtitle files!")
+        cu.print_error( "Number of source files does not match the number of subtitle files!")
         return False
 
     # If all checks pass, return True
     return True
 
 
-# Create job objects for found and selected files 
+# Create job objects for found and selected files
 def create_jobs(zipped_jobs, task):
-    jobs = []
-    
-    # Create objects and append to list
-    for idx, (src, dst, sub) in enumerate(zipped_jobs, start=1):
-        new_job = job.Job(idx, src, dst, sub, task)
-        jobs.append(new_job)
+    jobs = [
+        Job(idx, src, dst, sub, task)
+        for idx, (src, dst, sub) in enumerate(zipped_jobs, start=1)
+    ]
 
     return jobs

@@ -1,76 +1,87 @@
 import sys
+from importlib.util import find_spec
+
+# Check if required packages are installed
+packages = ["colorama", "sushi", "prettytable", "yaspin"]
+for pkg in packages:
+    if find_spec(pkg) is None:
+        print(f"Package {pkg} is not installed! Install all requirements before running the tool")
+        sys.exit(1)
+
 import files
-import job_manager as jm
+from enums import Task
+from job_queue import JobQueue
+import queue_manager as qm
 import console_utils as cu
-import queue_data as qd
-
-try:
-    import sushi
-    from art import text2art
-except ImportError:
-    cu.print_error("Install all requirements before running the tool")
-    sys.exit(1)
 
 
-# Handle actions when running directory-select tasks
-def run_dir_modes_tasks(task):
-    src, dst = files.get_directories()
-    if src is not None and dst is not None:
-        job_list = files.search_directories(src, dst, task)
-        if job_list is not None:
-            jm.handle_details_options(job_list, task)
-
-
-# Handle actions when running file-select tasks
-def run_file_modes_tasks(task):
-    job_list = files.select_files(task)
-    if job_list is not None:
-        jm.handle_details_options(job_list, task)
-
-
-def print_menu():
+# Show main menu
+def main_menu():
+    options = {
+        "1": "Audio-based Sync  (Directory Select)",
+        "2": "Video-based Sync  (Directory Select)",
+        "3": "Audio-based Sync  (File Select)",
+        "4": "Video-based Sync  (File Select)",
+        "5": "Job Queue",
+        "6": "Exit",
+    }
     cu.clear_screen()
-    header = text2art("Sushi   Batch   Tool") 
-    print(f"{cu.fore.CYAN}{header}")
-    print("1) Audio-based Sync  (Directory Select) \n2) Video-based Sync  (Directory Select) \n3) Audio-based Sync  (File Select) \n4) Video-based Sync  (File Select) \n5) Job Queue \n6) Exit  ")
+    cu.print_header(f"{cu.app_logo}")
+    cu.show_menu_options(options)
+
+
+def run_modes(task):
+    # Get jobs from file/folder selection
+    if task in (Task.AUDIO_SYNC_DIR, Task.VIDEO_SYNC_DIR):
+        src, dst = files.get_directories()
+        if src is not None and dst is not None:
+            jobs = files.search_directories(src, dst, task)
+    else:
+        jobs = files.select_files(task)
+
+    # Show options if job list is not empty
+    if jobs is not None:
+        temp_queue = JobQueue(jobs)
+        qm.temp_queue_options(temp_queue, task)
 
 
 def main():
-
     # Exit with error message if FFmpeg is not found
     if not cu.is_ffmpeg_installed():
-        cu.print_error("FFmpeg is not installed! \nAdd FFmpeg to PATH or copy the binary to this folder.")
+        cu.print_error(
+            "FFmpeg could not be found. \nAdd the filepath to %PATH% or copy the binary to this folder."
+        )
         sys.exit(1)
 
     # Load queue contents on startup
-    jm.job_queue = qd.load_list_data()
+    qm.main_queue.load()
 
+    # Allow mode selection only if FFmpeg is found
     while True:
-        # Allow mode selection only if FFmpeg is found
-        print_menu()
-        selected_option = cu.get_choice(range(1, 7))
+        main_menu()
+        selected_option = cu.get_choice(1, 7)
         cu.clear_screen()
         match selected_option:
             case 1:
-                print(f"{cu.fore.CYAN}Audio-based Sync (Directory mode)")
-                run_dir_modes_tasks("aud-sync-dir")
+                cu.print_header("Audio-based Sync (Directory mode)")
+                run_modes(Task.AUDIO_SYNC_DIR)
             case 2:
-                print(f"{cu.fore.CYAN}Video-based Sync (Directory mode)")
-                run_dir_modes_tasks("vid-sync-dir")
+                cu.print_header("Video-based Sync (Directory mode)")
+                run_modes(Task.VIDEO_SYNC_DIR)
             case 3:
-                print(f"{cu.fore.CYAN}Audio-based Sync (File-select mode)")
-                run_file_modes_tasks("aud-sync-fil")
+                cu.print_header("Audio-based Sync (File-select mode)")
+                run_modes(Task.AUDIO_SYNC_FIL)
             case 4:
-                print(f"{cu.fore.CYAN}Video-based Sync (File-select mode)")
-                run_file_modes_tasks("vid-sync-fil")
+                cu.print_header("Video-based Sync (File-select mode)")
+                run_modes(Task.VIDEO_SYNC_FIL)
             case 5:
-                if len(jm.job_queue) == 0:
+                if not qm.main_queue.contents:
                     cu.print_error("No jobs queued!")
                 else:
-                    jm.handle_queue_options()
+                    qm.main_queue_options(Task.JOB_QUEUE)
             case 6:
-                    sys.exit(0)
-                    
+                sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
