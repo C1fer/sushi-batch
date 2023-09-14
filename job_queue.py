@@ -39,7 +39,8 @@ class JobQueue:
             self.contents.extend(unqueued_jobs)
         else:
             jobs_to_queue = [
-                unqueued_jobs[job_idx - 1] for job_idx in selected_jobs_indexes
+                unqueued_jobs[job_idx - 1] 
+                for job_idx in selected_jobs_indexes
             ]
             self.contents.extend(jobs_to_queue)
 
@@ -63,13 +64,13 @@ class JobQueue:
             jobs_to_run = [
                 job 
                 for job in self.contents 
-                if job.status != Status.COMPLETED
+                if job.status == Status.PENDING
             ]
         else:
             jobs_to_run = [
                 self.contents[job_idx - 1]
                 for job_idx in selected_jobs_indexes
-                if self.contents[job_idx - 1].status != Status.COMPLETED
+                if self.contents[job_idx - 1].status == Status.PENDING
             ]
 
         # Run sync on selected jobs
@@ -200,7 +201,7 @@ class JobQueue:
         cu.clear_screen()
 
         # Show title based on current task
-        title = "Job Queue" if task == Task.JOB_QUEUE else "Job Details"
+        title = "Job Queue" if task == Task.JOB_QUEUE else "Jobs"
         cu.print_header(f"{title}")
 
         # Enumerate job list and get the number of the iteration
