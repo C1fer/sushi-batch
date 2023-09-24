@@ -1,5 +1,6 @@
 import subprocess
 import re
+import console_utils as cu
 
 
 class Stream:
@@ -13,8 +14,8 @@ class Stream:
     def from_tuple(cls, tpl):
         return Stream(*tpl)
 
-    @staticmethod
     # Get streams contained in file
+    @staticmethod
     def get_probe_output(filepath):
         process = subprocess.Popen(
             ["ffmpeg", "-hide_banner", "-i", filepath],
@@ -24,8 +25,8 @@ class Stream:
         _, err = process.communicate()
         return err
 
-    @staticmethod
     # Get available streams from file probe output
+    @staticmethod
     def get_streams(file, stream_type):
         # Probe specified file
         probe_output = Stream.get_probe_output(file)
@@ -42,21 +43,34 @@ class Stream:
         )
         return [Stream.from_tuple(x) for x in streams]
 
-    @staticmethod
     # Get language code from subtitle stream index
+    @staticmethod
     def get_subtitle_lang(streams, sub_id):
         for stream in streams:
             if stream.id == sub_id:
                 return stream.lang
 
+    # Get trackname code from subtitle stream index
     @staticmethod
-    # Get last stream index from a list of streams
-    def get_last_id(streams):
-        track_id = int(streams[-1].id)
-        return track_id
+    def get_subtitle_name(streams, sub_id):
+        for stream in streams:
+            if stream.id == sub_id:
+                return stream.title
 
+    # Get first stream index from a list of streams
     @staticmethod
+    def get_first_stream(streams):
+        first_stream_idx = streams[0].id
+        return first_stream_idx
+
+    # Get last stream index from a list of streams
+    @staticmethod
+    def get_last_stream(streams):
+        last_stream_idx = int(streams[-1].id)
+        return last_stream_idx
+
     # Show list of available streams
+    @staticmethod
     def show_streams(streams):
         for stream in streams:
-            print(f"{stream.id}: {stream.lang}, {stream.title}, {stream.info}")
+            print(f"{cu.style_reset}{stream.id}: {stream.lang}, {stream.title}, {stream.info}")

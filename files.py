@@ -108,18 +108,18 @@ def validate_files(src_files, dst_files, sub_files, task):
         return False
 
     # Check if there are no destination files
-    if not dst_files:
+    elif not dst_files:
         cu.print_error("No destination files found!")
         return False
 
     # Check if source and destination files contain the same number of elements
-    if src_files_len != dst_files_len:
+    elif src_files_len != dst_files_len:
         print(f"({src_files_len} source files, {dst_files_len} destination files)")
         cu.print_error("Number of source files does not match the number of destination files!")
         return False
 
     # Check if source and subtitle files contain the same number of elements (audio sync tasks)
-    if (
+    elif (
         task in (Task.AUDIO_SYNC_DIR, Task.AUDIO_SYNC_FIL)
         and src_files_len != sub_files_len
     ):
@@ -134,7 +134,7 @@ def validate_files(src_files, dst_files, sub_files, task):
 # Create job objects for found and selected files
 def create_jobs(zipped_jobs, task):
     jobs = [
-        Job(idx, src, dst, sub, task)
+        Job(idx=idx, src_file=src, dst_file=dst, sub_file=sub, task=task, merged=False if task in (Task.VIDEO_SYNC_FIL, Task.VIDEO_SYNC_DIR) else None)
         for idx, (src, dst, sub) in enumerate(zipped_jobs, start=1)
     ]
 

@@ -1,15 +1,13 @@
 import os
 from time import sleep
-from collections import namedtuple
 from colorama import init, Fore, Style
+import subprocess
 
 
 # Store Fore and Style attributes to enable direct access from other modules
 init(autoreset=True)
 fore = Fore
 style_reset = Style.RESET_ALL
-
-app_logo = " ____               _      _     ____          _          _         _____                _ \n/ ___|  _   _  ___ | |__  (_)   | __ )   __ _ | |_   ___ | |__     |_   _|  ___    ___  | |\n\\___ \\ | | | |/ __|| '_ \\ | |   |  _ \\  / _` || __| / __|| '_ \\      | |   / _ \\  / _ \\ | |\n ___) || |_| |\\__ \\| | | || |   | |_) || (_| || |_ | (__ | | | |     | |  | (_) || (_) || |\n|____/  \\__,_||___/|_| |_||_|   |____/  \\__,_| \\__| \\___||_| |_|     |_|   \\___/  \\___/ |_|\n                                                                                           \n"
 
 
 # Clear command line screen
@@ -19,6 +17,10 @@ def clear_screen():
 
 def print_header(message):
     return print(f"{fore.CYAN}{message}")
+
+
+def print_subheader(message):
+    return print(f"\n{fore.YELLOW}{message}")
 
 
 def print_error(message, wait=True):
@@ -46,37 +48,47 @@ def confirm_action(prompt="Are you sure? (Y/N): "):
 
 
 # Get option selected by user
-def get_choice(start=1, end=None, prompt="Select an option: "):
+def get_choice(start, end, prompt="Select an option: "):
     while True:
         try:
             choice = int(input(f"\n{fore.LIGHTBLACK_EX}{prompt}"))
+        except ValueError:
+            print_error("Invalid choice! Please select a valid option.", False)
+        else:
             if choice in range(start, end + 1):
+                print()
                 return choice
             else:
                 print_error("Invalid choice! Please select a valid option.", False)
-        except ValueError:
-            print_error("Invalid choice! Please select a valid option.", False)
 
 
-# Show menu options
+# Show formatted menu options
 def show_menu_options(options):
-    print("")
+    print()
     for key, val in options.items():
         print(f"{key}) {val}")
 
 
-# Look for ffmpeg binary in PATH env var and working directory
-def is_ffmpeg_installed():
-    # Check if FFmpeg is set on PATH
-    if os.environ.get("PATH").find("ffmpeg") != -1:
+# Check if specified app is installed
+def is_app_installed(app_name):
+    # Check if app is an enviroment variable
+    if is_app_env_var(app_name):
         return True
-
-    # If FFmpeg is not an enviroment variable, look for the binary in working directory
-    ffmpeg_bin = ("ffmpeg.exe" if os.name == "nt" else "ffmpeg")  
-    ffmpeg_path = os.path.join(os.getcwd(), ffmpeg_bin)
-
-    if os.path.exists(ffmpeg_path):
+    
+    # If running on Windows, check if executable is inside working directory 
+   
+    elif os.name == "nt" and os.path.exists(os.path.join(os.path.dirname(__file__), f"{app_name}.exe")): 
         return True
-
-    # If FFmpeg is not found, return false
+    
     return False
+
+
+# Run subprocess to check if app is on PATH env var
+def is_app_env_var(app):
+    try:
+        subprocess.run(app, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError as e:
+        return False
+    else:
+        return True
+    

@@ -1,4 +1,6 @@
-colorama >= 0.4.6
-prettytable >= 3.9.0
-sushi_sub >= 0.6.2
-yaspin >= 3.0.1
+art
+colorama
+opencv-python
+prettytable
+sushi_sub
+yaspin

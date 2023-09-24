@@ -2,14 +2,20 @@ import sys
 from importlib.util import find_spec
 
 # Check if required packages are installed
-packages = ["colorama", "sushi", "prettytable", "yaspin"]
+packages = ["art", "colorama", "cv2", "sushi", "prettytable", "yaspin"]
 for pkg in packages:
     if find_spec(pkg) is None:
-        print(f"Package {pkg} is not installed! Install all requirements before running the tool")
+        print(
+            "\033[91m{}\033[00m".format(
+                f"Package {pkg} is not installed. Install all dependencies before running the tool"
+            )
+        )
         sys.exit(1)
 
+from art import text2art
 import files
 from enums import Task
+import settings as s
 from job_queue import JobQueue
 import queue_manager as qm
 import console_utils as cu
@@ -23,10 +29,12 @@ def main_menu():
         "3": "Audio-based Sync  (File Select)",
         "4": "Video-based Sync  (File Select)",
         "5": "Job Queue",
-        "6": "Exit",
+        "6": "Settings",
+        "7": "Exit",
     }
     cu.clear_screen()
-    cu.print_header(f"{cu.app_logo}")
+    header = text2art("Sushi Batch Tool")
+    cu.print_header(f"{header}")
     cu.show_menu_options(options)
 
 
@@ -47,13 +55,12 @@ def run_modes(task):
 
 def main():
     # Exit with error message if FFmpeg is not found
-    if not cu.is_ffmpeg_installed():
-        cu.print_error(
-            "FFmpeg could not be found. \nAdd the filepath to %PATH% or copy the binary to this folder."
-        )
+    if not cu.is_app_installed("ffmpeg"):
+        cu.print_error("FFmpeg could not be found! \nInstall or add the program to PATH before running the tool", False)
         sys.exit(1)
 
-    # Load queue contents on startup
+    # Load settings and queue contents on startup
+    s.config.handle_load()
     qm.main_queue.load()
 
     # Allow mode selection only if FFmpeg is found
@@ -75,11 +82,13 @@ def main():
                 cu.print_header("Video-based Sync (File-select mode)")
                 run_modes(Task.VIDEO_SYNC_FIL)
             case 5:
-                if not qm.main_queue.contents:
-                    cu.print_error("No jobs queued!")
-                else:
+                if qm.main_queue.contents:
                     qm.main_queue_options(Task.JOB_QUEUE)
+                else:
+                    cu.print_error("No jobs queued!")
             case 6:
+                s.config.handle_options()
+            case 7:
                 sys.exit(0)
 
 

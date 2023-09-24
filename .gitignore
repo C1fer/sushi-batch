@@ -1,12 +1,3 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-
-#FFMPEG binary
-ffmpeg.exe
-
-# Queue contents used for testing
-queue_data.json
-
-# Logs
-Logs/

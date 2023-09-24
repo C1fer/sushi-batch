@@ -13,15 +13,16 @@ def main_queue_options(task):
             "1": "Start queue",
             "2": "Run selected jobs",
             "3": "Remove selected jobs",
-            "4": "Clear queue",
-            "5": "Clear completed and failed jobs",
-            "6": "Return to main menu",
+            "4": "Merge video with synced sub on completed jobs",
+            "5": "Clear queue",
+            "6": "Clear completed and failed jobs",
+            "7": "Return to main menu",
         }
         main_queue.show(task)
         cu.show_menu_options(options)
 
         # Get selected option
-        choice = cu.get_choice(1, 6)
+        choice = cu.get_choice(1, 7)
 
         # Handle user-selected options
         if cu.confirm_action():
@@ -44,15 +45,20 @@ def main_queue_options(task):
                         if not main_queue.contents:
                             break
                 case 4:
+                    if cu.is_app_installed("mkvmerge"):
+                        main_queue.merge_completed_video_tasks(main_queue.contents)
+                    else:
+                        cu.print_error("\nMKVMerge could not be found!")
+                case 5:
                     main_queue.clear()
                     cu.print_success("Queue cleared.")
                     break
-                case 5:
+                case 6:
                     main_queue.clear_completed_jobs()
                     # Return to main menu if queue was cleared
                     if not main_queue.contents:
                         break
-                case 6:
+                case 7:
                     break
 
 

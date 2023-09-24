@@ -42,3 +42,11 @@ class Status(Enum):
     PENDING = 1
     COMPLETED = 2
     FAILED = 3
+    
+    
+class Section(Enum):
+    GEN = "General"
+    SRC = "Source File"
+    DST = "Destination File"
+    SUB = "Synced subtitle"
+
