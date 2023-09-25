@@ -77,7 +77,7 @@ def is_app_installed(app_name):
     
     # If running on Windows, check if executable is inside working directory 
    
-    elif os.name == "nt" and os.path.exists(os.path.join(os.path.dirname(__file__), f"{app_name}.exe")): 
+    elif os.name == "nt" and os.path.exists(os.path.join(os.getcwd(), f"{app_name}.exe")): 
         return True
     
     return False

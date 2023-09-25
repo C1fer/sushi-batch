@@ -9,24 +9,28 @@ class Formats(Enum):
 
 class FileTypes(Enum):
     AUDIO = [
-        (
-            "Audio Formats (*.aac, *.flac, *.m4a, *.mp3, *.opus, *.wav)",
-            ".aac .flac .m4a .mp3 .opus .wav",
-        )
+        "All Audio Formats (*.aac *.flac *.m4a *.mp3 *.opus *.wav)",
+        "AAC (*.aac)",
+        "FLAC (*.flac)",
+        "M4A (*.m4a)",
+        "MP3 (*.mp3)",
+        "Opus (*.opus)",
+        "WAV (*.wav)",
     ]
 
     VIDEO = [
-        (
-            "Video formats (*.avi, *.mp4, *.mkv, *.webm)", 
-            "avi .mp4 .mkv .webm"
-        )
+        "All Video Formats (*.avi *.mp4 *.mkv *.webm)",
+        "AVI (*.avi)",
+        "MP4 (*.mp4)",
+        "Matroska (*.mkv)",
+        "WebM (*.webm)",
     ]
-
+    
     SUBTITLE = [
-        (
-            "Subtitle Formats (*.ass, *.ssa, *.srt )", 
-            ".ass .ssa .srt"
-        )
+        "Subtitle Formats (*.ass *.ssa *.srt)",
+        "ASS (*.ass)",
+        "SSA (*.ssa)",
+        "SRT (*.srt)",
     ]
 
 
@@ -42,11 +46,10 @@ class Status(Enum):
     PENDING = 1
     COMPLETED = 2
     FAILED = 3
-    
-    
+
+
 class Section(Enum):
     GEN = "General"
     SRC = "Source File"
     DST = "Destination File"
     SUB = "Synced subtitle"
-

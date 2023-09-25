@@ -1,5 +1,5 @@
 import os
-from tkinter import filedialog
+from file_dialogs import FileDialog
 from enums import Task, FileTypes, Formats
 from job import Job
 import console_utils as cu
@@ -8,9 +8,9 @@ import console_utils as cu
 # Get folder paths (Directory modes)
 def get_directories():
     # Enter folder paths via folder select dialog
-    src_path = filedialog.askdirectory(title="Select Source Folder")
-    dst_path = filedialog.askdirectory(title="Select Destination Folder")
-
+    src_path = FileDialog.askdirectory(title="Select Source Folder")
+    dst_path = FileDialog.askdirectory(title="Select Destination Folder")
+  
     # Validate selected folders
     if not os.path.exists(src_path):
         cu.print_error(f"Source Path {src_path} does not exist!")
@@ -34,9 +34,7 @@ def search_directories(src_path, dst_path, task):
     sub_files = []
 
     # Set formats to filter by based on current task
-    formats = (
-        Formats.AUDIO.value if task == Task.AUDIO_SYNC_DIR else Formats.VIDEO.value
-    )
+    formats = (Formats.AUDIO.value if task == Task.AUDIO_SYNC_DIR else Formats.VIDEO.value)
 
     # Find source files and subtitles
     for root, _, files in os.walk(src_path):
@@ -66,23 +64,19 @@ def search_directories(src_path, dst_path, task):
 
 # Select files via Tkinter dialog
 def select_files(task):
-    # Enter file paths via file select dialog
-    def select_files_gui(title, filetypes):
-        return filedialog.askopenfilenames(title=title, filetypes=filetypes)
-
     src_files = []
     dst_files = []
     sub_files = []
 
-    # Open file select dialogs based on task
+    # Enter file paths via file select dialog
     if task == Task.AUDIO_SYNC_FIL:
-        src_files = select_files_gui("Select Source Audio Files", FileTypes.AUDIO.value)
-        sub_files = select_files_gui("Select Source Subtitle Files", FileTypes.SUBTITLE.value)
-        dst_files = select_files_gui("Select Destination Audio Files", FileTypes.AUDIO.value)
+        src_files = FileDialog.askfilenames("Select Source Audio Files", FileTypes.AUDIO.value)
+        sub_files = FileDialog.askfilenames("Select Source Subtitle Files", FileTypes.SUBTITLE.value)
+        dst_files = FileDialog.askfilenames("Select Destination Audio Files", FileTypes.AUDIO.value)
 
     elif task == Task.VIDEO_SYNC_FIL:
-        src_files = select_files_gui("Select Source Video Files", FileTypes.VIDEO.value)
-        dst_files = select_files_gui("Select Destination Video Files", FileTypes.VIDEO.value)
+        src_files = FileDialog.askfilenames("Select Source Video Files", FileTypes.VIDEO.value)
+        dst_files = FileDialog.askfilenames("Select Destination Video Files", FileTypes.VIDEO.value)
 
         # Fill subtitle list with None values to avoid passing empty sublist to job queue
         sub_files.extend([None] * len(src_files))

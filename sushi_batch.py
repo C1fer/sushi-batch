@@ -39,6 +39,8 @@ def main_menu():
 
 
 def run_modes(task):
+    jobs = None
+    
     # Get jobs from file/folder selection
     if task in (Task.AUDIO_SYNC_DIR, Task.VIDEO_SYNC_DIR):
         src, dst = files.get_directories()

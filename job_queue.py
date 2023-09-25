@@ -163,7 +163,7 @@ class JobQueue:
     def get_stream_index(streams, prompt):
         last_stream_index = Stream.get_last_stream(streams)
         Stream.show_streams(streams)
-        return str(cu.get_choice(1, last_stream_index, prompt))
+        return str(cu.get_choice(0, last_stream_index, prompt))
     
     # Get all stream indexes
     @staticmethod
@@ -194,7 +194,7 @@ class JobQueue:
     
     @staticmethod
     def set_stream_indexes(unqueued_jobs, task):
-        if len(unqueued_jobs) > 1 and cu.confirm_action("Set default stream index for all jobs? (Y/N): "):
+        if len(unqueued_jobs) > 1 and cu.confirm_action("\nSet default stream index for all jobs? (Y/N): "):
             # Set default track indexes for all jobs
             default_indexes = JobQueue.get_indexes(unqueued_jobs[0], True) # Use first job as reference
             for job in unqueued_jobs:

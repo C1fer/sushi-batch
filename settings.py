@@ -157,17 +157,25 @@ class Settings():
     def update_value(self, option, option_label):
         # Get current option value
         curr_val = getattr(self, option)
+        new_val = None
+        
         print(f"Option: {cu.fore.YELLOW}{option_label}")
-        print(f"\nCurrent value: {self.set_value_format(curr_val)}")
+        print(f"\nCurrent value: {self.set_value_format(curr_val)}\n")
         
-        # Set new option value
-        prompt = "Disable" if curr_val else "Enable"
-        choice = cu.confirm_action(f"\n{prompt} option? (Y/N): ")
-        new_val = not curr_val if choice else curr_val  # If Y, toggle setting   
-        
-        # Update value and save changes
-        setattr(self, option, new_val)
-        self.save()
+        match curr_val:
+            case bool():
+                prompt = "Disable" if curr_val else "Enable"
+                if cu.confirm_action(f"{prompt} option? (Y/N): "):
+                    new_val = not curr_val  # If Y, toggle setting   
+            case str():
+                user_input = input("New value: ")
+                if cu.confirm_action():
+                    new_val = user_input
+                    
+        if new_val is not None:       
+            # Update value and save changes
+            setattr(self, option, new_val)
+            self.save()
     
     # Select option from table    
     def select_option(self, rows):
