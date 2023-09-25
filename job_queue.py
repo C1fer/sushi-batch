@@ -187,8 +187,8 @@ class JobQueue:
             "src_aud_id": src_aud_id,
             "src_sub_id": src_sub_id,
             "dst_aud_id": dst_aud_id,
-            "src_sub_lang": Stream.get_subtitle_lang(src_sub_streams, src_sub_id),
-            "src_sub_name": Stream.get_subtitle_name(src_sub_streams, src_sub_id),
+            "src_sub_lang": Stream.get_stream_lang(src_sub_streams, src_sub_id),
+            "src_sub_name": Stream.get_stream_name(src_sub_streams, src_sub_id),
         }
         return indexes
     

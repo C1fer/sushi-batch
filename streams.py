@@ -21,6 +21,7 @@ class Stream:
             ["ffmpeg", "-hide_banner", "-i", filepath],
             stderr=subprocess.PIPE,
             universal_newlines=True,
+            encoding='utf-8',
         )
         _, err = process.communicate()
         return err
@@ -35,7 +36,7 @@ class Stream:
         stream_type_pattern = "Audio" if stream_type == "audio" else "Subtitle"
 
         streams = re.findall(
-            r"Stream\s\#0:(\d+)\((.*?)\).*?{}:\s*(.*?)\s*?\r?\n"
+            r"Stream\s\#0:(\d+)(?:\((.*?)\))?.*?{}:\s*(.*?)\s*?\r?\n"
             r"(?:\s*Metadata:\s*\r?\n"
             r"\s*title\s*:\s*(.*?)\r?\n)?".format(stream_type_pattern),
             probe_output,
@@ -45,32 +46,34 @@ class Stream:
 
     # Get language code from subtitle stream index
     @staticmethod
-    def get_subtitle_lang(streams, sub_id):
+    def get_stream_lang(streams, stream_id):
         for stream in streams:
-            if stream.id == sub_id:
-                return stream.lang
+            if stream.id == stream_id:
+                lang = stream.lang if not stream.lang == "" else "und"
+                return lang
 
     # Get trackname code from subtitle stream index
     @staticmethod
-    def get_subtitle_name(streams, sub_id):
+    def get_stream_name(streams, stream_id):
         for stream in streams:
-            if stream.id == sub_id:
+            if stream.id == stream_id:
                 return stream.title
 
     # Get first stream index from a list of streams
     @staticmethod
     def get_first_stream(streams):
-        first_stream_idx = streams[0].id
-        return first_stream_idx
+            first_stream_idx = streams[0].id
+            return first_stream_idx
 
     # Get last stream index from a list of streams
     @staticmethod
     def get_last_stream(streams):
-        last_stream_idx = int(streams[-1].id)
-        return last_stream_idx
+            last_stream_idx = int(streams[-1].id)
+            return last_stream_idx
 
     # Show list of available streams
     @staticmethod
     def show_streams(streams):
         for stream in streams:
             print(f"{cu.style_reset}{stream.id}: {stream.lang}, {stream.title}, {stream.info}")
+            
