@@ -96,9 +96,8 @@ class Sushi:
             args=args,
             stderr=subprocess.PIPE,
             text=True,
-            encoding="utf-8",
         )
-
+        
         # Initialize and start spinner
         with yaspin(text=f"Job {job.idx}", color="cyan", timer=True) as sp:
             # Get subprocess output
