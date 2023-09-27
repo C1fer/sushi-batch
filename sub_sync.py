@@ -5,7 +5,6 @@ from yaspin import yaspin
 from enums import Task, Status
 import settings as s
 
-
 class Sushi:
     # Set arguments for job execution
     @staticmethod
@@ -63,17 +62,16 @@ class Sushi:
         shift_count = 0
 
         for line in output:
-            if "Group (" in line:
-                # Split line into parts
+            if "shift:" in line:
+                # Split line into parts and get shift value
                 parts = line.split()
-
-                # Extract numeric part of the shift value
-                shift_val = parts[-1].removesuffix(")")
+                shift_val = float(parts[2].removesuffix(","))
 
                 # Add shift value to total and increment count
-                total_shift += float(shift_val)
+                total_shift += shift_val
                 shift_count += 1
-
+        
+        # Get average shift 
         avg_shift = round(total_shift / shift_count, 3)
 
         # Return average shift with three decimal places regardless of value
