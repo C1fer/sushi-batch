@@ -122,7 +122,7 @@ class MKVMerge:
             stdout, _ = mkv_merge.communicate()
 
             if s.config.save_mkvmerge_logs:
-                with open(log_path, "w", encoding="utf-8") as fil:
+                with open(log_path, "w") as fil:
                     fil.write(stdout)
 
             match (mkv_merge.returncode):

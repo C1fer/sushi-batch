@@ -11,10 +11,8 @@ class Sushi:
     @staticmethod
     def set_args(job):
         # Set sample rate for search algorithm
-        sushi_bin = "sushi" if os.name == "nt" else "~/.local/bin/sushi"
-
         args = [
-            sushi_bin,
+            "sushi",
             "--src",
             job.src_file,
             "--dst",
@@ -96,7 +94,6 @@ class Sushi:
             args=args,
             stderr=subprocess.PIPE,
             text=True,
-            encoding="utf-8"
         )
         
         # Initialize and start spinner
@@ -106,7 +103,7 @@ class Sushi:
 
             # Save output to log file only if enabled
             if s.config.save_sushi_logs:
-                with open(log_path, "w", encoding="utf-8") as fil:
+                with open(log_path, "w") as fil:
                     fil.write(stderr)
 
             # Split output into list
