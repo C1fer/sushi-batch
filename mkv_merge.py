@@ -112,17 +112,17 @@ class MKVMerge:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            encoding="utf-8",
+            errors="replace",
         )
 
         # Initialize spinner
-        with yaspin(
-            text=f"{path.basename(output_file)}", color="magenta", timer=True
-        ) as sp:
+        with yaspin(text=f"{path.basename(output_file)}", color="magenta", timer=True) as sp:
             # Wait for process completion
             stdout, _ = mkv_merge.communicate()
 
             if s.config.save_mkvmerge_logs:
-                with open(log_path, "w") as fil:
+                with open(log_path, "w", encoding="utf-8") as fil:
                     fil.write(stdout)
 
             match (mkv_merge.returncode):

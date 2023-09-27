@@ -92,6 +92,8 @@ class Sushi:
             args=args,
             stderr=subprocess.PIPE,
             text=True,
+            encoding="utf-8",
+            errors="replace"
         )
         
         # Initialize and start spinner
@@ -101,7 +103,7 @@ class Sushi:
 
             # Save output to log file only if enabled
             if s.config.save_sushi_logs:
-                with open(log_path, "w") as fil:
+                with open(log_path, "w", encoding="utf-8") as fil:
                     fil.write(stderr)
 
             # Split output into list
