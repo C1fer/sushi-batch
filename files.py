@@ -57,7 +57,7 @@ def search_directories(src_path, dst_path, task):
     # Perform validations on search results
     if validate_files(src_files, dst_files, sub_files, task):
         # Split the elements into job objects if files pass validation
-        job_list = create_jobs(zip(src_files, dst_files, sub_files), task)
+        job_list = create_jobs(src_files, dst_files, sub_files, task)
         return job_list
     return None
 
@@ -84,7 +84,7 @@ def select_files(task):
     # Return job list if selected files pass validation
     if validate_files(src_files, dst_files, sub_files, task):
         # Split the elements into job objects if files pass validation
-        job_list = create_jobs(zip(src_files, dst_files, sub_files), task)
+        job_list = create_jobs(src_files, dst_files, sub_files, task)
         return job_list
     return None
 
@@ -126,10 +126,27 @@ def validate_files(src_files, dst_files, sub_files, task):
 
 
 # Create job objects for found and selected files
-def create_jobs(zipped_jobs, task):
+def create_jobs(src_files, dst_files, sub_files, task):
+    merged_status = False
+    
+    # Sort sub files if task is not video-sync
+    if task not in (Task.VIDEO_SYNC_FIL, Task.VIDEO_SYNC_DIR):
+        merged_status = None
+        sub_files.sort()
+    
+    # Generate pairings with sorted lists to avoid incorrect pairings
+    zipped_jobs = zip(sorted(src_files), sorted(dst_files), sub_files)
+    
     jobs = [
-        Job(idx=idx, src_file=src, dst_file=dst, sub_file=sub, task=task, merged=False if task in (Task.VIDEO_SYNC_FIL, Task.VIDEO_SYNC_DIR) else None)
+        Job(
+            idx=idx, 
+            src_file=src, 
+            dst_file=dst, 
+            sub_file=sub, 
+            task=task, 
+            merged=merged_status
+        )
         for idx, (src, dst, sub) in enumerate(zipped_jobs, start=1)
     ]
-
     return jobs
+
