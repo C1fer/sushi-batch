@@ -28,9 +28,10 @@ def main_menu():
         "2": "Video-based Sync  (Directory Select)",
         "3": "Audio-based Sync  (File Select)",
         "4": "Video-based Sync  (File Select)",
-        "5": "Job Queue",
-        "6": "Settings",
-        "7": "Exit",
+        "5": "Show Job Queue",
+        "6": "Show Settings",
+        "7": "Clear Logs",
+        "8": "Exit",
     }
     cu.clear_screen()
     header = text2art("Sushi Batch Tool")
@@ -68,7 +69,7 @@ def main():
     # Allow mode selection only if FFmpeg is found
     while True:
         main_menu()
-        selected_option = cu.get_choice(1, 7)
+        selected_option = cu.get_choice(1, 8)
         cu.clear_screen()
         match selected_option:
             case 1:
@@ -91,6 +92,10 @@ def main():
             case 6:
                 s.config.handle_options()
             case 7:
+                if cu.confirm_action():
+                    cu.clear_logs(s.config.data_path)
+                    cu.print_success("Logs cleared.")
+            case 8:
                 sys.exit(0)
 
 

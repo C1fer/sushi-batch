@@ -2,7 +2,7 @@ import os
 from time import sleep
 from colorama import init, Fore, Style
 import subprocess
-
+import shutil
 
 # Store Fore and Style attributes to enable direct access from other modules
 init(autoreset=True)
@@ -76,7 +76,6 @@ def is_app_installed(app_name):
         return True
     
     # If running on Windows, check if executable is inside working directory 
-   
     elif os.name == "nt" and os.path.exists(os.path.join(os.getcwd(), f"{app_name}.exe")): 
         return True
     
@@ -92,3 +91,12 @@ def is_app_env_var(app):
     else:
         return True
     
+
+def clear_logs(dirpath):
+    try:
+        for entry in os.listdir(dirpath):
+            if entry in("Sushi Logs", "Merge Logs"):
+                entry_path = os.path.join(dirpath, entry)
+                shutil.rmtree(entry_path)  # Recursively delete the directory
+    except OSError as e:
+        print(e)
