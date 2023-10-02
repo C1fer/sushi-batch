@@ -34,7 +34,7 @@ def main_menu():
         "8": "Exit",
     }
     cu.clear_screen()
-    header = text2art("Sushi Batch Tool")
+    header = text2art("Sushi Batch")
     cu.print_header(f"{header}")
     cu.show_menu_options(options)
 

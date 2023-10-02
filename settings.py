@@ -79,7 +79,7 @@ class Settings():
         # General Section 
         tb.add_rows(
             [
-                [Section.GEN.value, "Merge destination video and synced sub automatically", self.set_value_format(self.merge_files_after_execution)], 
+                [Section.GEN.value, "Merge synced sub automatically", self.set_value_format(self.merge_files_after_execution)], 
                 [Section.GEN.value, "Save Sushi logs", self.set_value_format(self.save_sushi_logs)]  
             ]
         )
@@ -99,11 +99,11 @@ class Settings():
         # Destination File Section
         tb.add_rows(
             [
-                [Section.DST.value, "Only copy audio track used for synchronization", self.set_value_format(self.dst_copy_audio_tracks)],
+                [Section.DST.value, "Only copy audio track used for sync", self.set_value_format(self.dst_copy_audio_tracks)],
                 [Section.DST.value, "Copy attachments", self.set_value_format(self.dst_copy_attachments)],
                 [Section.DST.value, "Copy chapters", self.set_value_format(self.dst_copy_chapters)],
+                [Section.DST.value, "Copy subtitles", self.set_value_format(self.dst_copy_subtitle_tracks)],
                 [Section.DST.value, "Copy global tags", self.set_value_format(self.dst_copy_global_tags)],
-                [Section.DST.value, "Copy subtitle tracks", self.set_value_format(self.dst_copy_subtitle_tracks)],
             ]
         )
         tb.add_row([Section.DST.value, "Copy track tags", self.set_value_format(self.dst_copy_track_tags)], divider=True)
