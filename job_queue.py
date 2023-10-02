@@ -155,7 +155,7 @@ class JobQueue:
             print(f"{cu.fore.LIGHTYELLOW_EX}Selected jobs: {valid_job_indexes}\n")
             return valid_job_indexes
         else:
-            cu.print_error("Invalid choice! Please select valid jobs.", False)
+            cu.print_error("Invalid choice! Please select valid jobs.")
             return None
 
     # Allow selecting a stream index

@@ -28,8 +28,8 @@ class Settings():
         self.dst_copy_audio_tracks = False
         self.dst_copy_attachments = True
         self.dst_copy_chapters = True
-        self.dst_copy_global_tags = True
         self.dst_copy_subtitle_tracks = True
+        self.dst_copy_global_tags = True
         self.dst_copy_track_tags = True
 
         # Subtitle settings
@@ -142,16 +142,15 @@ class Settings():
             cu.show_menu_options(options)
 
             choice = cu.get_choice(1,3)
-            
-            if cu.confirm_action():
-                match choice:
-                    case 1:
-                        opt, opt_label = self.select_option(tbl.rows)
-                        self.update_value(opt, opt_label)
-                    case 2:
-                       self.restore()
-                    case 3:
-                        break
+            match choice:
+                case 1:
+                    opt, opt_label = self.select_option(tbl.rows)
+                    self.update_value(opt, opt_label)
+                case 2:
+                    if cu.confirm_action():
+                        self.restore()
+                case 3:
+                    break
     
     # Update value for selected option
     def update_value(self, option, option_label):
