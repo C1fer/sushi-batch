@@ -103,6 +103,8 @@ class JobQueue:
                 MKVMerge.run(job)
                 self.save()
             input("\nPress Enter to go back... ")
+        else:
+            cu.print_error("No completed jobs to merge!")
             
     # Clear queue contents
     def clear(self):
