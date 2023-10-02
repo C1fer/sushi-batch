@@ -3,6 +3,7 @@ from file_dialogs import FileDialog
 from enums import Task, FileTypes, Formats
 from job import Job
 import console_utils as cu
+from streams import Stream
 
 
 # Get folder paths (Directory modes)
@@ -95,7 +96,6 @@ def validate_files(src_files, dst_files, sub_files, task):
     src_files_len = len(src_files)
     dst_files_len = len(dst_files)
     sub_files_len = len(sub_files)
-
     # Check if there are no source files
     if not src_files:
         cu.print_error("No source files found!")
@@ -137,8 +137,14 @@ def create_jobs(src_files, dst_files, sub_files, task):
     # Generate pairings with sorted lists to avoid incorrect pairings
     zipped_jobs = zip(sorted(src_files), sorted(dst_files), sub_files)
     
-    jobs = [
-        Job(
+    jobs = []
+    for idx, (src, dst, sub) in enumerate(zipped_jobs, start=1):
+        # Skip pairing if source video does not have at least one subtitle stream
+        if task in(Task.VIDEO_SYNC_FIL, Task.VIDEO_SYNC_DIR) and not Stream.has_subtitles(src):
+            cu.print_error(f"Source video {src} does not contain subtitles! Skipping...")
+            continue
+        
+        new_job = Job(
             idx=idx, 
             src_file=src, 
             dst_file=dst, 
@@ -146,7 +152,5 @@ def create_jobs(src_files, dst_files, sub_files, task):
             task=task, 
             merged=merged_status
         )
-        for idx, (src, dst, sub) in enumerate(zipped_jobs, start=1)
-    ]
+        jobs.append(new_job)
     return jobs
-

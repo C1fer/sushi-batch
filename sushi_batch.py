@@ -51,7 +51,7 @@ def run_modes(task):
         jobs = files.select_files(task)
 
     # Show options if job list is not empty
-    if jobs is not None:
+    if jobs:
         temp_queue = JobQueue(jobs)
         qm.temp_queue_options(temp_queue, task)
 

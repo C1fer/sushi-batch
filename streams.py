@@ -71,7 +71,14 @@ class Stream:
     def get_last_stream(streams):
             last_stream_idx = int(streams[-1].id)
             return last_stream_idx
-
+        
+    # Check if specified file has subtitles
+    @staticmethod
+    def has_subtitles(file):
+        if Stream.get_streams(file, "subtitles"):
+            return True
+        return False
+    
     # Show list of available streams
     @staticmethod
     def show_streams(streams):
