@@ -57,7 +57,7 @@ class MKVMerge:
         args.append(job.src_file)
 
         # Destination file arguments
-        if not s.config.dst_copy_audio_tracks:
+        if s.config.dst_copy_audio_tracks:
             # Only copy audio track used for synchronization
             args.extend(["--audio-tracks", job.dst_aud_id])
         if not s.config.dst_copy_attachments:
