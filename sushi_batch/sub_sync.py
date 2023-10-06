@@ -1,9 +1,12 @@
 import os
 import subprocess
 from datetime import datetime
+
 from yaspin import yaspin
-from enums import Task, Status
-import settings as s
+
+from . import settings as s
+from .enums import Status, Task
+
 
 class Sushi:
     # Set arguments for job execution

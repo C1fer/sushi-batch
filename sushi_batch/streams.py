@@ -1,6 +1,7 @@
-import subprocess
 import re
-import console_utils as cu
+import subprocess
+
+from . import console_utils as cu
 
 
 class Stream:

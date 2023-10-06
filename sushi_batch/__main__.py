@@ -13,12 +13,13 @@ for pkg in packages:
         sys.exit(1)
 
 from art import text2art
-import files
-from enums import Task
-import settings as s
-from job_queue import JobQueue
-import queue_manager as qm
-import console_utils as cu
+
+from . import console_utils as cu
+from . import files
+from . import queue_manager as qm
+from . import settings as s
+from .enums import Task
+from .job_queue import JobQueue
 
 
 # Show main menu
@@ -101,3 +102,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+import sushi

@@ -1,6 +1,7 @@
-from json import JSONEncoder, JSONDecoder
-from enums import Status, Task
-from job import Job
+from json import JSONDecoder, JSONEncoder
+
+from .enums import Status, Task
+from .job import Job
 
 
 # Custom JSON encoder for Job class

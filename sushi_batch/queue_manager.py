@@ -1,6 +1,5 @@
-import console_utils as cu
-from job_queue import JobQueue
-
+from . import console_utils as cu
+from .job_queue import JobQueue
 
 main_queue = JobQueue()
 

@@ -1,8 +1,10 @@
-from os import path, makedirs
 import json
+from os import makedirs, path
+
 from prettytable import PrettyTable
-from enums import Section
-import console_utils as cu
+
+from . import console_utils as cu
+from .enums import Section
 
 
 class Settings():

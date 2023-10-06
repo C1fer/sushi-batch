@@ -1,4 +1,3 @@
-
 # Sushi Batch
 Batch subtitle synchronization tool based on [FichteFoll](https://github.com/FichteFoll/Sushi)'s fork of [Sushi](https://github.com/tp7/Sushi).
 

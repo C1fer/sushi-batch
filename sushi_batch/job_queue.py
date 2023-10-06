@@ -1,12 +1,13 @@
 import json
 from os import path
-from json_hooks import JobEncoder, JobDecoder
-from enums import Task, Status
-from streams import Stream
-import console_utils as cu
-import settings as s
-from sub_sync import Sushi
-from mkv_merge import MKVMerge
+
+from . import console_utils as cu
+from . import settings as s
+from .enums import Status, Task
+from .json_hooks import JobDecoder, JobEncoder
+from .mkv_merge import MKVMerge
+from .streams import Stream
+from .sub_sync import Sushi
 
 
 class JobQueue:

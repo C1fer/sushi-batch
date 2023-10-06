@@ -1,9 +1,10 @@
 import os
-from file_dialogs import FileDialog
-from enums import Task, FileTypes, Formats
-from job import Job
-import console_utils as cu
-from streams import Stream
+
+from . import console_utils as cu
+from .enums import FileTypes, Formats, Task
+from .file_dialogs import FileDialog
+from .job import Job
+from .streams import Stream
 
 
 # Get folder paths (Directory modes)

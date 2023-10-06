@@ -1,6 +1,0 @@
-art
-colorama
-opencv-python
-prettytable
-sushi_sub
-yaspin

@@ -1,4 +1,4 @@
-from enums import Status, Task
+from .enums import Status, Task
 
 
 class Job:

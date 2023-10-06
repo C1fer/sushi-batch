@@ -1,9 +1,11 @@
-from os import path, makedirs
 import subprocess
+from os import makedirs, path
+
 from yaspin import yaspin
-import console_utils as cu
-import settings as s
-from sub_sync import Sushi
+
+from . import console_utils as cu
+from . import settings as s
+from .sub_sync import Sushi
 
 
 class MKVMerge:

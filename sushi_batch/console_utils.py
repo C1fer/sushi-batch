@@ -1,8 +1,9 @@
 import os
-from time import sleep
-from colorama import init, Fore, Style
-import subprocess
 import shutil
+import subprocess
+from time import sleep
+
+from colorama import Fore, Style, init
 
 # Store Fore and Style attributes to enable direct access from other modules
 init(autoreset=True)

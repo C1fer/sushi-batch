@@ -1,3 +1,9 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+
+#Build wheels
+dist/
+
+# Poetry lock file
+poetry.lock
