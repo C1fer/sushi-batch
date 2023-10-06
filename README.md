@@ -2,6 +2,9 @@
 # Sushi Batch
 Batch subtitle synchronization tool based on [FichteFoll](https://github.com/FichteFoll/Sushi)'s fork of [Sushi](https://github.com/tp7/Sushi).
 
+### WARNING
+**Sushi is not perfect, an can output subtitles with broken timings.** **You should check if the subtitle was synced correctly on completed tasks with high shift average (10s or greater).**
+
 ## Installation
 ### Required apps
 * [FFmpeg](https://ffmpeg.org/download.html)
