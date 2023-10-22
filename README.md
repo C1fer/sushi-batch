@@ -5,6 +5,9 @@ Batch subtitle synchronization tool based on [FichteFoll](https://github.com/Fic
 **Sushi is not perfect, an can output subtitles with broken timings.** **You should check if the subtitle was synced correctly on completed tasks with high shift average (10s or greater).**
 
 ## Installation
+
+`pip install sushi-batch`
+
 ### Required apps
 * [FFmpeg](https://ffmpeg.org/download.html)
 * [mkvmerge from MKVToolNix](https://mkvtoolnix.download/downloads.html) (Optional)
