@@ -20,6 +20,7 @@ from . import queue_manager as qm
 from . import settings as s
 from .enums import Task
 from .job_queue import JobQueue
+from importlib.metadata import version
 
 
 # Show main menu
@@ -35,7 +36,7 @@ def main_menu():
         "8": "Exit",
     }
     cu.clear_screen()
-    header = text2art("Sushi Batch")
+    header = text2art("Sushi Batch") + f"Version: {version('sushi-batch')}"
     cu.print_header(f"{header}")
     cu.show_menu_options(options)
 
@@ -102,5 +103,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-import sushi
