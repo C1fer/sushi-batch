@@ -7,3 +7,6 @@ dist/
 
 # Poetry lock file
 poetry.lock
+
+# VS Code settings
+.vscode/
