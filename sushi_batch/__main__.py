@@ -26,10 +26,10 @@ from importlib.metadata import version
 # Show main menu
 def main_menu():
     options = {
-        "1": "Audio-based Sync  (Directory Select)",
-        "2": "Video-based Sync  (Directory Select)",
-        "3": "Audio-based Sync  (File Select)",
-        "4": "Video-based Sync  (File Select)",
+        "1": "Video-based Sync  (Directory Select)",
+        "2": "Video-based Sync  (File Select)",
+        "3": "Audio-based Sync  (Directory Select)",
+        "4": "Audio-based Sync  (File Select)",
         "5": "Show Job Queue",
         "6": "Show Settings",
         "7": "Clear Logs",
@@ -75,17 +75,17 @@ def main():
         cu.clear_screen()
         match selected_option:
             case 1:
-                cu.print_header("Audio-based Sync (Directory mode)")
-                run_modes(Task.AUDIO_SYNC_DIR)
-            case 2:
                 cu.print_header("Video-based Sync (Directory mode)")
                 run_modes(Task.VIDEO_SYNC_DIR)
-            case 3:
-                cu.print_header("Audio-based Sync (File-select mode)")
-                run_modes(Task.AUDIO_SYNC_FIL)
-            case 4:
+            case 2:
                 cu.print_header("Video-based Sync (File-select mode)")
                 run_modes(Task.VIDEO_SYNC_FIL)
+            case 3:
+                cu.print_header("Audio-based Sync (Directory mode)")
+                run_modes(Task.AUDIO_SYNC_DIR)
+            case 4:
+                cu.print_header("Audio-based Sync (File-select mode)")
+                run_modes(Task.AUDIO_SYNC_FIL)
             case 5:
                 if qm.main_queue.contents:
                     qm.main_queue_options(Task.JOB_QUEUE)
