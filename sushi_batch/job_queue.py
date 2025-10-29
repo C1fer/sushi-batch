@@ -178,11 +178,16 @@ class JobQueue:
 
         if select_streams:
             print(f"{cu.fore.LIGHTYELLOW_EX}\nJob {job.idx}")
-        
-        src_aud_selected = JobQueue.get_stream_choice(src_aud_streams, "Select a source audio stream: ") if select_streams else src_aud_streams[0]
-        src_sub_selected = JobQueue.get_stream_choice(src_sub_streams, "Select a source subtitle stream: ") if select_streams else src_sub_streams[0]
-        dst_aud_selected = JobQueue.get_stream_choice(dst_aud_streams, "Select a destination audio stream: ") if select_streams else dst_aud_streams[0]
 
+        def _select_stream(streams, prompt):
+            if select_streams:
+                return JobQueue.get_stream_choice(streams, prompt)
+            else:
+                return streams[0]
+
+        src_aud_selected = _select_stream(src_aud_streams, "Select a source audio stream: ")
+        src_sub_selected = _select_stream(src_sub_streams, "Select a source subtitle stream: ")
+        dst_aud_selected = _select_stream(dst_aud_streams, "Select a destination audio stream: ")
         indexes = {
             "src_aud_id": src_aud_selected.id,
             "src_aud_display": src_aud_selected.display_name,
