@@ -163,10 +163,10 @@ class JobQueue:
 
     # Allow selecting a stream index
     @staticmethod
-    def get_stream_index(streams, prompt):
-        last_stream_index = Stream.get_last_stream(streams)
+    def get_stream_choice(streams, prompt):
         Stream.show_streams(streams)
-        return str(cu.get_choice(0, last_stream_index, prompt))
+        stream_choice = cu.get_choice(int(streams[0].id), int(streams[-1].id), prompt)
+        return filter(lambda s: int(s.id) == stream_choice, streams).__next__()
     
     # Get all stream indexes
     @staticmethod
@@ -178,20 +178,25 @@ class JobQueue:
 
         if select_streams:
             print(f"{cu.fore.LIGHTYELLOW_EX}\nJob {job.idx}")
-            src_aud_id = JobQueue.get_stream_index(src_aud_streams, "Select a source audio stream: ")
-            src_sub_id = JobQueue.get_stream_index(src_sub_streams, "Select a source subtitle stream: ")
-            dst_aud_id = JobQueue.get_stream_index(dst_aud_streams, "Select a destination audio stream: ")
-        else:
-            src_aud_id = Stream.get_first_stream(src_aud_streams)
-            src_sub_id = Stream.get_first_stream(src_sub_streams)
-            dst_aud_id = Stream.get_first_stream(dst_aud_streams)
-        
+
+        def _select_stream(streams, prompt):
+            if select_streams:
+                return JobQueue.get_stream_choice(streams, prompt)
+            else:
+                return streams[0]
+
+        src_aud_selected = _select_stream(src_aud_streams, "Select a source audio stream: ")
+        src_sub_selected = _select_stream(src_sub_streams, "Select a source subtitle stream: ")
+        dst_aud_selected = _select_stream(dst_aud_streams, "Select a destination audio stream: ")
         indexes = {
-            "src_aud_id": src_aud_id,
-            "src_sub_id": src_sub_id,
-            "dst_aud_id": dst_aud_id,
-            "src_sub_lang": Stream.get_stream_lang(src_sub_streams, src_sub_id),
-            "src_sub_name": Stream.get_stream_name(src_sub_streams, src_sub_id),
+            "src_aud_id": src_aud_selected.id,
+            "src_aud_display": src_aud_selected.display_name,
+            "dst_aud_id": dst_aud_selected.id,
+            "dst_aud_display": dst_aud_selected.display_name,
+            "src_sub_id": src_sub_selected.id,
+            "src_sub_display": src_sub_selected.display_name,
+            "src_sub_lang": Stream.get_stream_lang(src_sub_streams, src_sub_selected.id),
+            "src_sub_name": Stream.get_stream_name(src_sub_streams, src_sub_selected.id),
         }
         return indexes
     
@@ -227,20 +232,23 @@ class JobQueue:
             if job.sub_file is not None:
                 print(f"{cu.fore.LIGHTCYAN_EX }Subtitle file: {job.sub_file}")
 
-            if job.src_aud_id is not None:
-                print(
-                    f"{cu.fore.LIGHTMAGENTA_EX}Source Audio Track ID: {job.src_aud_id}"
-                )
+            if job.src_aud_display is not None:
+                print(f"{cu.fore.LIGHTMAGENTA_EX}Source Audio Track: {job.src_aud_display}")
 
-            if job.src_sub_id is not None:
-                print(
-                    f"{cu.fore.LIGHTCYAN_EX}Source Subtitle Track ID: {job.src_sub_id}"
-                )
+            if job.src_sub_display is not None:
+                print(f"{cu.fore.LIGHTCYAN_EX}Source Subtitle Track: {job.src_sub_display}")
 
-            if job.dst_aud_id is not None:
-                print(
-                    f"{cu.fore.YELLOW}Destination Audio Track ID: {job.dst_aud_id}"
-                )
+            if job.dst_aud_display is not None:
+                print(f"{cu.fore.YELLOW}Destination Audio Track: {job.dst_aud_display}")
+
+            if job.src_aud_id is not None and job.src_aud_display is None:
+                print(f"{cu.fore.LIGHTMAGENTA_EX}Source Audio Track ID: {job.src_aud_id}")
+
+            if job.src_sub_id is not None and job.src_sub_display is None:
+                print(f"{cu.fore.LIGHTCYAN_EX}Source Subtitle Track ID: {job.src_sub_id}")
+
+            if job.dst_aud_id is not None and job.dst_aud_display is None:
+                print(f"{cu.fore.YELLOW}Destination Audio Track ID: {job.dst_aud_id}")
 
             if task == Task.JOB_QUEUE: 
                 match job.status:

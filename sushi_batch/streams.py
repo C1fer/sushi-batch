@@ -10,6 +10,7 @@ class Stream:
         self.lang = lang
         self.info = info
         self.title = title
+        self.display_name = f"{idx} - {lang}, {info}" if title == "" else f"{idx} - {title}, {lang}, {info}"
 
     @classmethod
     def from_tuple(cls, tpl):
@@ -60,19 +61,7 @@ class Stream:
         for stream in streams:
             if stream.id == stream_id:
                 return stream.title
-
-    # Get first stream index from a list of streams
-    @staticmethod
-    def get_first_stream(streams):
-            first_stream_idx = streams[0].id
-            return first_stream_idx
-
-    # Get last stream index from a list of streams
-    @staticmethod
-    def get_last_stream(streams):
-            last_stream_idx = int(streams[-1].id)
-            return last_stream_idx
-        
+            
     # Check if specified file has subtitles
     @staticmethod
     def has_subtitles(file):
@@ -84,5 +73,5 @@ class Stream:
     @staticmethod
     def show_streams(streams):
         for stream in streams:
-            print(f"{cu.style_reset}{stream.id}: {stream.lang}, {stream.title}, {stream.info}")
+            print(f"{cu.style_reset}{stream.display_name}")
             
