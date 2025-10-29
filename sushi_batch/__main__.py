@@ -2,7 +2,7 @@ import sys
 from importlib.util import find_spec
 
 # Check if required packages are installed
-packages = ["art", "colorama", "cv2", "sushi", "prettytable", "yaspin"]
+packages = ["art", "colorama", "sushi", "prettytable", "yaspin"]
 for pkg in packages:
     if find_spec(pkg) is None:
         print(
