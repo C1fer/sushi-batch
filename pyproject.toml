@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sushi-batch"
-version = "0.1.0"
+version = "0.2.0"
 description = "Batch Subtitle Synchronization Tool"
 authors = ["C1fer"]
 license = "MIT"
