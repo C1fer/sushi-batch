@@ -10,3 +10,6 @@ poetry.lock
 
 # VS Code settings
 .vscode/
+
+# Local virtual environment
+.venv/

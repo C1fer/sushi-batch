@@ -101,7 +101,7 @@ def temp_queue_options(temp_queue, task):
                     cu.print_success(f"{len(temp_queue.contents)} job(s) added to queue.")
                     break
                 case 4:
-                    selected_jobs = details_queue.select_jobs(
+                    selected_jobs = temp_queue.select_jobs(
                         "Select jobs to add to the queue (e.g: all, 1, 5-10): "
                     )
                     if selected_jobs is not None and cu.confirm_action():
