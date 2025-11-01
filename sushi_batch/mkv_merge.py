@@ -5,7 +5,7 @@ from yaspin import yaspin
 
 from . import console_utils as cu
 from . import settings as s
-from .sub_sync import Sushi
+from .subprocess_logger import SubProcessLogger
 
 
 class MKVMerge:
@@ -106,7 +106,7 @@ class MKVMerge:
         output_file = args[2]
 
         if s.config.save_mkvmerge_logs:
-            log_path = Sushi.set_log_path(output_file, "Merge Logs")
+            log_path = SubProcessLogger.set_log_path(output_file, "Merge Logs")
 
         # Run merge with arguments
         mkv_merge = subprocess.Popen(
@@ -124,8 +124,7 @@ class MKVMerge:
             stdout, _ = mkv_merge.communicate()
 
             if s.config.save_mkvmerge_logs:
-                with open(log_path, "w", encoding="utf-8") as fil:
-                    fil.write(stdout)
+                SubProcessLogger.save_log_output(log_path, stdout)
 
             match (mkv_merge.returncode):
                 case 0:

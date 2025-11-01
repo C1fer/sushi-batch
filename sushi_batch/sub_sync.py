@@ -4,15 +4,15 @@ from datetime import datetime
 
 from yaspin import yaspin
 
-from . import settings as s
+from . import settings
 from .enums import Status, Task
+from .subprocess_logger import SubProcessLogger
 
 
 class Sushi:
     # Set arguments for job execution
     @staticmethod
     def set_args(job):
-        # Set sample rate for search algorithm
         args = [
             "sushi",
             "--src",
@@ -38,25 +38,6 @@ class Sushi:
 
         return args
 
-    # Set log file path
-    @staticmethod
-    def set_log_path(src_file, dir_name):
-        # Get job execution date and time
-        current_datetime = datetime.now().strftime("%Y-%m-%d - %H.%M.%S")
-
-        # Set logs directory path
-        output_dirpath = os.path.join(s.config.data_path, dir_name)
-        os.makedirs(output_dirpath, exist_ok=True)
-
-        # Get source file name and extension
-        base_name = os.path.basename(src_file)
-        name, ext = os.path.splitext(base_name)
-
-        # Set log file path
-        output_filepath = os.path.join(output_dirpath, f"{current_datetime} - {name}.log")
-
-        return output_filepath
-
     # Calculate average subtitle shift
     @staticmethod
     def calc_avg_shift(output):
@@ -74,20 +55,16 @@ class Sushi:
                 total_shift += shift_val
                 shift_count += 1
         
-        # Get average shift 
         avg_shift = round(total_shift / shift_count, 3)
 
-        # Return average shift with three decimal places regardless of value
         return f"{avg_shift:.3f} sec"
 
     # Run Sushi as a subprocess to capture output
     @staticmethod
     def run(job):
-        # Get log file path only if enabled
-        if s.config.save_sushi_logs:
-            log_path = Sushi.set_log_path(job.src_file, "Sushi Logs")
+        if settings.config.save_sushi_logs:
+            log_path = SubProcessLogger.set_log_path(job.src_file, "Sushi Logs")
 
-        # Get sushi arguments
         args = Sushi.set_args(job)
 
         # Pipe output to stderr to avoid collision with spinner in stdout
@@ -99,20 +76,17 @@ class Sushi:
             errors="replace"
         )
         
-        # Initialize and start spinner
         with yaspin(text=f"Job {job.idx}", color="cyan", timer=True) as sp:
             # Get subprocess output
             _, stderr = sushi.communicate()
 
             # Save output to log file only if enabled
-            if s.config.save_sushi_logs:
-                with open(log_path, "w", encoding="utf-8") as fil:
-                    fil.write(stderr)
+            if settings.config.save_sushi_logs:
+                SubProcessLogger.save_log_output(log_path, stderr)
 
             # Split output into list
             lines = stderr.strip().splitlines()
 
-            # Check if task completed succesfully
             if sushi.returncode == 0:
                 job.status = Status.COMPLETED
                 job.result = Sushi.calc_avg_shift(lines)
