@@ -80,8 +80,14 @@ class JobQueue:
                 self.save()  # Update data file after job execution
 
             # If enabled and mkvmerge is installed, merge files for completed jobs
-            if s.config.merge_files_after_execution:
+            has_video_jobs = any(
+                job.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL)
+                for job in jobs_to_run
+            )
+            
+            if s.config.merge_files_after_execution and has_video_jobs:
                 if cu.is_app_installed("mkvmerge"):
+                    
                     self.merge_completed_video_tasks(jobs_to_run)
                 else:
                     cu.print_error("\nMKVMerge could not be found. Video files cannot be merged.")
