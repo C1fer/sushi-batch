@@ -2,18 +2,19 @@ import json
 from os import path
 
 from . import console_utils as cu
-from . import settings as s
+from . import settings
 from .enums import Status, Task
 from .json_hooks import JobDecoder, JobEncoder
 from .mkv_merge import MKVMerge
 from .streams import Stream
 from .sub_sync import Sushi
+from .sub_resample import SubResampler
 
 
 class JobQueue:
     def __init__(self, contents=[]):
         self.contents = contents
-        self.file_path = path.join(s.config.data_path, "queue_data.json")
+        self.file_path = path.join(settings.config.data_path, "queue_data.json")
 
     # Save queue contents to JSON file
     def save(self):
@@ -84,10 +85,9 @@ class JobQueue:
                 job.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL)
                 for job in jobs_to_run
             )
-            
-            if s.config.merge_files_after_execution and has_video_jobs:
+
+            if settings.config.merge_files_after_execution and has_video_jobs:
                 if cu.is_app_installed("mkvmerge"):
-                    
                     self.merge_completed_video_tasks(jobs_to_run)
                 else:
                     cu.print_error("\nMKVMerge could not be found. Video files cannot be merged.")
@@ -103,16 +103,31 @@ class JobQueue:
             and job.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL)
             and job.merged == False
         ]
-        
-        if completed_jobs:
-            cu.print_subheader("Merging files")
-            for job in completed_jobs:
-                MKVMerge.run(job)
-                self.save()
-            input("\nPress Enter to go back... ")
-        else:
+
+        if not completed_jobs:
             cu.print_error("No completed jobs to merge!")
-            
+            return
+        
+        cu.print_subheader("Merging files")
+
+        can_resample = settings.config.resample_subs_on_merge
+
+        if can_resample and not SubResampler.is_installed:
+            cu.print_error("Aegisub-CLI could not be found. Subtitle resampling is disabled.")
+
+        for job in completed_jobs:
+            if can_resample and SubResampler.is_installed:
+                resample_result = SubResampler.run(job)
+                MKVMerge.run(job, use_resampled_sub=resample_result)
+                if not resample_result:
+                    print(f"{cu.fore.LIGHTYELLOW_EX}Subtitle could not be resampled. Merged synced subtitle instead.")
+            else:
+                MKVMerge.run(job)
+            self.save()
+
+        input("\nPress Enter to go back... ")
+           
+           
     # Clear queue contents
     def clear(self):
         self.contents.clear()

@@ -16,10 +16,11 @@ class Settings():
 
         # General settings
         self.merge_files_after_execution = True
+        self.resample_subs_on_merge = False
         self.save_sushi_logs = True
+        self.save_aegisub_resample_logs = False
         self.save_mkvmerge_logs = False
         
-
         # Source file settings
         self.src_copy_attachments = True
         self.src_copy_chapters = False
@@ -82,7 +83,9 @@ class Settings():
         tb.add_rows(
             [
                 [Section.GEN.value, "Merge synced sub automatically", self.set_value_format(self.merge_files_after_execution)], 
-                [Section.GEN.value, "Save Sushi logs", self.set_value_format(self.save_sushi_logs)]  
+                [Section.GEN.value, "Resample synced sub resolution before merging", self.set_value_format(self.resample_subs_on_merge)],
+                [Section.GEN.value, "Save Sushi logs", self.set_value_format(self.save_sushi_logs)],
+                [Section.GEN.value, "Save Aegisub-CLI resample logs", self.set_value_format(self.save_aegisub_resample_logs)]
             ]
         )
         tb.add_row([Section.GEN.value, "Save MKVMerge logs", self.set_value_format(self.save_mkvmerge_logs)], divider=True)

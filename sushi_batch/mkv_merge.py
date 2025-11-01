@@ -34,7 +34,7 @@ class MKVMerge:
 
     # Set mkvmerge arguments based on settings
     @staticmethod
-    def set_args(job):
+    def set_args(job, use_resampled_sub=False):
         # Set output file path
         output_file = MKVMerge.set_out_filepath(job.dst_file)
 
@@ -94,15 +94,22 @@ class MKVMerge:
             args.extend(["--default-track-flag", "0: 0"])
         if not s.config.sub_forced_flag:
             args.extend(["--forced-display-flag", "0: 0"])
-        args.append(f"{job.dst_file}.sushi.ass")
+
+        select_sub_file = (
+            f"{job.dst_file}.sushi_resampled.ass"
+            if use_resampled_sub
+            else f"{job.dst_file}.sushi.ass"
+        )   
+
+        args.append(select_sub_file)
 
         return args
 
     # Generate new video file with the specified args
     @staticmethod
-    def run(job):
+    def run(job, use_resampled_sub=False):
         # Get arguments
-        args = MKVMerge.set_args(job)
+        args = MKVMerge.set_args(job, use_resampled_sub)
         output_file = args[2]
 
         if s.config.save_mkvmerge_logs:
