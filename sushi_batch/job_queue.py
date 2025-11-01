@@ -3,6 +3,7 @@ from os import path
 
 from . import console_utils as cu
 from . import settings
+from . import utils
 from .enums import Status, Task
 from .json_hooks import JobDecoder, JobEncoder
 from .mkv_merge import MKVMerge
@@ -87,7 +88,7 @@ class JobQueue:
             )
 
             if settings.config.merge_files_after_execution and has_video_jobs:
-                if cu.is_app_installed("mkvmerge"):
+                if utils.is_app_installed("mkvmerge"):
                     self.merge_completed_video_tasks(jobs_to_run)
                 else:
                     cu.print_error("\nMKVMerge could not be found. Video files cannot be merged.")

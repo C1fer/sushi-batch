@@ -1,16 +1,7 @@
-import sys
-from importlib.util import find_spec
+from . import utils
+utils.check_required_packages() # Check if required packages are installed
 
-# Check if required packages are installed
-packages = ["art", "colorama", "sushi", "prettytable", "yaspin"]
-for pkg in packages:
-    if find_spec(pkg) is None:
-        print(
-            "\033[91m{}\033[00m".format(
-                f"Package {pkg} is not installed. Install all dependencies before running the tool"
-            )
-        )
-        sys.exit(1)
+import sys
 
 from art import text2art
 
@@ -19,12 +10,25 @@ from . import files
 from . import queue_manager as qm
 from . import settings as s
 from .enums import Task
+from .ffmpeg import FFmpeg
 from .job_queue import JobQueue
-from importlib.metadata import version
 
+VERSION = "0.2.0"
 
-# Show main menu
-def main_menu():
+def handle_sync_option_selected(task):
+    jobs = None
+
+    if task in (Task.AUDIO_SYNC_DIR, Task.VIDEO_SYNC_DIR):
+        src, dst = files.get_directories()
+        if src and dst:
+            jobs = files.search_directories(src, dst, task)
+    else:
+        jobs = files.select_files(task)
+
+    if jobs:
+        qm.temp_queue_options(JobQueue(jobs), task)
+
+def show_main_menu():
     options = {
         "1": "Video-based Sync  (Directory Select)",
         "2": "Video-based Sync  (File Select)",
@@ -35,32 +39,16 @@ def main_menu():
         "7": "Clear Logs",
         "8": "Exit",
     }
+
+    header = text2art("Sushi Batch") + f"Version: {VERSION}"
+
     cu.clear_screen()
-    header = text2art("Sushi Batch") + f"Version: {version('sushi-batch')}"
-    cu.print_header(f"{header}")
+    cu.print_header(header)
     cu.show_menu_options(options)
 
 
-def run_modes(task):
-    jobs = None
-    
-    # Get jobs from file/folder selection
-    if task in (Task.AUDIO_SYNC_DIR, Task.VIDEO_SYNC_DIR):
-        src, dst = files.get_directories()
-        if src is not None and dst is not None:
-            jobs = files.search_directories(src, dst, task)
-    else:
-        jobs = files.select_files(task)
-
-    # Show options if job list is not empty
-    if jobs:
-        temp_queue = JobQueue(jobs)
-        qm.temp_queue_options(temp_queue, task)
-
-
 def main():
-    # Exit with error message if FFmpeg is not found
-    if not cu.is_app_installed("ffmpeg"):
+    if not FFmpeg.is_installed:
         cu.print_error("FFmpeg could not be found! \nInstall or add the program to PATH before running the tool", False)
         sys.exit(1)
 
@@ -68,24 +56,25 @@ def main():
     s.config.handle_load()
     qm.main_queue.load()
 
-    # Allow mode selection only if FFmpeg is found
+    sync_tasks = {
+        1: (Task.VIDEO_SYNC_DIR, "Video-based Sync (Directory mode)"),
+        2: (Task.VIDEO_SYNC_FIL, "Video-based Sync (File-select mode)"),
+        3: (Task.AUDIO_SYNC_DIR, "Audio-based Sync (Directory mode)"),
+        4: (Task.AUDIO_SYNC_FIL, "Audio-based Sync (File-select mode)"),
+    } 
+
     while True:
-        main_menu()
+        show_main_menu()
         selected_option = cu.get_choice(1, 8)
-        cu.clear_screen()
+        
+        if selected_option not in (7, 8):
+            cu.clear_screen()   
+
         match selected_option:
-            case 1:
-                cu.print_header("Video-based Sync (Directory mode)")
-                run_modes(Task.VIDEO_SYNC_DIR)
-            case 2:
-                cu.print_header("Video-based Sync (File-select mode)")
-                run_modes(Task.VIDEO_SYNC_FIL)
-            case 3:
-                cu.print_header("Audio-based Sync (Directory mode)")
-                run_modes(Task.AUDIO_SYNC_DIR)
-            case 4:
-                cu.print_header("Audio-based Sync (File-select mode)")
-                run_modes(Task.AUDIO_SYNC_FIL)
+            case 1 | 2 | 3 | 4:
+                task, header = sync_tasks[selected_option]
+                cu.print_header(header)
+                handle_sync_option_selected(task)
             case 5:
                 if qm.main_queue.contents:
                     qm.main_queue_options(Task.JOB_QUEUE)
@@ -95,11 +84,11 @@ def main():
                 s.config.handle_options()
             case 7:
                 if cu.confirm_action():
-                    cu.clear_logs(s.config.data_path)
+                    utils.clear_logs(s.config.data_path)
                     cu.print_success("Logs cleared.")
             case 8:
                 sys.exit(0)
 
-
+    
 if __name__ == "__main__":
     main()

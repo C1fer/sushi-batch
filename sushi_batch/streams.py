@@ -1,7 +1,7 @@
 import re
-import subprocess
 
 from . import console_utils as cu
+from .ffmpeg import FFmpeg
 
 
 class Stream:
@@ -16,26 +16,11 @@ class Stream:
     def from_tuple(cls, tpl):
         return Stream(*tpl)
 
-    # Get streams contained in file
-    @staticmethod
-    def get_probe_output(filepath):
-        process = subprocess.Popen(
-            ["ffmpeg", "-hide_banner", "-i", filepath],
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-            encoding='utf-8',
-            errors="ignore"
-        )
-        _, err = process.communicate()
-        return err
-
     # Get available streams from file probe output
     @staticmethod
     def get_streams(file, stream_type):
-        # Probe specified file
-        probe_output = Stream.get_probe_output(file)
+        probe_output = FFmpeg.get_probe_output(file)
 
-        # Set stream type to filter by
         stream_type_pattern = "Audio" if stream_type == "audio" else "Subtitle"
 
         streams = re.findall(

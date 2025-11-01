@@ -1,4 +1,5 @@
 from . import console_utils as cu
+from . import utils
 from .job_queue import JobQueue
 
 main_queue = JobQueue()
@@ -44,7 +45,7 @@ def main_queue_options(task):
                         if not main_queue.contents:
                             break
                 case 4:
-                    if cu.is_app_installed("mkvmerge"):
+                    if utils.is_app_installed("mkvmerge"):
                         main_queue.merge_completed_video_tasks(main_queue.contents)
                     else:
                         cu.print_error("\nMKVMerge could not be found!")

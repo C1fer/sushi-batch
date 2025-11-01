@@ -1,10 +1,10 @@
 import subprocess
 from .subprocess_logger import SubProcessLogger
 from . import settings
-from . import console_utils as cu
+from . import utils
 
 class SubResampler:
-    is_installed = cu.is_app_installed("aegisub-cli")
+    is_installed = utils.is_app_installed("aegisub-cli")
     
     @staticmethod
     def get_args(job):
