@@ -1,10 +1,13 @@
 from os import path, walk
 
+from ..models.enums import FileTypes, Formats, Task
+from ..models.job import Job
+from ..models.streams import Stream
+
+
 from . import console_utils as cu
-from .enums import FileTypes, Formats, Task
 from .file_dialogs import FileDialog
-from .job import Job
-from .streams import Stream
+
 
 
 def get_directories():

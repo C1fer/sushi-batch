@@ -1,7 +1,10 @@
 import subprocess
+
+from ..models import settings
+from ..utils import utils
+
 from .subprocess_logger import SubProcessLogger
-from . import settings
-from . import utils
+
 
 class SubResampler:
     is_installed = utils.is_app_installed("aegisub-cli")

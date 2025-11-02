@@ -1,14 +1,15 @@
 import json
 from os import path
 
-from . import console_utils as cu
+from ..utils import console_utils as cu
+from ..utils.json_utils import JobDecoder, JobEncoder
+from ..external.mkv_merge import MKVMerge
+from ..external.sub_sync import Sushi
+from ..external.sub_resample import SubResampler
+
 from . import settings
-from .enums import Status, Task, JobSelection
-from .json_hooks import JobDecoder, JobEncoder
-from .mkv_merge import MKVMerge
 from .streams import Stream
-from .sub_sync import Sushi
-from .sub_resample import SubResampler
+from .enums import Status, Task, JobSelection
 
 
 class JobQueue:

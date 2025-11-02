@@ -3,9 +3,10 @@ from os import makedirs, path
 
 from yaspin import yaspin
 
-from . import console_utils as cu
-from . import utils
-from . import settings as s
+from ..utils import console_utils as cu
+from ..utils import utils
+from ..models import settings as s
+
 from .subprocess_logger import SubProcessLogger
 
 

@@ -1,7 +1,7 @@
 import re
 
-from . import console_utils as cu
-from .ffmpeg import FFmpeg
+from ..utils import console_utils as cu
+from ..external.ffmpeg import FFmpeg
 
 
 class Stream:

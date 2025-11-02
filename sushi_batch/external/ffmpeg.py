@@ -1,6 +1,6 @@
 import subprocess 
 
-from . import utils
+from ..utils import utils
 
 
 class FFmpeg:

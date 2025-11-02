@@ -1,17 +1,17 @@
-from . import utils
+from .utils import utils
 utils.check_required_packages() # Check if required packages are installed
 
 import sys
 
 from art import text2art
 
-from . import console_utils as cu
-from . import files
-from . import queue_manager as qm
-from . import settings as s
-from .enums import Task
-from .ffmpeg import FFmpeg
-from .job_queue import JobQueue
+from .utils import console_utils as cu
+from .utils import file_utils
+from .utils import queue_manager as qm
+from .models import settings as s
+from .models.enums import Task
+from .external.ffmpeg import FFmpeg
+from .models.job_queue import JobQueue
 
 VERSION = "0.2.0"
 
@@ -19,11 +19,11 @@ def handle_sync_option_selected(task):
     jobs = None
 
     if task in (Task.AUDIO_SYNC_DIR, Task.VIDEO_SYNC_DIR):
-        src, dst = files.get_directories()
+        src, dst = file_utils.get_directories()
         if src and dst:
-            jobs = files.search_directories(src, dst, task)
+            jobs = file_utils.search_directories(src, dst, task)
     else:
-        jobs = files.select_files(task)
+        jobs = file_utils.select_files(task)
 
     if jobs:
         qm.temp_queue_options(JobQueue(jobs), task)

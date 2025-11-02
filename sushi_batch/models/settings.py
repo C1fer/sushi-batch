@@ -3,7 +3,8 @@ from os import makedirs, path
 
 from prettytable import PrettyTable
 
-from . import console_utils as cu
+from ..utils import console_utils as cu
+
 from .enums import Section
 
 

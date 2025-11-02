@@ -1,7 +1,7 @@
 from datetime import datetime
 from os import makedirs, path
 
-from . import settings 
+from ..models import settings 
 
 class SubProcessLogger:
     @staticmethod

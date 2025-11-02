@@ -1,7 +1,7 @@
 from json import JSONDecoder, JSONEncoder
 
-from .enums import Status, Task
-from .job import Job
+from ..models.enums import Status, Task
+from ..models.job import Job
 
 
 class JobEncoder(JSONEncoder):

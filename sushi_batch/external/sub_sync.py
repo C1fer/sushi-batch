@@ -2,8 +2,9 @@ import subprocess
 
 from yaspin import yaspin
 
-from . import settings
-from .enums import Status, Task
+from ..models import settings
+from ..models.enums import Status, Task
+
 from .subprocess_logger import SubProcessLogger
 
 

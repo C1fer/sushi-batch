@@ -1,7 +1,9 @@
+from ..models.job_queue import JobQueue
+from ..external.mkv_merge import MKVMerge
+from ..models.enums import JobSelection
+
 from . import console_utils as cu
-from .job_queue import JobQueue
-from .mkv_merge import MKVMerge
-from .enums import JobSelection
+
 
 main_queue = JobQueue()
 
@@ -70,8 +72,8 @@ def temp_queue_options(temp_queue, task):
 
         match choice:
             case 1 if cu.confirm_action():
-                main_queue.add_jobs("all", temp_queue.contents, task)
-                temp_queue.run_jobs("all")
+                main_queue.add_jobs(JobSelection.ALL, temp_queue.contents, task)
+                temp_queue.run_jobs(JobSelection.ALL)
                 break
             case 2:
                 selected_jobs = temp_queue.select_jobs("Select jobs to run (e.g: 1, 5-10): ")
@@ -80,7 +82,7 @@ def temp_queue_options(temp_queue, task):
                     temp_queue.run_jobs(selected_jobs)
                     break
             case 3 if cu.confirm_action():
-                main_queue.add_jobs("all", temp_queue.contents, task)
+                main_queue.add_jobs(JobSelection.ALL, temp_queue.contents, task)
                 cu.print_success(f"{len(temp_queue.contents)} job(s) added to queue.")
                 break
             case 4:
