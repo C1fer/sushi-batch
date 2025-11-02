@@ -103,20 +103,20 @@ class MKVMerge:
 
     @staticmethod
     def run(job, use_resampled_sub=False):
-        args = MKVMerge._get_merge_args(job, use_resampled_sub)
-        output_file = args[2]
+        with yaspin(text=f"{path.basename(output_file)}", color="magenta", timer=True) as sp:
+            try:     
+                args = MKVMerge._get_merge_args(job, use_resampled_sub)
+                output_file = args[2]
+                
+                mkv_merge = subprocess.Popen(
+                    args=args,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                )
 
-        try:     
-            mkv_merge = subprocess.Popen(
-                args=args,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-            )
-
-            with yaspin(text=f"{path.basename(output_file)}", color="magenta", timer=True) as sp:
                 stdout, _ = mkv_merge.communicate()
 
                 if s.config.save_mkvmerge_logs:
@@ -138,5 +138,5 @@ class MKVMerge:
                         error = [x for x in lines if x.startswith("Error:")]
                         sp.fail("❌")
                         sp.write(f"{cu.fore.LIGHTRED_EX}{error[0]}\n")
-        except Exception as e:
-            cu.print_error(f"Merge error: {e}")
+            except Exception as e:
+                cu.print_error(f"Merge error: {e}")

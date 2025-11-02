@@ -49,17 +49,17 @@ class Sushi:
 
     @staticmethod
     def run(job):
-        args = Sushi._get_args(job)
-        try: 
-            sushi = subprocess.Popen(
-                args=args,
-                stderr=subprocess.PIPE,  # Pipe output to stderr to avoid collision with spinner in stdout
-                text=True,
-                encoding="utf-8",
-                errors="replace"
-            )
-        
-            with yaspin(text=f"Job {job.idx}", color="cyan", timer=True) as sp:
+        with yaspin(text=f"Job {job.idx}", color="cyan", timer=True) as sp:
+            try: 
+                args = Sushi._get_args(job)
+                sushi = subprocess.Popen(
+                    args=args,
+                    stderr=subprocess.PIPE,  # Pipe output to stderr to avoid collision with spinner in stdout
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace"
+                )
+            
                 _, stderr = sushi.communicate()
 
                 if settings.config.save_sushi_logs:
@@ -73,9 +73,8 @@ class Sushi:
                     job.result = Sushi._calc_avg_shift(lines)
                     sp.ok("✅")
                 else:
-                    job.status = Status.FAILED
-                    job.result = lines[-1]
-                    sp.fail("❌")
-        except Exception as e:
-            job.status = Status.FAILED
-            job.result = str(e)
+                    raise subprocess.SubprocessError(lines[-1])
+            except Exception as e:
+                sp.fail("❌")
+                job.status = Status.FAILED
+                job.result = str(e)
