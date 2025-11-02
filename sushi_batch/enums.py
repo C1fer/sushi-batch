@@ -53,3 +53,8 @@ class Section(Enum):
     SRC = "Source File"
     DST = "Destination File"
     SUB = "Synced subtitle"
+
+
+class JobSelection(Enum):
+    ALL = "all"
+    SELECTED = "selected"

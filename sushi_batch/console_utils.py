@@ -9,32 +9,45 @@ fore = Fore
 style_reset = Style.RESET_ALL
 
 
-# Clear command line screen
-def clear_screen():
-    os.system("cls" if os.name == "nt" else "clear")
+def _print_colored(message, color, nl_before=False):
+    """Small helper to print a colored message, optionally prefixed by a newline."""
+    if nl_before:
+        print()
+    print(f"{color}{message}{style_reset}")
 
 
 def print_header(message):
-    return print(f"{fore.CYAN}{message}")
+    _print_colored(message, fore.CYAN)
 
 
 def print_subheader(message):
-    return print(f"\n{fore.YELLOW}{message}")
+    _print_colored(message, fore.YELLOW, nl_before=True)
 
 
 def print_error(message, wait=True):
-    print(f"{fore.LIGHTRED_EX}{message}")
+    _print_colored(message, fore.LIGHTRED_EX)
     if wait:
         sleep(1)
 
 
-def print_success(message):
-    print(f"\n{fore.LIGHTGREEN_EX}{message}")
-    sleep(1)
+def print_success(message, wait=True):
+    _print_colored(message, fore.LIGHTGREEN_EX, nl_before=True)
+    if wait:
+        sleep(1)
 
 
-# Ask for user confirmation
+def clear_screen():
+    os.system("cls" if os.name == "nt" else "clear")
+
+
+def show_menu_options(options):
+    print()
+    for key, val in options.items():
+        print(f"{key}) {val}")
+
+
 def confirm_action(prompt="Are you sure? (Y/N): "):
+    """Prompt user for a yes/no confirmation."""
     while True:
         confirm = input(f"{fore.CYAN}{prompt}").upper()
         match confirm:
@@ -42,12 +55,12 @@ def confirm_action(prompt="Are you sure? (Y/N): "):
                 return True
             case "N":
                 return False
-            case others:
+            case _:
                 print_error("Wrong input!\n", False)
 
 
-# Get option selected by user
 def get_choice(start, end, prompt="Select an option: "):
+    """Prompt user to select an option within a specified range."""
     while True:
         try:
             choice = int(input(f"\n{fore.LIGHTBLACK_EX}{prompt}"))
@@ -59,10 +72,3 @@ def get_choice(start, end, prompt="Select an option: "):
                 return choice
             else:
                 print_error("Invalid choice! Please select a valid option.", False)
-
-
-# Show formatted menu options
-def show_menu_options(options):
-    print()
-    for key, val in options.items():
-        print(f"{key}) {val}")

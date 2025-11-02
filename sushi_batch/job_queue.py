@@ -3,8 +3,7 @@ from os import path
 
 from . import console_utils as cu
 from . import settings
-from . import utils
-from .enums import Status, Task
+from .enums import Status, Task, JobSelection
 from .json_hooks import JobDecoder, JobEncoder
 from .mkv_merge import MKVMerge
 from .streams import Stream
@@ -17,55 +16,52 @@ class JobQueue:
         self.contents = contents
         self.file_path = path.join(settings.config.data_path, "queue_data.json")
 
-    # Save queue contents to JSON file
     def save(self):
-        # Set JSON file path
+        """Save queue contents to JSON file"""
         with open(self.file_path, "w", encoding="utf-8") as data_file:
             json.dump(self.contents, data_file, cls=JobEncoder, indent=4)
 
-    # Load queue contents from JSON file
     def load(self):
+        """Load queue contents from JSON file"""
         if path.exists(self.file_path):
-            # Return jobs list if data file is found
             with open(self.file_path, "r", encoding="utf-8") as data_file:
-                # Read JSON file
                 self.contents = json.load(data_file, cls=JobDecoder)
 
-    # Add selected jobs to queue
     def add_jobs(self, selected_jobs_indexes, unqueued_jobs, task):
-        # Queue all jobs or those selected by user
-        if selected_jobs_indexes == "all":
-           jobs_to_queue = unqueued_jobs.copy()
-        else:
-            jobs_to_queue = [unqueued_jobs[job_idx - 1] for job_idx in selected_jobs_indexes]
-            
-        # Allow setting audio and subtitle track indexes for video-sync tasks
+        """Add selected jobs to queue"""
+        jobs_to_queue = (
+            unqueued_jobs.copy()
+            if selected_jobs_indexes == JobSelection.ALL
+            else [unqueued_jobs[job_idx - 1] for job_idx in selected_jobs_indexes]
+        )
+
         if task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL):
-            if cu.confirm_action("\nSpecify audio and sub track indexes for job(s)? (Y/N): "):
-                self.set_stream_indexes(jobs_to_queue, task)
-            else:
-                for job in jobs_to_queue:
-                    indexes = JobQueue.get_indexes(job, False)
-                    job.__dict__.update(indexes)
-                    
-        # Add to queue and update data file
+            self._set_video_job_indexes(jobs_to_queue)
+
         self.contents.extend(jobs_to_queue)
         self.save()
 
-    # Remove selected jobs from queue
-    def remove_jobs(self, selected_jobs_indexes):
-        # Remove jobs from queue in reverse order to avoid out of bounds error
-        for job_idx in sorted(selected_jobs_indexes, reverse=True):
-            # Decrease index by 1 to match real job index
-            del self.contents[job_idx - 1]
+    def _set_video_job_indexes(self, jobs_to_queue):
+        """Set audio and subtitle track indexes for video sync jobs"""
+        if cu.confirm_action("\nSpecify audio and sub track indexes for job(s)? (Y/N): "):
+            self._set_stream_indexes(jobs_to_queue)
+        else:
+            for job in jobs_to_queue:
+                indexes = self._get_stream_indexes(job, False)
+                job.__dict__.update(indexes)
 
-        # Update JSON data file
+    def remove_jobs(self, selected_jobs_indexes):
+        """Remove selected jobs from queue"""
+        self.contents = [
+            job
+            for idx, job in enumerate(self.contents, start=1)
+            if idx not in selected_jobs_indexes
+        ]
         self.save()
 
-    # Run user-selected jobs
     def run_jobs(self, selected_jobs_indexes):
-        # Get jobs to run
-        if selected_jobs_indexes == "all":
+        """ Run jobs selected by user"""
+        if selected_jobs_indexes == JobSelection.ALL:
             jobs_to_run = [job for job in self.contents if job.status == Status.PENDING]
         else:
             jobs_to_run = [
@@ -73,42 +69,37 @@ class JobQueue:
                 for job_idx in selected_jobs_indexes
                 if self.contents[job_idx - 1].status == Status.PENDING
             ]
-        
-        if jobs_to_run: 
-            # Run sync on selected jobs 
-            cu.print_subheader("Running jobs")           
-            for job in jobs_to_run:
-                Sushi.run(job)
-                self.save()  # Update data file after job execution
 
-            # If enabled and mkvmerge is installed, merge files for completed jobs
-            has_video_jobs = any(
-                job.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL)
-                for job in jobs_to_run
-            )
+        if not jobs_to_run:
+            cu.print_error("\nNo pending jobs to run!") 
+            return
 
-            if settings.config.merge_files_after_execution and has_video_jobs:
-                if utils.is_app_installed("mkvmerge"):
-                    self.merge_completed_video_tasks(jobs_to_run)
-                else:
-                    cu.print_error("\nMKVMerge could not be found. Video files cannot be merged.")
-        else:
-            cu.print_error("\nNo pending jobs to run!")
-            
-    # Generate a new video file from completed video tasks
+        cu.print_subheader("Running jobs")           
+        for job in jobs_to_run:
+            Sushi.run(job)
+            self.save() 
+
+        contains_video_tasks = any(job.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL) for job in jobs_to_run)
+
+        if settings.config.merge_files_after_execution and contains_video_tasks:
+            if MKVMerge.is_installed:
+                self.merge_completed_video_tasks(jobs_to_run)
+            else:
+                cu.print_error("\nMKVMerge could not be found. Video files cannot be merged.")
+
     def merge_completed_video_tasks(self, job_list):
+        """ Generate a new video file from completed video tasks """
         completed_jobs = [
-            job 
-            for job in job_list
+            job for job in job_list
             if job.status == Status.COMPLETED 
             and job.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL)
-            and job.merged == False
+            and not job.merged
         ]
 
         if not completed_jobs:
             cu.print_error("No completed jobs to merge!")
             return
-        
+
         cu.print_subheader("Merging files")
 
         can_resample = settings.config.resample_subs_on_merge
@@ -127,15 +118,14 @@ class JobQueue:
             self.save()
 
         input("\nPress Enter to go back... ")
-           
-           
-    # Clear queue contents
+
     def clear(self):
+        """ Clear queue contents """
         self.contents.clear()
         self.save()
 
-    # Remove jobs without Pending Status
     def clear_completed_jobs(self):
+        """ Clear completed and failed jobs from queue """
         jobs_to_remove = [
             idx
             for idx, (job) in enumerate(self.contents, start=1)
@@ -148,33 +138,27 @@ class JobQueue:
         else:
             cu.print_error("No completed jobs to clear!")
 
-    # Select and validate jobs selected by user
     def select_jobs(self, prompt):
-        # Get selected indexes from user input
+        """ Select jobs from queue based on user input """
         user_input = input(f"\n{cu.fore.LIGHTBLACK_EX}{prompt}")
         selected_jobs_indexes = user_input.replace(" ", "").split(",")
 
-        # Store job queue length for validations
         valid_job_indexes = []
         job_list_range = range(1, len(self.contents) + 1)
 
         for idx in selected_jobs_indexes:
-            # Check if item is a number
             if idx.isnumeric():
                 job_index = int(idx)
-                # Add to valid indexes list if found on range
                 if job_index in job_list_range:
                     valid_job_indexes.append(job_index)
 
             # Check if item is a range of jobs (e.g., "15-20")
             elif "-" in idx:
                 start, end = map(int, idx.split("-"))
-                # Increase end index by 1 to match range max number
                 for job_index in range(start, end + 1):
                     if job_index in job_list_range:
                         valid_job_indexes.append(job_index)
 
-        # Return valid indexes list if not empty
         if valid_job_indexes:
             valid_job_indexes.sort()
             print(f"{cu.fore.LIGHTYELLOW_EX}Selected jobs: {valid_job_indexes}\n")
@@ -183,17 +167,14 @@ class JobQueue:
             cu.print_error("Invalid choice! Please select valid jobs.")
             return None
 
-    # Allow selecting a stream index
-    @staticmethod
-    def get_stream_choice(streams, prompt):
+    def _get_stream_choice(self, streams, prompt):
+        """"Get user-selected stream from list"""
         Stream.show_streams(streams)
         stream_choice = cu.get_choice(int(streams[0].id), int(streams[-1].id), prompt)
-        return filter(lambda s: int(s.id) == stream_choice, streams).__next__()
-    
-    # Get all stream indexes
-    @staticmethod
-    def get_indexes(job, select_streams):
-        # Get source and destination media streams
+        return next(stream for stream in streams if int(stream.id) == stream_choice)
+
+    def _get_stream_indexes(self, job, select_streams):
+        """"Get source and destination media stream indexes"""
         src_aud_streams = Stream.get_streams(job.src_file, "audio")
         src_sub_streams = Stream.get_streams(job.src_file, "subtitle")
         dst_aud_streams = Stream.get_streams(job.dst_file, "audio")
@@ -202,15 +183,12 @@ class JobQueue:
             print(f"{cu.fore.LIGHTYELLOW_EX}\nJob {job.idx}")
 
         def _select_stream(streams, prompt):
-            if select_streams:
-                return JobQueue.get_stream_choice(streams, prompt)
-            else:
-                return streams[0]
+            return self._get_stream_choice(streams, prompt) if select_streams else streams[0]
 
         src_aud_selected = _select_stream(src_aud_streams, "Select a source audio stream: ")
         src_sub_selected = _select_stream(src_sub_streams, "Select a source subtitle stream: ")
         dst_aud_selected = _select_stream(dst_aud_streams, "Select a destination audio stream: ")
-        indexes = {
+        streams_info = {
             "src_aud_id": src_aud_selected.id,
             "src_aud_display": src_aud_selected.display_name,
             "dst_aud_id": dst_aud_selected.id,
@@ -220,37 +198,32 @@ class JobQueue:
             "src_sub_lang": Stream.get_stream_lang(src_sub_streams, src_sub_selected.id),
             "src_sub_name": Stream.get_stream_name(src_sub_streams, src_sub_selected.id),
         }
-        return indexes
-    
-    @staticmethod
-    def set_stream_indexes(unqueued_jobs, task):
+        return streams_info
+
+    def _set_stream_indexes(self, unqueued_jobs):
+        """"Set audio and subtitle track indexes for video sync jobs"""
         if len(unqueued_jobs) > 1 and cu.confirm_action("\nSet default stream index for all jobs? (Y/N): "):
-            # Set default track indexes for all jobs
-            default_indexes = JobQueue.get_indexes(unqueued_jobs[0], True) # Use first job as reference
+            default_indexes = self._get_stream_indexes(unqueued_jobs[0], True) # Use first job as reference
             for job in unqueued_jobs:
-                job.__dict__.update(default_indexes) # Update object dict with indexes
+                job.__dict__.update(default_indexes)
         else:
-            # Set track indexes per job
             for job in unqueued_jobs:
-                indexes = JobQueue.get_indexes(job, True)
+                indexes = self._get_stream_indexes(job, True)
                 job.__dict__.update(indexes)
 
-    # Show Job List
     def show(self, task):
+        """ Show Job List contents """
         cu.clear_screen()
 
-        # Show title based on current task
         title = "Job Queue" if task == Task.JOB_QUEUE else "Jobs"
         cu.print_header(f"{title}")
 
-        # Enumerate job list and get the number of the iteration
         for job in self.contents:
             job.idx = self.contents.index(job) + 1
             print(f"\n{cu.fore.LIGHTBLACK_EX}Job {job.idx}")
             print(f"{cu.fore.LIGHTBLUE_EX}Source file: {job.src_file}")
             print(f"{cu.fore.LIGHTYELLOW_EX}Destination file: {job.dst_file}")
 
-            # Don't show field if value is None
             if job.sub_file is not None:
                 print(f"{cu.fore.LIGHTCYAN_EX }Subtitle file: {job.sub_file}")
 
@@ -282,10 +255,9 @@ class JobQueue:
                     case Status.FAILED:
                         print(f"{cu.fore.LIGHTRED_EX}Status: Failed")
                         print(f"{cu.fore.RED}Error: {job.result}")
-                        
+
                 match job.merged:
                     case True:
                         print(f"{cu.fore.LIGHTGREEN_EX}Merged: Yes")
                     case False:
                         print(f"{cu.fore.LIGHTBLACK_EX}Merged: No")
-

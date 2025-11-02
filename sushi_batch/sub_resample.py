@@ -7,7 +7,7 @@ class SubResampler:
     is_installed = utils.is_app_installed("aegisub-cli")
     
     @staticmethod
-    def get_args(job):
+    def _get_args(job):
         return [
             "aegisub-cli",
             f"{job.dst_file}.sushi.ass",
@@ -19,7 +19,7 @@ class SubResampler:
 
     @staticmethod
     def run(job):
-        args = SubResampler.get_args(job)
+        args = SubResampler._get_args(job)
 
         aegisub_resample = subprocess.Popen(
             args=args,

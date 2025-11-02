@@ -13,7 +13,6 @@ class JobEncoder(JSONEncoder):
             return dct
         return super().default(obj) 
 
-
 class JobDecoder(JSONDecoder):
     def __init__(self, **kwargs):
         kwargs.setdefault("object_hook", self.object_hook)
@@ -25,5 +24,4 @@ class JobDecoder(JSONDecoder):
         if "status" in dct:
             dct["status"] = Status[dct["status"]]
 
-        # Return Job instance with modified dict values
         return Job(**dct)
