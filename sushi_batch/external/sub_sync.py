@@ -50,29 +50,32 @@ class Sushi:
     @staticmethod
     def run(job):
         args = Sushi._get_args(job)
-
-        sushi = subprocess.Popen(
-            args=args,
-            stderr=subprocess.PIPE,  # Pipe output to stderr to avoid collision with spinner in stdout
-            text=True,
-            encoding="utf-8",
-            errors="replace"
-        )
+        try: 
+            sushi = subprocess.Popen(
+                args=args,
+                stderr=subprocess.PIPE,  # Pipe output to stderr to avoid collision with spinner in stdout
+                text=True,
+                encoding="utf-8",
+                errors="replace"
+            )
         
-        with yaspin(text=f"Job {job.idx}", color="cyan", timer=True) as sp:
-            _, stderr = sushi.communicate()
+            with yaspin(text=f"Job {job.idx}", color="cyan", timer=True) as sp:
+                _, stderr = sushi.communicate()
 
-            if settings.config.save_sushi_logs:
-                log_path = SubProcessLogger.set_log_path(job.src_file, "Sushi Logs")
-                SubProcessLogger.save_log_output(log_path, stderr)
+                if settings.config.save_sushi_logs:
+                    log_path = SubProcessLogger.set_log_path(job.src_file, "Sushi Logs")
+                    SubProcessLogger.save_log_output(log_path, stderr)
 
-            lines = stderr.strip().splitlines()
+                lines = stderr.strip().splitlines()
 
-            if sushi.returncode == 0:
-                job.status = Status.COMPLETED
-                job.result = Sushi._calc_avg_shift(lines)
-                sp.ok("✅")
-            else:
-                job.status = Status.FAILED
-                job.result = lines[-1]
-                sp.fail("❌")
+                if sushi.returncode == 0:
+                    job.status = Status.COMPLETED
+                    job.result = Sushi._calc_avg_shift(lines)
+                    sp.ok("✅")
+                else:
+                    job.status = Status.FAILED
+                    job.result = lines[-1]
+                    sp.fail("❌")
+        except Exception as e:
+            job.status = Status.FAILED
+            job.result = str(e)

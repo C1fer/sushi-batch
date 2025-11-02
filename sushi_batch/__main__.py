@@ -53,8 +53,11 @@ def main():
         sys.exit(1)
 
     # Load settings and queue contents on startup
-    s.config.handle_load()
-    qm.main_queue.load()
+    try:
+        s.config.handle_load()
+        qm.main_queue.load()
+    except Exception as e:
+        cu.print_error(f"Error initializing app: {e}")
 
     sync_tasks = {
         1: (Task.VIDEO_SYNC_DIR, "Video-based Sync (Directory mode)"),

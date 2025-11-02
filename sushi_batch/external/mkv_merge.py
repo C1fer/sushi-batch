@@ -106,34 +106,37 @@ class MKVMerge:
         args = MKVMerge._get_merge_args(job, use_resampled_sub)
         output_file = args[2]
 
-        mkv_merge = subprocess.Popen(
-            args=args,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-        )
+        try:     
+            mkv_merge = subprocess.Popen(
+                args=args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
 
-        with yaspin(text=f"{path.basename(output_file)}", color="magenta", timer=True) as sp:
-            stdout, _ = mkv_merge.communicate()
+            with yaspin(text=f"{path.basename(output_file)}", color="magenta", timer=True) as sp:
+                stdout, _ = mkv_merge.communicate()
 
-            if s.config.save_mkvmerge_logs:
-                log_path = SubProcessLogger.set_log_path(output_file, "Merge Logs")
-                SubProcessLogger.save_log_output(log_path, stdout)
+                if s.config.save_mkvmerge_logs:
+                    log_path = SubProcessLogger.set_log_path(output_file, "Merge Logs")
+                    SubProcessLogger.save_log_output(log_path, stdout)
 
-            match (mkv_merge.returncode):
-                case 0:
-                    sp.ok("✅")
-                    job.merged = True
-                case 1:
-                    lines = stdout.splitlines()
-                    warnings = "\n".join([x for x in lines if x.startswith("Warning:")])
-                    sp.ok("⚠️ ")
-                    sp.write(f"{cu.fore.LIGHTYELLOW_EX}{warnings}\n")
-                    job.merged = True
-                case 2:
-                    lines = stdout.splitlines()
-                    error = [x for x in lines if x.startswith("Error:")]
-                    sp.fail("❌")
-                    sp.write(f"{cu.fore.LIGHTRED_EX}{error[0]}\n")
+                match (mkv_merge.returncode):
+                    case 0:
+                        sp.ok("✅")
+                        job.merged = True
+                    case 1:
+                        lines = stdout.splitlines()
+                        warnings = "\n".join([x for x in lines if x.startswith("Warning:")])
+                        sp.ok("⚠️ ")
+                        sp.write(f"{cu.fore.LIGHTYELLOW_EX}{warnings}\n")
+                        job.merged = True
+                    case 2:
+                        lines = stdout.splitlines()
+                        error = [x for x in lines if x.startswith("Error:")]
+                        sp.fail("❌")
+                        sp.write(f"{cu.fore.LIGHTRED_EX}{error[0]}\n")
+        except Exception as e:
+            cu.print_error(f"Merge error: {e}")
