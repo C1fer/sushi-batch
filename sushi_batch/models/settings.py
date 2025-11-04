@@ -168,7 +168,7 @@ class Settings():
         """Display options and get user selection"""
         idx = cu.get_choice(1, len(rows), "Select option to modify: ")
     
-        _, sel_option_label = rows[idx - 1][:2]
+        sel_option_label = rows[idx - 1][2]
     
         attr_names = list(self.__dict__)[2:]  # Exclude data_path and file_path
         sel_option = attr_names[idx - 1]
