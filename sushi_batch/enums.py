@@ -2,20 +2,21 @@ from enum import Enum
 
 
 class Formats(Enum):
-    AUDIO = (".aac", ".ac3". ".eac3", ".flac", ".m4a", ".mp3", ".opus", ".pcm", ".wav")
+    AUDIO = (".aac", ".ac3". ".eac3", ".flac", ".m4a", ".mp3", ".ogg", ".opus", ".pcm", ".wav")
     VIDEO = (".avi", ".mp4", ".mkv", ".webm")
     SUBTITLE = (".ass", ".ssa", ".srt")
 
 
 class FileTypes(Enum):
     AUDIO = [
-        "All Audio Formats (*.aac *.ac3 *.eac3 *.flac *.m4a *.mp3 *.opus *.pcm *.wav)",
+        "All Audio Formats (*.aac *.ac3 *.eac3 *.flac *.m4a *.mp3 *.ogg *.opus *.pcm *.wav)",
         "AAC (*.aac)",
         "AC3 (*.ac3)",
         "EAC3 (*.eac3)",
         "FLAC (*.flac)",
         "M4A (*.m4a)",
         "MP3 (*.mp3)",
+        "Ogg (*.ogg)",
         "Opus (*.opus)",
         "PCM (*.pcm)",
         "WAV (*.wav)",
