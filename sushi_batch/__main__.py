@@ -13,7 +13,7 @@ from .models.enums import Task
 from .external.ffmpeg import FFmpeg
 from .models.job_queue import JobQueue
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 
 def handle_sync_option_selected(task):
     jobs = None
