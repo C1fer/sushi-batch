@@ -1,7 +1,4 @@
-import re
-
 from ..utils import console_utils as cu
-from ..external.ffmpeg import FFmpeg
 
 
 class Stream:
@@ -13,25 +10,48 @@ class Stream:
         self.display_name = f"{idx} - {lang}, {info}" if title == "" else f"{idx} - {title}, {lang}, {info}"
 
     @classmethod
-    def from_tuple(cls, tpl):
-        return Stream(*tpl)
-
-    @staticmethod
-    def get_streams(file, stream_type):
+    def get_sub_streams_from_probe(cls, probed_tracks):
         """Get available streams from specified file"""
-        probe_output = FFmpeg.get_probe_output(file)
+        streams = []
 
-        stream_type_pattern = "Audio" if stream_type == "audio" else "Subtitle"
+        for track in probed_tracks:
+            idx = track.get('index')
+            title = track.get('tags', {}).get('title', '')
+            lang = track.get('tags', {}).get('language', 'und')
+            
+            info = ''.join(filter(None, [
+                track.get('codec_name', None),
+                f", {track.get('sample_rate')} Hz" if track.get('sample_rate') else None,
+                f", {track.get('channel_layout')}" if track.get('channel_layout') else None,
+                f", {track.get('bits_per_raw_sample')} bits" if track.get('bits_per_raw_sample') else None,
+                " (forced)" if track.get('disposition', {}).get('forced', 0) == 1 else None,
+                " (default)" if track.get('disposition', {}).get('default', 0) == 1 else None
+            ]))
 
-        streams = re.findall(
-            r"Stream\s\#0:(\d+)(?:\((.*?)\))?.*?{}:\s*(.*?)\s*?\r?\n"
-            r"(?:\s*Metadata:\s*\r?\n"
-            r"\s*title\s*:\s*(.*?)\r?\n)?".format(stream_type_pattern),
-            probe_output,
-            flags=re.VERBOSE,
-        )
-        return [Stream.from_tuple(x) for x in streams]
+            streams.append(Stream(idx, lang, info, title))
+               
+        return streams
+    
+    @classmethod
+    def get_sub_streams_from_probe(cls, probed_tracks):
+        """Get available streams from specified file"""
+        streams = []
 
+        for track in probed_tracks:
+            idx = track.get('index')
+            title = track.get('tags', {}).get('title', '')
+            lang = track.get('tags', {}).get('language', 'und')
+            
+            info = ''.join(filter(None, [
+                track.get('codec_name', None),
+                " (forced)" if track.get('disposition', {}).get('forced', 0) == 1 else None,
+                " (default)" if track.get('disposition', {}).get('default', 0) == 1 else None
+            ]))
+
+            streams.append(Stream(idx, lang, info, title))
+               
+        return streams
+    
     @staticmethod
     def get_stream_lang(streams, stream_id):
         """Get language code of specified stream"""
@@ -47,10 +67,6 @@ class Stream:
             if stream.id == stream_id:
                 return stream.title
             
-    @staticmethod
-    def has_subtitles(file):
-        """Check if specified file has subtitles"""
-        return bool(Stream.get_streams(file, "subtitles"))
     
     @staticmethod
     def show_streams(streams):

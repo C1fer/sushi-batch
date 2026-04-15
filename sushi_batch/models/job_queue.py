@@ -1,6 +1,8 @@
 import json
 from os import path
 
+from sushi_batch.external.ffmpeg import FFmpeg
+
 from ..utils import console_utils as cu
 from ..utils.json_utils import JobDecoder, JobEncoder
 from ..external.mkv_merge import MKVMerge
@@ -175,10 +177,13 @@ class JobQueue:
         return next(stream for stream in streams if int(stream.id) == stream_choice)
 
     def _get_stream_indexes(self, job, select_streams):
+        src_media_info = FFmpeg.get_clean_probe_info(job.src_file)
+        dst_media_info = FFmpeg.get_clean_probe_info(job.dst_file)
+
         """"Get source and destination media stream indexes"""
-        src_aud_streams = Stream.get_streams(job.src_file, "audio")
-        src_sub_streams = Stream.get_streams(job.src_file, "subtitle")
-        dst_aud_streams = Stream.get_streams(job.dst_file, "audio")
+        src_aud_streams = Stream.get_sub_streams_from_probe(src_media_info['audio']) if 'audio' in src_media_info else []
+        src_sub_streams = Stream.get_sub_streams_from_probe(src_media_info['subtitle']) if 'subtitle' in src_media_info else []
+        dst_aud_streams = Stream.get_sub_streams_from_probe(dst_media_info['audio']) if 'audio' in dst_media_info else []
 
         if select_streams:
             print(f"{cu.fore.LIGHTYELLOW_EX}\nJob {job.idx}")
@@ -189,6 +194,7 @@ class JobQueue:
         src_aud_selected = _select_stream(src_aud_streams, "Select a source audio stream: ")
         src_sub_selected = _select_stream(src_sub_streams, "Select a source subtitle stream: ")
         dst_aud_selected = _select_stream(dst_aud_streams, "Select a destination audio stream: ")
+        
         streams_info = {
             "src_aud_id": src_aud_selected.id,
             "src_aud_display": src_aud_selected.display_name,

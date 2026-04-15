@@ -107,9 +107,9 @@ def create_jobs(src_files, dst_files, sub_files, task):
     
     jobs = []
     for idx, (src, dst, sub) in enumerate(zipped_jobs, start=1):
-        if is_video_task and not Stream.has_subtitles(src):
-            cu.print_error(f"Source video {src} does not contain subtitles! Skipping...")
-            continue
+        # if is_video_task and not Stream.has_subtitles(src):
+        #     cu.print_error(f"Source video {src} does not contain subtitles! Skipping...")
+        #     continue
 
         jobs.append(
             Job(
