@@ -1,7 +1,7 @@
 import re
-import subprocess
 
-from . import console_utils as cu
+from ..utils import console_utils as cu
+from ..external.ffmpeg import FFmpeg
 
 
 class Stream:
@@ -16,26 +16,11 @@ class Stream:
     def from_tuple(cls, tpl):
         return Stream(*tpl)
 
-    # Get streams contained in file
-    @staticmethod
-    def get_probe_output(filepath):
-        process = subprocess.Popen(
-            ["ffmpeg", "-hide_banner", "-i", filepath],
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-            encoding='utf-8',
-            errors="ignore"
-        )
-        _, err = process.communicate()
-        return err
-
-    # Get available streams from file probe output
     @staticmethod
     def get_streams(file, stream_type):
-        # Probe specified file
-        probe_output = Stream.get_probe_output(file)
+        """Get available streams from specified file"""
+        probe_output = FFmpeg.get_probe_output(file)
 
-        # Set stream type to filter by
         stream_type_pattern = "Audio" if stream_type == "audio" else "Subtitle"
 
         streams = re.findall(
@@ -47,31 +32,29 @@ class Stream:
         )
         return [Stream.from_tuple(x) for x in streams]
 
-    # Get language code from subtitle stream index
     @staticmethod
     def get_stream_lang(streams, stream_id):
+        """Get language code of specified stream"""
         for stream in streams:
             if stream.id == stream_id:
                 lang = stream.lang if not stream.lang == "" else "und"
                 return lang
 
-    # Get trackname code from subtitle stream index
     @staticmethod
     def get_stream_name(streams, stream_id):
+        """Get title/name of specified stream"""
         for stream in streams:
             if stream.id == stream_id:
                 return stream.title
             
-    # Check if specified file has subtitles
     @staticmethod
     def has_subtitles(file):
-        if Stream.get_streams(file, "subtitles"):
-            return True
-        return False
+        """Check if specified file has subtitles"""
+        return bool(Stream.get_streams(file, "subtitles"))
     
-    # Show list of available streams
     @staticmethod
     def show_streams(streams):
+        """Display available streams for user selection"""
         for stream in streams:
             print(f"{cu.style_reset}{stream.display_name}")
             
