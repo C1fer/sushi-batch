@@ -28,13 +28,13 @@ class Sushi:
             # Sushi defaults to first audio and sub track if index is not provided
             # Use custom track indexes if specified
             if job.src_aud_id is not None:
-                args.extend(["--src-audio", job.src_aud_id])
+                args.extend(["--src-audio", str(job.src_aud_id)])
 
             if job.src_sub_id is not None:
-                args.extend(["--src-script", job.src_sub_id])
+                args.extend(["--src-script", str(job.src_sub_id)])
 
             if job.dst_aud_id is not None:
-                args.extend(["--dst-audio", job.dst_aud_id])
+                args.extend(["--dst-audio", str(job.dst_aud_id)])
 
         return args
 

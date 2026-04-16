@@ -48,7 +48,7 @@ class MKVMerge:
     def _add_destination_file_args(args, job):
         """Add destination file specific arguments."""
         if s.config.dst_copy_audio_tracks:
-            args.extend(["--audio-tracks", job.dst_aud_id])
+            args.extend(["--audio-tracks", str(job.dst_aud_id)])
         if not s.config.dst_copy_attachments:
             args.append("--no-attachments")
         if not s.config.dst_copy_chapters:
