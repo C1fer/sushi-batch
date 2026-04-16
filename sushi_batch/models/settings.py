@@ -22,7 +22,7 @@ class Settings():
         self.file_path = path.join(self.data_path, "settings.json")
 
         # General settings
-        self.queue_theme = QueueTheme.CLASSIC
+        self.queue_theme = QueueTheme.CARD
         self.merge_files_after_execution = True
         self.resample_subs_on_merge = False
         self.save_sushi_logs = True

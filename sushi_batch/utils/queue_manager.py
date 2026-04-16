@@ -175,7 +175,7 @@ def show_queue(queue, current_task):
             show_yaml_queue(queue, current_task)
         case _:
             cu.print_error(f"Unknown queue theme: {current_theme}")
-            show_classic_queue(queue, current_task)
+            show_card_queue(queue, current_task)
 
 def main_queue_options(task):
     while True:
