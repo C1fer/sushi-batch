@@ -88,36 +88,70 @@ def show_card_queue(queued_jobs, current_task):
         status_display = f"[{status_color}{status_icon} {status_label}{cu.fore.LIGHTBLUE_EX}]" if current_task == Task.JOB_QUEUE else ""
         print(f"\n{cu.fore.LIGHTBLUE_EX}┌─ Job {idx} {status_display}")
 
-        lines = [
-            ("Source", f"{cu.fore.LIGHTBLUE_EX}{job.src_file}"),
-            ("Destination", f"{cu.fore.LIGHTYELLOW_EX}{job.dst_file}"),
+        src_audio, src_sub, dst_audio = _get_track_values(job)
+
+        sections = [
+            {
+                "label": "Source",
+                "value": f"{cu.fore.LIGHTBLUE_EX}{job.src_file}",
+                "children": [
+                    ("Audio Track", f"{cu.fore.LIGHTMAGENTA_EX}{src_audio}") if src_audio is not None else None,
+                    ("Sub Track", f"{cu.fore.LIGHTCYAN_EX}{src_sub}") if src_sub is not None else None,
+                ],
+            },
+            {
+                "label": "Destination",
+                "value": f"{cu.fore.LIGHTYELLOW_EX}{job.dst_file}",
+                "children": [
+                    ("Audio Track", f"{cu.fore.YELLOW}{dst_audio}") if dst_audio is not None else None,
+                ],
+            },
         ]
 
         if job.sub_file is not None:
-            lines.append(("Subtitle", f"{cu.fore.LIGHTCYAN_EX}{job.sub_file}"))
-
-        src_audio, src_sub, dst_audio = _get_track_values(job)
-        if src_audio is not None:
-            lines.append(("Src Audio", f"{cu.fore.LIGHTMAGENTA_EX}{src_audio}"))
-        if src_sub is not None:
-            lines.append(("Src Subtitle", f"{cu.fore.LIGHTCYAN_EX}{src_sub}"))
-        if dst_audio is not None:
-            lines.append(("Dst Audio", f"{cu.fore.YELLOW}{dst_audio}"))
+            sections.append(
+                {
+                    "label": "Subtitle",
+                    "value": f"{cu.fore.LIGHTCYAN_EX}{job.sub_file}",
+                }
+            )
 
         if current_task == Task.JOB_QUEUE:
-            lines.append(("Status", f"{status_color}{status_label}"))
+            status_section = {
+                "label": "Status",
+                "value": f"{status_color}{status_label}",
+                "children": [],
+            }
             if job.status == Status.COMPLETED:
-                lines.append(("Avg Shift", f"{detail_color}{job.result}"))
+                status_section["children"].append(("Avg Shift", f"{detail_color}{job.result}"))
                 if job.merged is not None:
                     merge_status = f"{cu.fore.LIGHTGREEN_EX}Yes" if job.merged else "No"
-                    lines.append(("Merged", merge_status))
+                    status_section["children"].append(("Merged", merge_status))
             elif job.status == Status.FAILED:
-                lines.append(("Error", f"{detail_color}{job.result}"))
+                status_section["children"].append(("Error", f"{detail_color}{job.result}"))
+            sections.append(status_section)
+        
+        sections = [
+            {
+                "label": section["label"],
+                "value": section["value"],
+                "children": [child for child in section.get("children", []) if child is not None],
+            }
+            for section in sections
+        ]
 
-        last_idx = len(lines) - 1
-        for line_idx, (label, value) in enumerate(lines):
-            divider = "└─" if line_idx == last_idx else "├─"
-            print(f"{cu.fore.LIGHTBLACK_EX}{divider} {label}: {value}")
+        last_section_idx = len(sections) - 1
+        for sec_idx, section in enumerate(sections):
+            is_last_section = sec_idx == last_section_idx
+            top_divider = "└─" if is_last_section else "├─"
+            print(f"{cu.fore.LIGHTBLACK_EX}{top_divider} {section['label']}: {section['value']}")
+
+            children = section["children"]
+            for child_idx, (child_label, child_value) in enumerate(children):
+                is_last_child = child_idx == len(children) - 1
+                child_prefix = "   " if is_last_section else "│  "
+                child_divider = "└─" if is_last_child else "├─"
+                print(f"{cu.fore.LIGHTBLACK_EX}{child_prefix}{child_divider} {child_label}: {child_value}")
 
 def show_yaml_queue(queued_jobs, current_task):
     """Show job list in a YAML/config style format (YAML-like Theme)."""
