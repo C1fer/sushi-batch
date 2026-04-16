@@ -1,4 +1,4 @@
-from .enums import Status, Task
+from .enums import Status
 
 
 class Job:
@@ -17,6 +17,8 @@ class Job:
         src_sub_display=None,
         src_sub_lang=None,
         src_sub_name=None,
+        dst_vid_width=None,
+        dst_vid_height=None,
         status=Status.PENDING,
         result=None,
         merged=None
@@ -37,3 +39,5 @@ class Job:
         self.status = status
         self.result = result
         self.merged = merged
+        self.dst_vid_width = dst_vid_width
+        self.dst_vid_height = dst_vid_height

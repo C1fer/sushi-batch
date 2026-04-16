@@ -91,6 +91,20 @@ class JobQueue:
             else:
                 cu.print_error("\nMKVMerge could not be found. Video files cannot be merged.")
 
+    def _resample_before_merge(self, job):
+        """Resample subtitle file before merging. 
+        Skipped if script and video resolutions match.
+        """
+        if not SubResampler.is_resample_needed(job):
+            return False
+        
+        resample_done = SubResampler.run(job)
+        if not resample_done:
+            print(f"{cu.fore.LIGHTYELLOW_EX}Subtitle could not be resampled. Merging synced subtitle instead.")
+            return False
+        return True
+
+
     def merge_completed_video_tasks(self, job_list):
         """ Generate a new video file from completed video tasks """
         completed_jobs = [
@@ -105,20 +119,18 @@ class JobQueue:
             return
 
         cu.print_subheader("Merging files")
-
-        can_resample = settings.config.resample_subs_on_merge
-
-        if can_resample and not SubResampler.is_installed:
-            cu.print_error("Aegisub-CLI could not be found. Subtitle resampling is disabled.")
+        
+        do_resample = True
+        if settings.config.resample_subs_on_merge and not SubResampler.is_installed:
+            do_resample = False
+            cu.print_error("Aegisub-CLI could not be found. Subtitle resampling will be skipped.")
 
         for job in completed_jobs:
-            if can_resample and SubResampler.is_installed:
-                resample_result = SubResampler.run(job)
-                MKVMerge.run(job, use_resampled_sub=resample_result)
-                if not resample_result:
-                    print(f"{cu.fore.LIGHTYELLOW_EX}Subtitle could not be resampled. Merged synced subtitle instead.")
-            else:
-                MKVMerge.run(job)
+            use_resampled_sub = False
+            if do_resample:
+                use_resampled_sub = self._resample_before_merge(job)
+                pass
+            MKVMerge.run(job, use_resampled_sub=use_resampled_sub)
             self.save()
 
         input("\nPress Enter to go back... ")
@@ -205,6 +217,8 @@ class JobQueue:
             "src_sub_display": src_sub_selected.display_name,
             "src_sub_lang": Stream.get_stream_lang(src_sub_streams, src_sub_selected.id),
             "src_sub_name": Stream.get_stream_name(src_sub_streams, src_sub_selected.id),
+            "dst_vid_width": dst_media_info.get('video', [{}])[0].get('width'),
+            "dst_vid_height": dst_media_info.get('video', [{}])[0].get('height')
         }
         return streams_info
 

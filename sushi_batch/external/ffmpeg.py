@@ -7,8 +7,6 @@ from ..utils import console_utils as cu
 
 class FFmpeg:
     is_installed = utils.is_app_installed("ffprobe")
-    whitelisted_stream_types = ["audio", "subtitle"]
-
     @staticmethod
     def get_probe_output(filepath, stream_type=None):
         """
@@ -21,7 +19,7 @@ class FFmpeg:
                 '-v', 'quiet',
                 '-show_streams',
                 '-show_entries',
-                'stream=index,codec_name,codec_type,sample_rate,channel_layout,bits_per_raw_sample:'
+                'stream=index,codec_name,codec_type,sample_rate,channel_layout,bits_per_raw_sample,width,height:'
                 'stream_tags=title,language:'
                 'stream_disposition=default,forced',
                 '-print_format', 'json=compact=1',
@@ -58,7 +56,7 @@ class FFmpeg:
             for stream in parsed["streams"]:
                 codec_type = stream['codec_type']
                 
-                if codec_type not in cls.whitelisted_stream_types:
+                if codec_type == "attachment":
                     continue
 
                 streams_by_type.setdefault(codec_type, []).append(stream)
