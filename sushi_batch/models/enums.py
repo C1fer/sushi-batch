@@ -61,3 +61,9 @@ class Section(Enum):
 class JobSelection(Enum):
     ALL = "all"
     SELECTED = "selected"
+
+
+class QueueTheme(Enum):
+    CLASSIC = "classic"
+    CARD = "card"
+    YAML = "yaml" 

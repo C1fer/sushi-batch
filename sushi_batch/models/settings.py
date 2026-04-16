@@ -5,7 +5,7 @@ from prettytable import PrettyTable
 
 from ..utils import console_utils as cu
 
-from .enums import Section
+from .enums import Section, QueueTheme
 
 
 class Settings():
@@ -16,6 +16,7 @@ class Settings():
         self.file_path = path.join(self.data_path, "settings.json")
 
         # General settings
+        self.queue_theme = QueueTheme.CLASSIC.value
         self.merge_files_after_execution = True
         self.resample_subs_on_merge = False
         self.save_sushi_logs = True
@@ -63,7 +64,7 @@ class Settings():
             makedirs(self.data_path, exist_ok=True)
             self._save()
 
-    def _get_formated_value(self, value):
+    def _get_formatted_value(self, value):
         """Return formatted value for table display"""
         match value:
             case True:
@@ -79,6 +80,7 @@ class Settings():
         
         rows = [
             # General Section
+            (Section.GEN, "Queue display mode", self.queue_theme),
             (Section.GEN, "Merge synced sub automatically", self.merge_files_after_execution),
             (Section.GEN, "Resample synced sub resolution before merging", self.resample_subs_on_merge),
             (Section.GEN, "Save Sushi logs", self.save_sushi_logs),
@@ -111,7 +113,7 @@ class Settings():
         for row in rows:
             section, option, value = row[:3]
             has_divider = len(row) > 3 and row[3]
-            tb.add_row([section.value, option, self._get_formated_value(value)], divider=has_divider)
+            tb.add_row([section.value, option, self._get_formatted_value(value)], divider=has_divider)
         
         tb.add_autoindex("Option")
         
@@ -141,6 +143,7 @@ class Settings():
                     self.restore()
                 case 3:
                     break
+
     
     def update_value(self, option, option_label):
         """Update value for selected option"""
@@ -148,7 +151,7 @@ class Settings():
         new_val = None
         
         print(f"Option: {cu.fore.YELLOW}{option_label}")
-        print(f"\nCurrent value: {self._get_formated_value(curr_val)}\n")
+        print(f"\nCurrent value: {self._get_formatted_value(curr_val)}\n")
         
         match curr_val:
             case bool():
