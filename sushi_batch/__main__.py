@@ -60,10 +60,13 @@ def main():
 
     # Load settings and queue contents on startup
     try:
+        cu.print_subheader("Loading settings")
         s.config.handle_load()
+        cu.print_subheader("Loading queue")
         qm.main_queue.load()
     except Exception as e:
-        cu.print_error(f"---INIT ERROR---\n{e}", False)
+        init_trace = traceback.format_exc().rstrip()
+        cu.print_error(f"---INIT ERROR---\nStartup initialization failed: {type(e).__name__}: {e}\n{init_trace}", False)
         sys.exit(1)
 
     sync_tasks = {
