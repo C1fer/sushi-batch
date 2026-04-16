@@ -66,4 +66,4 @@ class JobSelection(Enum):
 class QueueTheme(Enum):
     CLASSIC = "classic"
     CARD = "card"
-    YAML = "yaml" 
+    YAML = "yaml-like" 

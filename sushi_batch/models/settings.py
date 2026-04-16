@@ -80,7 +80,7 @@ class Settings():
         
         rows = [
             # General Section
-            (Section.GEN, "Queue display mode", self.queue_theme),
+            (Section.GEN, "Queue Theme", self.queue_theme),
             (Section.GEN, "Merge synced sub automatically", self.merge_files_after_execution),
             (Section.GEN, "Resample synced sub resolution before merging", self.resample_subs_on_merge),
             (Section.GEN, "Save Sushi logs", self.save_sushi_logs),
@@ -144,6 +144,20 @@ class Settings():
                 case 3:
                     break
 
+    def select_queue_theme(self):
+        """Display queue theme options and update setting based on user selection"""
+        options = {
+            "1": ("Classic", QueueTheme.CLASSIC.value),
+            "2": ("Card-style", QueueTheme.CARD.value),
+            "3": ("YAML-inspired", QueueTheme.YAML.value)
+        }
+        cu.clear_screen()
+        cu.print_header("Select Queue Theme\n")
+        cu.show_menu_options({k: v[0] for k, v in options.items()})
+        
+        choice = cu.get_choice(1, len(options))
+        selected_mode = options[str(choice)][1]
+        return selected_mode
     
     def update_value(self, option, option_label):
         """Update value for selected option"""
@@ -154,6 +168,8 @@ class Settings():
         print(f"\nCurrent value: {self._get_formatted_value(curr_val)}\n")
         
         match curr_val:
+            case QueueTheme():
+                self.select_queue_theme()
             case bool():
                 prompt = "Disable" if curr_val else "Enable"
                 if cu.confirm_action(f"{prompt} option? (Y/N): "):

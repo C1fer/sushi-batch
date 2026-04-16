@@ -1,15 +1,13 @@
 from ..models.job_queue import JobQueue
 from ..models.enums import JobSelection, QueueTheme, Task, Status
-from ..models.settings import Settings
+from ..models import settings as s
 
 from ..external.mkv_merge import MKVMerge
-
 
 from . import console_utils as cu
 
 
 main_queue = JobQueue()
-
 
 def _status_style(status):
     """Return display metadata for a job status."""
@@ -21,7 +19,7 @@ def _status_style(status):
         case _:
             return (cu.fore.LIGHTBLACK_EX, "Pending", "~", cu.fore.LIGHTBLACK_EX)
 
-def show_classic_queue(queued_jobs, task):
+def show_classic_queue(queued_jobs, current_task):
     """ Show Job List contents (Classic Theme) """
     for job in queued_jobs:
         job.idx = queued_jobs.index(job) + 1
@@ -50,7 +48,7 @@ def show_classic_queue(queued_jobs, task):
         if job.dst_aud_id is not None and job.dst_aud_display is None:
             print(f"{cu.fore.YELLOW}Destination Audio Track ID: {job.dst_aud_id}")
 
-        if task == Task.JOB_QUEUE: 
+        if current_task == Task.JOB_QUEUE: 
             match job.status:
                 case Status.PENDING:
                     print(f"{cu.fore.LIGHTBLACK_EX}Status: Pending")
@@ -68,7 +66,7 @@ def show_classic_queue(queued_jobs, task):
                     print(f"{cu.fore.LIGHTBLACK_EX}Merged: No")
 
 
-def show_card_queue(queued_jobs, task):
+def show_card_queue(queued_jobs, current_task):
     """Show job list using card-style blocks (Option 2)."""
     for idx, job in enumerate(queued_jobs, start=1):
         job.idx = idx
@@ -92,7 +90,7 @@ def show_card_queue(queued_jobs, task):
         if dst_audio is not None:
             print(f"{cu.fore.LIGHTBLACK_EX}| Dst Audio   : {cu.fore.YELLOW}{dst_audio}")
 
-        if task == Task.JOB_QUEUE:
+        if current_task == Task.JOB_QUEUE:
             print(f"{cu.fore.LIGHTBLACK_EX}| Status      : {status_color}{status_label}")
             if job.status == Status.COMPLETED:
                 print(f"{cu.fore.LIGHTBLACK_EX}| Avg Shift   : {detail_color}{job.result}")
@@ -103,27 +101,30 @@ def show_card_queue(queued_jobs, task):
             print(f"{cu.fore.LIGHTBLACK_EX}+ Merged      : {merged_color}{merged_label}")
 
 
-def show_yaml_queue(queued_jobs, task):
+def show_yaml_queue(queued_jobs, current_task):
     """Show job list in a YAML/config style format (Option 4)."""
     for idx, job in enumerate(queued_jobs, start=1):
         job.idx = idx
         status_color, status_label, _, detail_color = _status_style(job.status)
 
-        print(f"\n{cu.fore.LIGHTBLUE_EX}job_{idx}:")
+        print(f"\n{cu.fore.LIGHTBLUE_EX}Job {idx}:")
         print(f"{cu.fore.LIGHTBLACK_EX}  source_file: {cu.fore.LIGHTBLUE_EX}{job.src_file}")
         print(f"{cu.fore.LIGHTBLACK_EX}  destination_file: {cu.fore.LIGHTYELLOW_EX}{job.dst_file}")
-        print(f"{cu.fore.LIGHTBLACK_EX}  subtitle_file: {cu.fore.LIGHTCYAN_EX}{job.sub_file if job.sub_file is not None else 'null'}")
+        
+        if job.sub_file is not None:
+            print(f"{cu.fore.LIGHTBLACK_EX}  subtitle_file: {cu.fore.LIGHTCYAN_EX}{job.sub_file}")
 
-        src_audio = job.src_aud_display if job.src_aud_display is not None else job.src_aud_id
-        src_sub = job.src_sub_display if job.src_sub_display is not None else job.src_sub_id
-        dst_audio = job.dst_aud_display if job.dst_aud_display is not None else job.dst_aud_id
+        if job.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL):
+            src_audio = job.src_aud_display if job.src_aud_display is not None else job.src_aud_id
+            src_sub = job.src_sub_display if job.src_sub_display is not None else job.src_sub_id
+            dst_audio = job.dst_aud_display if job.dst_aud_display is not None else job.dst_aud_id
 
-        print(f"{cu.fore.LIGHTBLACK_EX}  tracks:")
-        print(f"{cu.fore.LIGHTBLACK_EX}    source_audio: {cu.fore.LIGHTMAGENTA_EX}{src_audio if src_audio is not None else 'null'}")
-        print(f"{cu.fore.LIGHTBLACK_EX}    source_subtitle: {cu.fore.LIGHTCYAN_EX}{src_sub if src_sub is not None else 'null'}")
-        print(f"{cu.fore.LIGHTBLACK_EX}    destination_audio: {cu.fore.YELLOW}{dst_audio if dst_audio is not None else 'null'}")
+            print(f"{cu.fore.LIGHTBLACK_EX}  tracks:")
+            print(f"{cu.fore.LIGHTBLACK_EX}    source_audio: {cu.fore.LIGHTMAGENTA_EX}{src_audio if src_audio is not None else 'null'}")
+            print(f"{cu.fore.LIGHTBLACK_EX}    source_subtitle: {cu.fore.LIGHTCYAN_EX}{src_sub if src_sub is not None else 'null'}")
+            print(f"{cu.fore.LIGHTBLACK_EX}    destination_audio: {cu.fore.YELLOW}{dst_audio if dst_audio is not None else 'null'}")
 
-        if task == Task.JOB_QUEUE:
+        if current_task == Task.JOB_QUEUE:
             print(f"{cu.fore.LIGHTBLACK_EX}  status: {status_color}{status_label.lower()}")
             if job.status == Status.COMPLETED:
                 print(f"{cu.fore.LIGHTBLACK_EX}  average_shift: {detail_color}{job.result}")
@@ -134,25 +135,25 @@ def show_yaml_queue(queued_jobs, task):
             print(f"{cu.fore.LIGHTBLACK_EX}  merged: {merged_color}{merged_label}")
     
 
-def show_queue(queue, task):
+def show_queue(queue, current_task):
     """Display the current job queue with status and options.
         Theme is chosen from settings.
     """
     cu.clear_screen()
-    title = "Job Queue" if task == Task.JOB_QUEUE else "Jobs"
+    title = "Job Queue" if current_task == Task.JOB_QUEUE else "Jobs"
     cu.print_header(f"{title}")
     
-    current_theme = Settings().queue_theme
+    current_theme = s.config.queue_theme
     match current_theme:
         case QueueTheme.CLASSIC.value:
-            show_classic_queue(queue, task)
+            show_classic_queue(queue, current_task)
         case QueueTheme.CARD.value:
-            show_card_queue(queue, task)
+            show_card_queue(queue, current_task)
         case QueueTheme.YAML.value:
-            show_yaml_queue(queue, task)
+            show_yaml_queue(queue, current_task)
         case _:
-            cu.print_error(f"Unknown queue display mode: {current_theme}")
-            show_classic_queue(queue, task)
+            cu.print_error(f"Unknown queue theme: {current_theme}")
+            show_classic_queue(queue, current_task)
 
 
 def main_queue_options(task):
