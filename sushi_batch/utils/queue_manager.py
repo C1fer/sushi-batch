@@ -67,39 +67,42 @@ def show_classic_queue(queued_jobs, current_task):
 
 
 def show_card_queue(queued_jobs, current_task):
-    """Show job list using card-style blocks (Option 2)."""
+    """Show job list using card-style blocks (Card Theme)."""
     for idx, job in enumerate(queued_jobs, start=1):
         job.idx = idx
         status_color, status_label, status_icon, detail_color = _status_style(job.status)
 
-        print(f"\n{cu.fore.LIGHTBLUE_EX}+- Job {idx} [{status_color}{status_icon} {status_label}{cu.fore.LIGHTBLUE_EX}]")
-        print(f"{cu.fore.LIGHTBLACK_EX}| Source      : {cu.fore.LIGHTBLUE_EX}{job.src_file}")
-        print(f"{cu.fore.LIGHTBLACK_EX}| Destination : {cu.fore.LIGHTYELLOW_EX}{job.dst_file}")
+        print(f"\n{cu.fore.LIGHTBLUE_EX}┌─ Job {idx} [{status_color}{status_icon} {status_label}{cu.fore.LIGHTBLUE_EX}]")
+        print(f"{cu.fore.LIGHTBLACK_EX}├─ Source       : {cu.fore.LIGHTBLUE_EX}{job.src_file}")
+        print(f"{cu.fore.LIGHTBLACK_EX}├─ Destination  : {cu.fore.LIGHTYELLOW_EX}{job.dst_file}")
 
         if job.sub_file is not None:
-            print(f"{cu.fore.LIGHTBLACK_EX}| Subtitle    : {cu.fore.LIGHTCYAN_EX}{job.sub_file}")
+            print(f"{cu.fore.LIGHTBLACK_EX}├─ Subtitle     : {cu.fore.LIGHTCYAN_EX}{job.sub_file}")
 
         src_audio = job.src_aud_display if job.src_aud_display is not None else job.src_aud_id
         src_sub = job.src_sub_display if job.src_sub_display is not None else job.src_sub_id
         dst_audio = job.dst_aud_display if job.dst_aud_display is not None else job.dst_aud_id
 
         if src_audio is not None:
-            print(f"{cu.fore.LIGHTBLACK_EX}| Src Audio   : {cu.fore.LIGHTMAGENTA_EX}{src_audio}")
+            print(f"{cu.fore.LIGHTBLACK_EX}├─ Src Audio    : {cu.fore.LIGHTMAGENTA_EX}{src_audio}")
         if src_sub is not None:
-            print(f"{cu.fore.LIGHTBLACK_EX}| Src Subtitle: {cu.fore.LIGHTCYAN_EX}{src_sub}")
+            print(f"{cu.fore.LIGHTBLACK_EX}├─ Src Subtitle : {cu.fore.LIGHTCYAN_EX}{src_sub}")
         if dst_audio is not None:
-            print(f"{cu.fore.LIGHTBLACK_EX}| Dst Audio   : {cu.fore.YELLOW}{dst_audio}")
+            print(f"{cu.fore.LIGHTBLACK_EX}├─ Dst Audio    : {cu.fore.YELLOW}{dst_audio}")
 
         if current_task == Task.JOB_QUEUE:
-            print(f"{cu.fore.LIGHTBLACK_EX}| Status      : {status_color}{status_label}")
-            if job.status == Status.COMPLETED:
-                print(f"{cu.fore.LIGHTBLACK_EX}| Avg Shift   : {detail_color}{job.result}")
-            elif job.status == Status.FAILED:
-                print(f"{cu.fore.LIGHTBLACK_EX}| Error       : {detail_color}{job.result}")
-            merged_label = "Yes" if job.merged else "No"
-            merged_color = cu.fore.LIGHTGREEN_EX if job.merged else cu.fore.LIGHTBLACK_EX
-            print(f"{cu.fore.LIGHTBLACK_EX}+ Merged      : {merged_color}{merged_label}")
+            status_divider = "└─" if job.status == Status.PENDING else "├─"
+            print( f"{cu.fore.LIGHTBLACK_EX}{status_divider} Status       : {status_color}{status_label}")
 
+            if job.status == Status.COMPLETED:
+                shift_divider = "└─" if job.merged is None else "├─"
+                print(f"{cu.fore.LIGHTBLACK_EX}{shift_divider} Avg Shift    : {detail_color}{job.result}")
+                if job.merged is not None:
+                    merge_status = f"{cu.fore.LIGHTGREEN_EX}Yes" if job.merged else "No"
+                    print(f"{cu.fore.LIGHTBLACK_EX}└─ Merged       : {merge_status}")
+
+            elif job.status == Status.FAILED:
+                print(f"{cu.fore.LIGHTBLACK_EX}└─ Error        : {detail_color}{job.result}")
 
 def show_yaml_queue(queued_jobs, current_task):
     """Show job list in a YAML/config style format (Option 4)."""
