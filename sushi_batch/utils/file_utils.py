@@ -2,8 +2,8 @@ from os import path, walk
 
 from ..models.enums import FileTypes, Formats, Task
 from ..models.job import Job
-from ..models.streams import Stream
 
+from ..external.ffmpeg import FFmpeg
 
 from . import console_utils as cu
 from .file_dialogs import FileDialog
@@ -86,7 +86,7 @@ def validate_files(src_files, dst_files, sub_files, task):
         (dst_len == 0, "No destination files found!"),
         (src_len != dst_len, f"Source ({src_len}) and destination ({dst_len}) file counts don't match!"),
         (task in (Task.AUDIO_SYNC_DIR, Task.AUDIO_SYNC_FIL) and src_len != sub_len, 
-         f"Audio ({src_len}) and subtitle ({sub_len}) file counts don't match!"),
+        f"Audio ({src_len}) and subtitle ({sub_len}) file counts don't match!"),
     ]
 
     for condition, error_msg in validations:
@@ -107,9 +107,9 @@ def create_jobs(src_files, dst_files, sub_files, task):
     
     jobs = []
     for idx, (src, dst, sub) in enumerate(zipped_jobs, start=1):
-        # if is_video_task and not Stream.has_subtitles(src):
-        #     cu.print_error(f"Source video {src} does not contain subtitles! Skipping...")
-        #     continue
+        if is_video_task and not FFmpeg.has_subtitles(src):
+            cu.print_error(f"Source video {src} does not contain subtitles! Skipping...")
+            continue
 
         jobs.append(
             Job(

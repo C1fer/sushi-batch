@@ -181,9 +181,9 @@ class JobQueue:
         dst_media_info = FFmpeg.get_clean_probe_info(job.dst_file)
 
         """"Get source and destination media stream indexes"""
-        src_aud_streams = Stream.get_sub_streams_from_probe(src_media_info['audio']) if 'audio' in src_media_info else []
+        src_aud_streams = Stream.get_audio_streams_from_probe(src_media_info['audio']) if 'audio' in src_media_info else []
         src_sub_streams = Stream.get_sub_streams_from_probe(src_media_info['subtitle']) if 'subtitle' in src_media_info else []
-        dst_aud_streams = Stream.get_sub_streams_from_probe(dst_media_info['audio']) if 'audio' in dst_media_info else []
+        dst_aud_streams = Stream.get_audio_streams_from_probe(dst_media_info['audio']) if 'audio' in dst_media_info else []
 
         if select_streams:
             print(f"{cu.fore.LIGHTYELLOW_EX}\nJob {job.idx}")

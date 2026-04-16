@@ -6,11 +6,11 @@ from ..utils import console_utils as cu
 
 
 class FFmpeg:
-    is_installed = utils.is_app_installed("ffmpeg")
+    is_installed = utils.is_app_installed("ffprobe")
     whitelisted_stream_types = ["audio", "subtitle"]
 
     @staticmethod
-    def get_probe_output(filepath):
+    def get_probe_output(filepath, stream_type=None):
         """
         Returns ffprobe output for specified file in JSON format.
         This is used to extract streams information for user selection.
@@ -25,8 +25,12 @@ class FFmpeg:
                 'stream_tags=title,language:'
                 'stream_disposition=default,forced',
                 '-print_format', 'json=compact=1',
-                filepath
             ]
+
+            if stream_type:
+                args.extend(['-select_streams', stream_type])
+
+            args.append(filepath)
 
             process = subprocess.Popen(
                 args,
@@ -62,3 +66,14 @@ class FFmpeg:
             return streams_by_type
         except Exception as e:
             raise Exception("Couldn't parse ffprobe output: {0}".format(str(e)))
+
+    @classmethod 
+    def has_subtitles(cls, filepath):
+        """Check if specified file contains subtitle streams"""
+        try:
+            media_info = cls.get_probe_output(filepath, stream_type="s")
+            parsed = json.loads(media_info)
+            return len(parsed.get("streams", [])) > 0
+        except Exception as e:
+            cu.print_error(f"An error occurred while checking for subtitles in {filepath}: {e}")
+            return False

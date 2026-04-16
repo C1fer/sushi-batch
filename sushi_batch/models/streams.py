@@ -10,10 +10,12 @@ class Stream:
         self.display_name = f"{idx} - {lang}, {info}" if title == "" else f"{idx} - {title}, {lang}, {info}"
 
     @classmethod
-    def get_sub_streams_from_probe(cls, probed_tracks):
-        """Get available streams from specified file"""
+    def get_audio_streams_from_probe(cls, probed_tracks):
+        """Get audio stream objects from FFprobe output"""
+        if len(probed_tracks) == 0:
+            return []
+        
         streams = []
-
         for track in probed_tracks:
             idx = track.get('index')
             title = track.get('tags', {}).get('title', '')
@@ -34,9 +36,11 @@ class Stream:
     
     @classmethod
     def get_sub_streams_from_probe(cls, probed_tracks):
-        """Get available streams from specified file"""
-        streams = []
+        """Get subtitle stream objects from FFprobe output"""
+        if len(probed_tracks) == 0:
+            return []
 
+        streams = []
         for track in probed_tracks:
             idx = track.get('index')
             title = track.get('tags', {}).get('title', '')
