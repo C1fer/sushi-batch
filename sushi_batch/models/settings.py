@@ -4,9 +4,15 @@ from os import makedirs, path
 from prettytable import PrettyTable
 
 from ..utils import console_utils as cu
+from ..utils.json_utils import SettingsDecoder, SettingsEncoder
 
 from .enums import Section, QueueTheme
 
+queue_themes_display = {
+    QueueTheme.CLASSIC: "Classic",
+    QueueTheme.CARD: "Card-style",
+    QueueTheme.YAML: "YAML-inspired"
+}
 
 class Settings():
 
@@ -16,7 +22,7 @@ class Settings():
         self.file_path = path.join(self.data_path, "settings.json")
 
         # General settings
-        self.queue_theme = QueueTheme.CLASSIC.value
+        self.queue_theme = QueueTheme.CLASSIC
         self.merge_files_after_execution = True
         self.resample_subs_on_merge = False
         self.save_sushi_logs = True
@@ -44,16 +50,25 @@ class Settings():
         self.sub_trackname = "Synced Sub"
 
     def _save(self):
-        """_Save settings to JSON file"""
-        with open(self.file_path, "w", encoding="utf-8") as settings_file:
-            json.dump(self.__dict__, settings_file, indent=4)
+        """Save settings to JSON file"""
+        try: 
+            converted_json = json.dumps(self, indent=4, cls=SettingsEncoder)
+            with open(self.file_path, "w", encoding="utf-8") as settings_file:
+                settings_file.write(converted_json)
+        except Exception as e:
+            cu.print_error(f"Error saving settings: {e}", True)
 
     def _load(self):
         """Load settings from JSON file"""
-        with open(self.file_path, "r", encoding="utf-8") as settings_file:
-            data = json.load(settings_file)
-            # Update instance attributes with loaded settings
-            for key, value in data.items():
+        try:
+            with open(self.file_path, "r", encoding="utf-8") as settings_file:
+                data = json.load(settings_file, cls=SettingsDecoder)
+        except Exception as e:
+            cu.print_error(f"Error loading settings: {e}", False)
+            return
+
+        # Update instance attributes with loaded settings
+        for key, value in data.items():
                 setattr(self, key, value)
     
     def handle_load(self):
@@ -71,6 +86,9 @@ class Settings():
                 return f"{cu.Fore.GREEN}Enabled{cu.style_reset}"
             case False:
                 return f"{cu.Fore.RED}Disabled{cu.style_reset}"
+            case QueueTheme():
+                theme_name = queue_themes_display.get(value, "Unknown")
+                return f"{cu.Fore.CYAN}{theme_name}{cu.style_reset}"
             case _:
                 return f"{cu.Fore.YELLOW}{value}{cu.style_reset}"
             
@@ -146,17 +164,11 @@ class Settings():
 
     def select_queue_theme(self):
         """Display queue theme options and update setting based on user selection"""
-        options = {
-            "1": ("Classic", QueueTheme.CLASSIC.value),
-            "2": ("Card-style", QueueTheme.CARD.value),
-            "3": ("YAML-inspired", QueueTheme.YAML.value)
-        }
-        cu.clear_screen()
-        cu.print_header("Select Queue Theme\n")
-        cu.show_menu_options({k: v[0] for k, v in options.items()})
-        
-        choice = cu.get_choice(1, len(options))
-        selected_mode = options[str(choice)][1]
+        for idx, display in enumerate(queue_themes_display.values(), 1):
+            print(f"{idx}) {display}")
+
+        choice = cu.get_choice(1, len(queue_themes_display))
+        selected_mode = list(queue_themes_display.keys())[choice - 1]
         return selected_mode
     
     def update_value(self, option, option_label):
@@ -169,7 +181,7 @@ class Settings():
         
         match curr_val:
             case QueueTheme():
-                self.select_queue_theme()
+                new_val = self.select_queue_theme()
             case bool():
                 prompt = "Disable" if curr_val else "Enable"
                 if cu.confirm_action(f"{prompt} option? (Y/N): "):

@@ -167,11 +167,11 @@ def show_queue(queue, current_task):
     
     current_theme = s.config.queue_theme
     match current_theme:
-        case QueueTheme.CLASSIC.value:
+        case QueueTheme.CLASSIC:
             show_classic_queue(queue, current_task)
-        case QueueTheme.CARD.value:
+        case QueueTheme.CARD:
             show_card_queue(queue, current_task)
-        case QueueTheme.YAML.value:
+        case QueueTheme.YAML:
             show_yaml_queue(queue, current_task)
         case _:
             cu.print_error(f"Unknown queue theme: {current_theme}")
