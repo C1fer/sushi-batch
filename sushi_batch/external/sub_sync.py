@@ -9,6 +9,8 @@ from .subprocess_logger import SubProcessLogger
 
 
 class Sushi:
+    error_flag = "---SUSHI: CRITICAL ERROR---"
+
     @staticmethod
     def _get_args(job):
         args = [
@@ -47,6 +49,17 @@ class Sushi:
 
         return f"{avg_shift:.3f} sec"
 
+    @classmethod
+    def _get_error_message(cls, lines):
+        """Extract a useful error message using Sushi critical error flag location."""
+        try:
+            error_idx = lines.index(cls.error_flag)
+            if error_idx + 1 < len(lines):
+                return lines[error_idx + 1]
+            return cls.error_flag
+        except ValueError:
+            return lines[-1] if lines else "Unknown Sushi error"
+
     @staticmethod
     def run(job):
         with yaspin(text=f"Job {job.idx}", color="cyan", timer=True) as sp:
@@ -73,7 +86,8 @@ class Sushi:
                     job.result = Sushi._calc_avg_shift(lines)
                     sp.ok("✅")
                 else:
-                    raise subprocess.SubprocessError(lines[-1])
+                    error_msg = Sushi._get_error_message(lines)
+                    raise subprocess.SubprocessError(error_msg)
             except Exception as e:
                 sp.fail("❌")
                 job.status = Status.FAILED
