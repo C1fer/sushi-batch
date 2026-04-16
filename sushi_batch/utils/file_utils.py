@@ -61,7 +61,9 @@ def search_directories(src_path, dst_path, task):
 
 def select_files(task):
     """Select files via dialog and create jobs."""
-    src_files = dst_files = sub_files = []
+    src_files = []
+    dst_files = []
+    sub_files = []
 
     if task == Task.AUDIO_SYNC_FIL:
         src_files = FileDialog.askfilenames("Select Source Audio Files", FileTypes.AUDIO.value)
