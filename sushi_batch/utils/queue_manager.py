@@ -21,8 +21,8 @@ def _status_style(status):
 
 def show_classic_queue(queued_jobs, current_task):
     """ Show Job List contents (Classic Theme) """
-    for job in queued_jobs:
-        job.idx = queued_jobs.index(job) + 1
+    for idx, job in enumerate(queued_jobs, start=1):
+        job.idx = idx
         print(f"\n{cu.fore.LIGHTBLACK_EX}Job {job.idx}")
         print(f"{cu.fore.LIGHTBLUE_EX}Source file: {job.src_file}")
         print(f"{cu.fore.LIGHTYELLOW_EX}Destination file: {job.dst_file}")
@@ -64,7 +64,8 @@ def show_classic_queue(queued_jobs, current_task):
                     print(f"{cu.fore.LIGHTGREEN_EX}Merged: Yes")
                 case False:
                     print(f"{cu.fore.LIGHTBLACK_EX}Merged: No")
-
+                case _:
+                    pass
 
 def show_card_queue(queued_jobs, current_task):
     """Show job list using card-style blocks (Card Theme)."""
@@ -105,7 +106,7 @@ def show_card_queue(queued_jobs, current_task):
                 print(f"{cu.fore.LIGHTBLACK_EX}└─ Error        : {detail_color}{job.result}")
 
 def show_yaml_queue(queued_jobs, current_task):
-    """Show job list in a YAML/config style format (Option 4)."""
+    """Show job list in a YAML/config style format (YAML-like Theme)."""
     for idx, job in enumerate(queued_jobs, start=1):
         job.idx = idx
         status_color, status_label, _, detail_color = _status_style(job.status)
@@ -133,11 +134,15 @@ def show_yaml_queue(queued_jobs, current_task):
                 print(f"{cu.fore.LIGHTBLACK_EX}  average_shift: {detail_color}{job.result}")
             elif job.status == Status.FAILED:
                 print(f"{cu.fore.LIGHTBLACK_EX}  error: {detail_color}{job.result}")
-            merged_label = "true" if job.merged else "false"
-            merged_color = cu.fore.LIGHTGREEN_EX if job.merged else cu.fore.LIGHTBLACK_EX
-            print(f"{cu.fore.LIGHTBLACK_EX}  merged: {merged_color}{merged_label}")
+            
+            match job.merged:
+                case True:
+                    print(f"{cu.fore.LIGHTGREEN_EX}  merged: true")
+                case False:
+                    print(f"{cu.fore.LIGHTBLACK_EX}  merged: false")
+                case _:
+                    pass
     
-
 def show_queue(queue, current_task):
     """Display the current job queue with status and options.
         Theme is chosen from settings.
