@@ -201,7 +201,7 @@ wheels = [
 
 [[package]]
 name = "sushi-batch"
-version = "0.4.0"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "art" },
@@ -218,22 +218,22 @@ requires-dist = [
     { name = "colorama", specifier = ">=0.4.6,<0.5" },
     { name = "prettytable", specifier = ">=3.9.0,<4" },
     { name = "pyqt6", specifier = ">=6.5.2,<7" },
-    { name = "sushi-sub-next", specifier = ">=0.6.4,<0.7" },
+    { name = "sushi-sub-next", specifier = ">=0.6.5,<0.7" },
     { name = "yaspin", specifier = ">=3.0.1,<4" },
 ]
 
 [[package]]
 name = "sushi-sub-next"
-version = "0.6.4"
+version = "0.6.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
     { name = "opencv-python" },
     { name = "scipy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8b/b2/9fb17984ca308e40409478a7fdc478a2c8de9a37ecd64e579de252457a50/sushi_sub_next-0.6.4.tar.gz", hash = "sha256:e2f65d93fff4024d8d2c4633f15bd3f5b3cc05f74b8b8d99842636e34435f32a", size = 26529, upload-time = "2026-04-15T21:32:12.778Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/79/46/3c5c69b31c7fa26d5c580940bcac39ec518d731eca6c30110bbd44169f46/sushi_sub_next-0.6.5.tar.gz", hash = "sha256:9fbdc9e29511ff1b830455deb15609a837ffd0217da1fc11da1736dc987866c2", size = 44769, upload-time = "2026-04-16T02:39:23.727Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f7/bb/341b9872afb809498f2d7d03fb5fcafa3404e072b1fb09eafd70dba24a0c/sushi_sub_next-0.6.4-py3-none-any.whl", hash = "sha256:8165ad20ec51bb5abc78dad0faa1de2c45583b67fac94fe069ab687671e17172", size = 28967, upload-time = "2026-04-15T21:32:11.26Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/df/6db0e02519acf134082edb3148219b315359e22ff58bb44e1ac99ae39d43/sushi_sub_next-0.6.5-py3-none-any.whl", hash = "sha256:5dc57f0ab718b4ed13294a8b41bc8eaf1b7541096e0f25f8db3ab002c2d83698", size = 26863, upload-time = "2026-04-16T02:39:24.681Z" },
 ]
 
 [[package]]

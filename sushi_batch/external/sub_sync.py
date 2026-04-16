@@ -10,6 +10,7 @@ from .subprocess_logger import SubProcessLogger
 
 class Sushi:
     error_flag = "---SUSHI: CRITICAL ERROR---"
+    avg_shift_flag = "Total average shift:"
 
     @staticmethod
     def _get_args(job):
@@ -37,17 +38,17 @@ class Sushi:
 
         return args
 
-    @staticmethod
-    def _calc_avg_shift(output):
-        """ Calculate average shift from Sushi output """
-        shifts = [
-            float(line.split()[2].removesuffix(","))
-            for line in output
-            if "shift:" in line
-        ]
-        avg_shift = round(sum(shifts) / len(shifts), 3)
+    @classmethod
+    def _calc_avg_shift(cls, output):
+        """Extract average shift from Sushi output."""
+        try:
+            for line in output:
+                if line.startswith(cls.avg_shift_flag):
+                    shift_str = line.split(cls.avg_shift_flag)[1].strip().split()[0]
+                    return shift_str
 
-        return f"{avg_shift:.3f} sec"
+        except Exception as e:
+            return "Unknown (Couldn't parse shift value: {0})".format(str(e))
 
     @classmethod
     def _get_error_message(cls, lines):
