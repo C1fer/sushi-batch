@@ -9,6 +9,25 @@ from . import console_utils as cu
 
 main_queue = JobQueue()
 
+def _get_track_values(job):
+    """Resolve track values using display label first, then raw id."""
+    src_audio = job.src_aud_display if job.src_aud_display is not None else job.src_aud_id
+    src_sub = job.src_sub_display if job.src_sub_display is not None else job.src_sub_id
+    dst_audio = job.dst_aud_display if job.dst_aud_display is not None else job.dst_aud_id
+    return src_audio, src_sub, dst_audio
+
+
+def _has_any_track_data(job):
+    """Return True when any source/destination track metadata is available."""
+    return any(
+        value is not None
+        for value in (
+            job.src_aud_id,
+            job.src_sub_id,
+            job.dst_aud_id
+        )
+    )
+
 def _status_style(status):
     """Return display metadata for a job status."""
     match status:
@@ -30,23 +49,16 @@ def show_classic_queue(queued_jobs, current_task):
         if job.sub_file is not None:
             print(f"{cu.fore.LIGHTCYAN_EX }Subtitle file: {job.sub_file}")
 
-        if job.src_aud_display is not None:
-            print(f"{cu.fore.LIGHTMAGENTA_EX}Source Audio Track: {job.src_aud_display}")
+        src_audio, src_sub, dst_audio = _get_track_values(job)
 
-        if job.src_sub_display is not None:
-            print(f"{cu.fore.LIGHTCYAN_EX}Source Subtitle Track: {job.src_sub_display}")
+        if src_audio is not None:
+            print(f"{cu.fore.LIGHTMAGENTA_EX}Source Audio Track: {src_audio}")
 
-        if job.dst_aud_display is not None:
-            print(f"{cu.fore.YELLOW}Destination Audio Track: {job.dst_aud_display}")
+        if src_sub is not None:
+            print(f"{cu.fore.LIGHTCYAN_EX}Source Subtitle Track: {src_sub}")
 
-        if job.src_aud_id is not None and job.src_aud_display is None:
-            print(f"{cu.fore.LIGHTMAGENTA_EX}Source Audio Track ID: {job.src_aud_id}")
-
-        if job.src_sub_id is not None and job.src_sub_display is None:
-            print(f"{cu.fore.LIGHTCYAN_EX}Source Subtitle Track ID: {job.src_sub_id}")
-
-        if job.dst_aud_id is not None and job.dst_aud_display is None:
-            print(f"{cu.fore.YELLOW}Destination Audio Track ID: {job.dst_aud_id}")
+        if dst_audio is not None:
+            print(f"{cu.fore.YELLOW}Destination Audio Track: {dst_audio}")
 
         if current_task == Task.JOB_QUEUE: 
             match job.status:
@@ -73,37 +85,39 @@ def show_card_queue(queued_jobs, current_task):
         job.idx = idx
         status_color, status_label, status_icon, detail_color = _status_style(job.status)
 
-        print(f"\n{cu.fore.LIGHTBLUE_EX}┌─ Job {idx} [{status_color}{status_icon} {status_label}{cu.fore.LIGHTBLUE_EX}]")
-        print(f"{cu.fore.LIGHTBLACK_EX}├─ Source       : {cu.fore.LIGHTBLUE_EX}{job.src_file}")
-        print(f"{cu.fore.LIGHTBLACK_EX}├─ Destination  : {cu.fore.LIGHTYELLOW_EX}{job.dst_file}")
+        status_display = f"[{status_color}{status_icon} {status_label}{cu.fore.LIGHTBLUE_EX}]" if current_task == Task.JOB_QUEUE else ""
+        print(f"\n{cu.fore.LIGHTBLUE_EX}┌─ Job {idx} {status_display}")
+
+        lines = [
+            ("Source", f"{cu.fore.LIGHTBLUE_EX}{job.src_file}"),
+            ("Destination", f"{cu.fore.LIGHTYELLOW_EX}{job.dst_file}"),
+        ]
 
         if job.sub_file is not None:
-            print(f"{cu.fore.LIGHTBLACK_EX}├─ Subtitle     : {cu.fore.LIGHTCYAN_EX}{job.sub_file}")
+            lines.append(("Subtitle", f"{cu.fore.LIGHTCYAN_EX}{job.sub_file}"))
 
-        src_audio = job.src_aud_display if job.src_aud_display is not None else job.src_aud_id
-        src_sub = job.src_sub_display if job.src_sub_display is not None else job.src_sub_id
-        dst_audio = job.dst_aud_display if job.dst_aud_display is not None else job.dst_aud_id
-
+        src_audio, src_sub, dst_audio = _get_track_values(job)
         if src_audio is not None:
-            print(f"{cu.fore.LIGHTBLACK_EX}├─ Src Audio    : {cu.fore.LIGHTMAGENTA_EX}{src_audio}")
+            lines.append(("Src Audio", f"{cu.fore.LIGHTMAGENTA_EX}{src_audio}"))
         if src_sub is not None:
-            print(f"{cu.fore.LIGHTBLACK_EX}├─ Src Subtitle : {cu.fore.LIGHTCYAN_EX}{src_sub}")
+            lines.append(("Src Subtitle", f"{cu.fore.LIGHTCYAN_EX}{src_sub}"))
         if dst_audio is not None:
-            print(f"{cu.fore.LIGHTBLACK_EX}├─ Dst Audio    : {cu.fore.YELLOW}{dst_audio}")
+            lines.append(("Dst Audio", f"{cu.fore.YELLOW}{dst_audio}"))
 
         if current_task == Task.JOB_QUEUE:
-            status_divider = "└─" if job.status == Status.PENDING else "├─"
-            print( f"{cu.fore.LIGHTBLACK_EX}{status_divider} Status       : {status_color}{status_label}")
-
+            lines.append(("Status", f"{status_color}{status_label}"))
             if job.status == Status.COMPLETED:
-                shift_divider = "└─" if job.merged is None else "├─"
-                print(f"{cu.fore.LIGHTBLACK_EX}{shift_divider} Avg Shift    : {detail_color}{job.result}")
+                lines.append(("Avg Shift", f"{detail_color}{job.result}"))
                 if job.merged is not None:
                     merge_status = f"{cu.fore.LIGHTGREEN_EX}Yes" if job.merged else "No"
-                    print(f"{cu.fore.LIGHTBLACK_EX}└─ Merged       : {merge_status}")
-
+                    lines.append(("Merged", merge_status))
             elif job.status == Status.FAILED:
-                print(f"{cu.fore.LIGHTBLACK_EX}└─ Error        : {detail_color}{job.result}")
+                lines.append(("Error", f"{detail_color}{job.result}"))
+
+        last_idx = len(lines) - 1
+        for line_idx, (label, value) in enumerate(lines):
+            divider = "└─" if line_idx == last_idx else "├─"
+            print(f"{cu.fore.LIGHTBLACK_EX}{divider} {label}: {value}")
 
 def show_yaml_queue(queued_jobs, current_task):
     """Show job list in a YAML/config style format (YAML-like Theme)."""
@@ -118,10 +132,10 @@ def show_yaml_queue(queued_jobs, current_task):
         if job.sub_file is not None:
             print(f"{cu.fore.LIGHTBLACK_EX}  subtitle_file: {cu.fore.LIGHTCYAN_EX}{job.sub_file}")
 
-        if job.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL):
-            src_audio = job.src_aud_display if job.src_aud_display is not None else job.src_aud_id
-            src_sub = job.src_sub_display if job.src_sub_display is not None else job.src_sub_id
-            dst_audio = job.dst_aud_display if job.dst_aud_display is not None else job.dst_aud_id
+        show_tracks_section = _has_any_track_data(job)
+
+        if show_tracks_section:
+            src_audio, src_sub, dst_audio = _get_track_values(job)
 
             print(f"{cu.fore.LIGHTBLACK_EX}  tracks:")
             print(f"{cu.fore.LIGHTBLACK_EX}    source_audio: {cu.fore.LIGHTMAGENTA_EX}{src_audio if src_audio is not None else 'null'}")
@@ -162,7 +176,6 @@ def show_queue(queue, current_task):
         case _:
             cu.print_error(f"Unknown queue theme: {current_theme}")
             show_classic_queue(queue, current_task)
-
 
 def main_queue_options(task):
     while True:
@@ -210,7 +223,6 @@ def main_queue_options(task):
             case 7:
                 break
 
-
 def temp_queue_options(temp_queue, task):
     """Handle options for the temporary job queue returned after file selection."""
     while True:
@@ -221,7 +233,7 @@ def temp_queue_options(temp_queue, task):
             "4": "Add selected jobs to queue",
             "5": "Return to main menu",
         }
-        temp_queue.show(task)
+        show_queue(temp_queue.contents, task)
         cu.show_menu_options(options)
 
         choice = cu.get_choice(1, 5)
