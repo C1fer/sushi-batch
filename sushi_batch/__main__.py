@@ -12,8 +12,12 @@ from .models import settings as s
 from .models.enums import Task
 from .external.ffmpeg import FFmpeg
 from .models.job_queue import JobQueue
+from importlib.metadata import version
 
-VERSION = "0.3.0"
+try: 
+    VERSION = version("sushi-batch")
+except Exception:
+    VERSION = None
 
 def handle_sync_option_selected(task):
     jobs = None
@@ -40,7 +44,8 @@ def show_main_menu():
         "8": "Exit",
     }
 
-    header = text2art("Sushi Batch") + f"Version: {VERSION}"
+    version_str = f"Version: {VERSION}" if VERSION else ""
+    header = text2art("Sushi Batch") + version_str 
 
     cu.clear_screen()
     cu.print_header(header)
