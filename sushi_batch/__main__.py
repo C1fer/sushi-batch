@@ -2,6 +2,7 @@ from .utils import utils
 utils.check_required_packages() # Check if required packages are installed
 
 import sys
+import traceback
 
 from art import text2art
 
@@ -62,7 +63,8 @@ def main():
         s.config.handle_load()
         qm.main_queue.load()
     except Exception as e:
-        cu.print_error(f"Error initializing app: {e}")
+        cu.print_error(f"---INIT ERROR---\n{e}", False)
+        sys.exit(1)
 
     sync_tasks = {
         1: (Task.VIDEO_SYNC_DIR, "Video-based Sync (Directory mode)"),

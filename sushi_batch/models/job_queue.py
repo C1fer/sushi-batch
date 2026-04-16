@@ -23,6 +23,7 @@ class JobQueue:
         """Save queue contents to JSON file"""
         with open(self.file_path, "w", encoding="utf-8") as data_file:
             json.dump(self.contents, data_file, cls=JobEncoder, indent=4)
+        return 0
 
     def load(self):
         """Load queue contents from JSON file"""

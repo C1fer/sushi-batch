@@ -60,13 +60,8 @@ class Settings():
 
     def _load(self):
         """Load settings from JSON file"""
-        try:
-            with open(self.file_path, "r", encoding="utf-8") as settings_file:
-                data = json.load(settings_file, cls=SettingsDecoder)
-        except Exception as e:
-            cu.print_error(f"Error loading settings: {e}", False)
-            return
-
+        with open(self.file_path, "r", encoding="utf-8") as settings_file:
+            data = json.load(settings_file, cls=SettingsDecoder)
         # Update instance attributes with loaded settings
         for key, value in data.items():
                 setattr(self, key, value)
