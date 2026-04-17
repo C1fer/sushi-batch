@@ -45,7 +45,8 @@ class Sushi:
             for line in output:
                 if line.startswith(cls.avg_shift_flag):
                     shift_str = line.split(cls.avg_shift_flag)[1].strip().split()[0]
-                    return shift_str
+                    formatted_shift = shift_str if shift_str.startswith("-") else f"+{shift_str}" 
+                    return formatted_shift
 
         except Exception as e:
             return "Unknown (Couldn't parse shift value: {0})".format(str(e))
