@@ -30,20 +30,22 @@ class Job:
     ):
         self.idx = idx
         self.src_file = self._normalize_path(src_file)
-        self.dst_file = self._normalize_path(dst_file)
-        self.sub_file = self._normalize_path(sub_file)
-        self.task = task
         self.src_aud_id = src_aud_id
         self.src_aud_display = src_aud_display
-        self.dst_aud_id = dst_aud_id
-        self.dst_aud_display = dst_aud_display
         self.src_sub_id = src_sub_id
         self.src_sub_display = src_sub_display
         self.src_sub_lang = src_sub_lang
         self.src_sub_name = src_sub_name
         self.src_sub_ext = src_sub_ext
+
+        self.dst_file = self._normalize_path(dst_file)
+        self.dst_aud_id = dst_aud_id
+        self.dst_aud_display = dst_aud_display
         self.dst_vid_width = dst_vid_width
         self.dst_vid_height = dst_vid_height
+        self.sub_file = self._normalize_path(sub_file)
+        
+        self.task = task
         self.status = status
         self.result = result
         self.merged = merged
