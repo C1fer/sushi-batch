@@ -32,11 +32,11 @@ def _status_style(status):
     """Return display metadata for a job status."""
     match status:
         case Status.COMPLETED:
-            return (cu.fore.LIGHTGREEN_EX, "Completed", "+", cu.fore.GREEN)
+            return (cu.fore.LIGHTGREEN_EX, "Completed", "✓", cu.fore.GREEN)
         case Status.FAILED:
             return (cu.fore.LIGHTRED_EX, "Failed", "x", cu.fore.RED)
         case _:
-            return (cu.fore.LIGHTBLACK_EX, "Pending", "~", cu.fore.LIGHTBLACK_EX)
+            return (cu.fore.LIGHTYELLOW_EX, "Pending", "~", cu.fore.LIGHTYELLOW_EX)
 
 def show_classic_queue(queued_jobs, current_task):
     """ Show Job List contents (Classic Theme) """
@@ -44,7 +44,7 @@ def show_classic_queue(queued_jobs, current_task):
         job.idx = idx
         print(f"\n{cu.fore.LIGHTBLACK_EX}Job {job.idx}")
         print(f"{cu.fore.LIGHTBLUE_EX}Source file: {job.src_file}")
-        print(f"{cu.fore.LIGHTYELLOW_EX}Destination file: {job.dst_file}")
+        print(f"{cu.fore.YELLOW}Destination file: {job.dst_file}")
 
         if job.sub_file is not None:
             print(f"{cu.fore.LIGHTCYAN_EX }Subtitle file: {job.sub_file}")
@@ -58,12 +58,12 @@ def show_classic_queue(queued_jobs, current_task):
             print(f"{cu.fore.LIGHTCYAN_EX}Source Subtitle Track: {src_sub}")
 
         if dst_audio is not None:
-            print(f"{cu.fore.YELLOW}Destination Audio Track: {dst_audio}")
+            print(f"{cu.fore.LIGHTMAGENTA_EX}Destination Audio Track: {dst_audio}")
 
         if current_task == Task.JOB_QUEUE: 
             match job.status:
                 case Status.PENDING:
-                    print(f"{cu.fore.LIGHTBLACK_EX}Status: Pending")
+                    print(f"{cu.fore.LIGHTYELLOW_EX}Status: Pending")
                 case Status.COMPLETED:
                     print(f"{cu.fore.LIGHTGREEN_EX}Status: Completed")
                     print(f"{cu.fore.GREEN}Average Shift: {job.result}")
@@ -73,9 +73,9 @@ def show_classic_queue(queued_jobs, current_task):
 
             match job.merged:
                 case True:
-                    print(f"{cu.fore.LIGHTGREEN_EX}Merged: Yes")
+                    print(f"{cu.fore.GREEN}Merged: Yes")
                 case False:
-                    print(f"{cu.fore.LIGHTBLACK_EX}Merged: No")
+                    print(f"{cu.fore.LIGHTYELLOW_EX}Merged: Pending")
                 case _:
                     pass
 
@@ -85,8 +85,7 @@ def show_card_queue(queued_jobs, current_task):
         job.idx = idx
         status_color, status_label, status_icon, detail_color = _status_style(job.status)
 
-        status_display = f"[{status_color}{status_icon} {status_label}{cu.fore.LIGHTBLUE_EX}]" if current_task == Task.JOB_QUEUE else ""
-        print(f"\n{cu.fore.LIGHTBLUE_EX}┌─ Job {idx} {status_display}")
+        print(f"\n{cu.fore.LIGHTBLUE_EX}┌─ Job {idx}")
 
         src_audio, src_sub, dst_audio = _get_track_values(job)
 
@@ -101,9 +100,9 @@ def show_card_queue(queued_jobs, current_task):
             },
             {
                 "label": "Destination",
-                "value": f"{cu.fore.LIGHTYELLOW_EX}{job.dst_file}",
+                "value": f"{cu.fore.YELLOW}{job.dst_file}",
                 "children": [
-                    ("Audio Track", f"{cu.fore.YELLOW}{dst_audio}") if dst_audio is not None else None,
+                    ("Audio Track", f"{cu.fore.LIGHTMAGENTA_EX}{dst_audio}") if dst_audio is not None else None,
                 ],
             },
         ]
@@ -119,13 +118,13 @@ def show_card_queue(queued_jobs, current_task):
         if current_task == Task.JOB_QUEUE:
             status_section = {
                 "label": "Status",
-                "value": f"{status_color}{status_label}",
+                "value": f"{status_color}{status_icon} {status_label}",
                 "children": [],
             }
             if job.status == Status.COMPLETED:
                 status_section["children"].append(("Avg Shift", f"{detail_color}{job.result}"))
                 if job.merged is not None:
-                    merge_status = f"{cu.fore.LIGHTGREEN_EX}Yes" if job.merged else "No"
+                    merge_status = f"{cu.fore.GREEN}Yes" if job.merged else f"{cu.fore.LIGHTYELLOW_EX}Pending"
                     status_section["children"].append(("Merged", merge_status))
             elif job.status == Status.FAILED:
                 status_section["children"].append(("Error", f"{detail_color}{job.result}"))
@@ -161,7 +160,7 @@ def show_yaml_queue(queued_jobs, current_task):
 
         print(f"\n{cu.fore.LIGHTBLUE_EX}Job {idx}:")
         print(f"{cu.fore.LIGHTBLACK_EX}  source_file: {cu.fore.LIGHTBLUE_EX}{job.src_file}")
-        print(f"{cu.fore.LIGHTBLACK_EX}  destination_file: {cu.fore.LIGHTYELLOW_EX}{job.dst_file}")
+        print(f"{cu.fore.LIGHTBLACK_EX}  destination_file: {cu.fore.YELLOW}{job.dst_file}")
         
         if job.sub_file is not None:
             print(f"{cu.fore.LIGHTBLACK_EX}  subtitle_file: {cu.fore.LIGHTCYAN_EX}{job.sub_file}")
@@ -174,7 +173,7 @@ def show_yaml_queue(queued_jobs, current_task):
             print(f"{cu.fore.LIGHTBLACK_EX}  tracks:")
             print(f"{cu.fore.LIGHTBLACK_EX}    source_audio: {cu.fore.LIGHTMAGENTA_EX}{src_audio if src_audio is not None else 'null'}")
             print(f"{cu.fore.LIGHTBLACK_EX}    source_subtitle: {cu.fore.LIGHTCYAN_EX}{src_sub if src_sub is not None else 'null'}")
-            print(f"{cu.fore.LIGHTBLACK_EX}    destination_audio: {cu.fore.YELLOW}{dst_audio if dst_audio is not None else 'null'}")
+            print(f"{cu.fore.LIGHTBLACK_EX}    destination_audio: {cu.fore.LIGHTMAGENTA_EX}{dst_audio if dst_audio is not None else 'null'}")
 
         if current_task == Task.JOB_QUEUE:
             print(f"{cu.fore.LIGHTBLACK_EX}  status: {status_color}{status_label.lower()}")
@@ -185,9 +184,9 @@ def show_yaml_queue(queued_jobs, current_task):
             
             match job.merged:
                 case True:
-                    print(f"{cu.fore.LIGHTGREEN_EX}  merged: true")
+                    print(f"{cu.fore.GREEN}  merged: true")
                 case False:
-                    print(f"{cu.fore.LIGHTBLACK_EX}  merged: false")
+                    print(f"{cu.fore.LIGHTYELLOW_EX}  merged: pending")
                 case _:
                     pass
     
