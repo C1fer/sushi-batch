@@ -135,8 +135,8 @@ class MKVMerge:
                         job.merged = True
                     case 2:
                         lines = stdout.splitlines()
-                        error = [x for x in lines if x.startswith("Error:")]
+                        error = [x.replace("Error: ", "Merge Error: ") for x in lines if x.startswith("Error:")]
                         sp.fail("❌")
                         sp.write(f"{cu.fore.LIGHTRED_EX}{error[0]}\n")
         except Exception as e:
-                cu.print_error(f"Merge error: {e}")
+                cu.print_error(f"Merge Error: {e}")
