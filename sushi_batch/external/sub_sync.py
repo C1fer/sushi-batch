@@ -5,6 +5,8 @@ from yaspin import yaspin
 from ..models import settings
 from ..models.enums import Status, Task
 
+from ..utils import console_utils as cu
+
 from .subprocess_logger import SubProcessLogger
 
 
@@ -64,7 +66,9 @@ class Sushi:
 
     @staticmethod
     def run(job):
-        with yaspin(text=f"Job {job.idx}", color="cyan", timer=True) as sp:
+        file_display = f"{cu.fore.MAGENTA}{job.dst_file}{cu.Style.RESET_ALL}"
+        title = f"[Job {job.idx} - Sushi] Syncing subtitles to {file_display}"
+        with yaspin(text=title, color="cyan", timer=True) as sp:
             try: 
                 args = Sushi._get_args(job)
                 sushi = subprocess.Popen(

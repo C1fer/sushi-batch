@@ -41,12 +41,8 @@ class SubResampler:
             if settings.config.save_aegisub_resample_logs:
                 log_filepath = SubProcessLogger.set_log_path(job.dst_file, "Aegisub Resample Logs")
                 SubProcessLogger.save_log_output(log_filepath, stdout)
-
-            return (
-                True 
-                if aegisub_resample.returncode == 0 
-                else False
-            )
+            return True if aegisub_resample.returncode == 0 else False
+            
         except Exception as e:
             cu.print_error(f"Subtitle resampling error: {e}")
             return False
@@ -75,26 +71,29 @@ class SubResampler:
     @classmethod
     def is_resample_needed(cls, job):
         """Determines if subtitle resampling is needed based on script and video resolution"""
+        log_prefix = f"[Job {job.idx} - SubResampler]"
+
         if job.src_sub_ext is None:
-            cu.print_error("Source subtitle file extension is unknown. Cannot determine if resampling is needed.")
+            cu.print_error(f"{log_prefix} Source subtitle file extension is unknown. Cannot determine if resampling is needed.", nl_before=False, wait=False)
             return False
         
         if job.src_sub_ext not in cls.whitelisted_resample_extensions:
-            cu.print_error(f"Subtitle format {job.src_sub_ext} is not supported for resampling. Skipping resample.")
+            cu.print_error(f"{log_prefix} Subtitle format {job.src_sub_ext} is not supported for resampling. Skipping resample.", nl_before=False, wait=False)
             return False
 
         video_resolution = (job.dst_vid_width, job.dst_vid_height)
         if None in video_resolution:
-            cu.print_error("Destination video resolution is unknown. Cannot determine if subtitle resampling is needed.")
+            cu.print_error(f"{log_prefix} Destination video resolution is unknown. Cannot determine if subtitle resampling is needed.", nl_before=False, wait=False)
             return False
         
         script_resolution = cls._get_script_resolution(f"{job.dst_file}.sushi{job.src_sub_ext}")
         if None in script_resolution:
-            cu.print_error("Script resolution could not be determined from subtitle file. Cannot determine if resampling is needed.")
+            cu.print_error(f"{log_prefix} Script resolution could not be determined from subtitle file. Cannot determine if resampling is needed.", nl_before=False, wait=False)
             return False
         
         if video_resolution == script_resolution:
-            print(f"{cu.fore.LIGHTYELLOW_EX}Subtitle resampling not needed. Script resolution matches video resolution.")
+            cu.print_warning(f"{log_prefix} Resampling not needed. Script resolution matches video resolution.", nl_before=False, wait=False)
             return False
 
+        cu.print_warning(f"{log_prefix} Resampling needed. Script resolution {script_resolution} does not match video resolution {video_resolution}.", nl_before=False, wait=False)
         return True

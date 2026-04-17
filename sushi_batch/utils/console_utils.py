@@ -29,9 +29,14 @@ def print_error(message, wait=True):
     if wait:
         sleep(1)
 
+def print_warning(message, wait=True, nl_before=False):
+    _print_colored(message, fore.LIGHTYELLOW_EX, nl_before=nl_before)
+    if wait:
+        sleep(1)
 
-def print_success(message, wait=True):
-    _print_colored(message, fore.LIGHTGREEN_EX, nl_before=True)
+
+def print_success(message, wait=True, nl_before=True):
+    _print_colored(message, fore.LIGHTGREEN_EX, nl_before=nl_before)
     if wait:
         sleep(1)
 

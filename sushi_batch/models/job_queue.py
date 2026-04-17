@@ -90,7 +90,7 @@ class JobQueue:
             cu.print_error("\nNo pending jobs to run!") 
             return
 
-        cu.print_subheader("Running jobs")           
+        cu.print_subheader("Executing synchronization jobs")           
         for job in jobs_to_run:
             Sushi.run(job)
             self.save() 
@@ -111,10 +111,13 @@ class JobQueue:
             return False
         
         resample_done = SubResampler.run(job)
-        if not resample_done:
-            print(f"{cu.fore.LIGHTYELLOW_EX}Subtitle could not be resampled. Merging synced subtitle instead.")
+        if resample_done:
+            cu.print_success(f"[Job {job.idx} - SubResampler] Resampling completed successfully.", nl_before=False, wait=False)
+            return True
+        else:
+            cu.print_warning(f"[Job {job.idx} - SubResampler] Subtitle could not be resampled. Merging synced subtitle instead.", nl_before=False, wait=False)
             return False
-        return True
+        
 
     def _clean_generated_files(self, job_list, confirm_deletion=True):
         """Delete files generated for the specified jobs.
