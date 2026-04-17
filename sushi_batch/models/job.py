@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from .enums import Status
 
 
@@ -25,9 +27,9 @@ class Job:
         merged=None
     ):
         self.idx = idx
-        self.src_file = src_file
-        self.dst_file = dst_file
-        self.sub_file = sub_file
+        self.src_file = self._normalize_path(src_file)
+        self.dst_file = self._normalize_path(dst_file)
+        self.sub_file = self._normalize_path(sub_file)
         self.task = task
         self.src_aud_id = src_aud_id
         self.src_aud_display = src_aud_display
@@ -43,4 +45,11 @@ class Job:
         self.status = status
         self.result = result
         self.merged = merged
+
+    @staticmethod
+    def _normalize_path(file_path):
+        """Normalize path formatting while preserving None values."""
+        if file_path is None:
+            return None
+        return str(Path(file_path))
        
