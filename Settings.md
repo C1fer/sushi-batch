@@ -2,7 +2,7 @@
 
 ## General
 #### Merge synced sub automatically 
-Merge output subtitle from Sushi with destination video after sync.
+Merge output subtitle from Sushi with sync target video after sync.
 
 #### Save Sushi Logs
 Save sync logs to data folder **(Located in Documents library)**.
@@ -26,7 +26,7 @@ Copy global metadata to output video.
 Copy tags from all tracks to output video.
 
 
-## Destination File
+## Sync Target File
 ### Only copy audio track used for sync.  
 Don't copy any audio tracks aside from the one used in the sync process. 
 

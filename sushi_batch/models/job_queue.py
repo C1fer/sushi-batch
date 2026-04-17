@@ -223,7 +223,7 @@ class JobQueue:
         src_media_info = FFmpeg.get_clean_probe_info(job.src_file)
         dst_media_info = FFmpeg.get_clean_probe_info(job.dst_file)
 
-        """"Get source and destination media stream indexes"""
+        """"Get source and sync target media stream indexes"""
         src_aud_streams = Stream.get_audio_streams_from_probe(src_media_info['audio']) if 'audio' in src_media_info else []
         src_sub_streams = Stream.get_sub_streams_from_probe(src_media_info['subtitle']) if 'subtitle' in src_media_info else []
         dst_aud_streams = Stream.get_audio_streams_from_probe(dst_media_info['audio']) if 'audio' in dst_media_info else []
@@ -236,7 +236,7 @@ class JobQueue:
 
         src_aud_selected = _select_stream(src_aud_streams, "Select a source audio stream: ")
         src_sub_selected = _select_stream(src_sub_streams, "Select a source subtitle stream: ")
-        dst_aud_selected = _select_stream(dst_aud_streams, "Select a destination audio stream: ")
+        dst_aud_selected = _select_stream(dst_aud_streams, "Select a sync target audio stream: ")
         
         streams_info = {
             "src_aud_id": src_aud_selected.id,

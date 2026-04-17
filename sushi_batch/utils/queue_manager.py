@@ -18,7 +18,7 @@ def _get_track_values(job):
 
 
 def _has_any_track_data(job):
-    """Return True when any source/destination track metadata is available."""
+    """Return True when any source/sync target track metadata is available."""
     return any(
         value is not None
         for value in (
@@ -54,7 +54,7 @@ def show_classic_queue(queued_jobs, current_task):
         job.idx = idx
         print(f"\n{cu.fore.LIGHTBLACK_EX}Job {job.idx}")
         print(f"{cu.fore.LIGHTBLUE_EX}Source file: {job.src_file}")
-        print(f"{cu.fore.YELLOW}Destination file: {job.dst_file}")
+        print(f"{cu.fore.YELLOW}Sync Target File: {job.dst_file}")
 
         if job.sub_file is not None:
             print(f"{cu.fore.LIGHTCYAN_EX }Subtitle file: {job.sub_file}")
@@ -68,7 +68,7 @@ def show_classic_queue(queued_jobs, current_task):
             print(f"{cu.fore.LIGHTCYAN_EX}Source Subtitle Track: {src_sub}")
 
         if dst_audio is not None:
-            print(f"{cu.fore.LIGHTMAGENTA_EX}Destination Audio Track: {dst_audio}")
+            print(f"{cu.fore.LIGHTMAGENTA_EX}Sync Target Audio Track: {dst_audio}")
 
         if current_task == Task.JOB_QUEUE: 
             match job.status:
@@ -109,7 +109,7 @@ def show_card_queue(queued_jobs, current_task):
                 ],
             },
             {
-                "label": "Destination",
+                "label": "Sync Target",
                 "value": f"{cu.fore.YELLOW}{job.dst_file}",
                 "children": [
                     ("Audio Track", f"{cu.fore.LIGHTMAGENTA_EX}{dst_audio}") if dst_audio is not None else None,
@@ -181,7 +181,7 @@ def show_yaml_queue(queued_jobs, current_task):
 
         print(f"\n{cu.fore.LIGHTBLUE_EX}Job {idx}:")
         print(f"{cu.fore.LIGHTBLACK_EX}  source_file: {cu.fore.LIGHTBLUE_EX}{job.src_file}")
-        print(f"{cu.fore.LIGHTBLACK_EX}  destination_file: {cu.fore.YELLOW}{job.dst_file}")
+        print(f"{cu.fore.LIGHTBLACK_EX}  sync_target_file: {cu.fore.YELLOW}{job.dst_file}")
         
         if job.sub_file is not None:
             print(f"{cu.fore.LIGHTBLACK_EX}  subtitle_file: {cu.fore.LIGHTCYAN_EX}{job.sub_file}")
@@ -194,7 +194,7 @@ def show_yaml_queue(queued_jobs, current_task):
             print(f"{cu.fore.LIGHTBLACK_EX}  tracks:")
             print(f"{cu.fore.LIGHTBLACK_EX}    source_audio: {cu.fore.LIGHTMAGENTA_EX}{src_audio if src_audio is not None else 'null'}")
             print(f"{cu.fore.LIGHTBLACK_EX}    source_subtitle: {cu.fore.LIGHTCYAN_EX}{src_sub if src_sub is not None else 'null'}")
-            print(f"{cu.fore.LIGHTBLACK_EX}    destination_audio: {cu.fore.LIGHTMAGENTA_EX}{dst_audio if dst_audio is not None else 'null'}")
+            print(f"{cu.fore.LIGHTBLACK_EX}    sync_target_audio: {cu.fore.LIGHTMAGENTA_EX}{dst_audio if dst_audio is not None else 'null'}")
 
         if current_task == Task.JOB_QUEUE:
             print(f"{cu.fore.LIGHTBLACK_EX}  status: {status_color}{status_label.lower()}")

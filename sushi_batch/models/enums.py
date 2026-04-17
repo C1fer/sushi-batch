@@ -55,7 +55,7 @@ class Section(Enum):
     GEN = "General"
     WORKFLOW = "Workflow"
     SRC = "Source File"
-    DST = "Destination File"
+    DST = "Sync Target File"
     SUB = "Synced subtitle"
 
 

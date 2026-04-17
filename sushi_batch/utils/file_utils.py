@@ -69,11 +69,11 @@ def select_files(task):
     if task == Task.AUDIO_SYNC_FIL:
         src_files = FileDialog.askfilenames("Select Source Audio Files", FileTypes.AUDIO.value)
         sub_files = FileDialog.askfilenames("Select Source Subtitle Files", FileTypes.SUBTITLE.value)
-        dst_files = FileDialog.askfilenames("Select Destination Audio Files", FileTypes.AUDIO.value)
+        dst_files = FileDialog.askfilenames("Select Sync Target Audio Files", FileTypes.AUDIO.value)
 
     elif task == Task.VIDEO_SYNC_FIL:
         src_files = FileDialog.askfilenames("Select Source Video Files", FileTypes.VIDEO.value)
-        dst_files = FileDialog.askfilenames("Select Destination Video Files", FileTypes.VIDEO.value)
+        dst_files = FileDialog.askfilenames("Select Sync Target Video Files", FileTypes.VIDEO.value)
 
     if validate_files(src_files, dst_files, sub_files, task):
         return create_jobs(src_files, dst_files, sub_files, task)
@@ -86,8 +86,8 @@ def validate_files(src_files, dst_files, sub_files, task):
 
     validations = [
         (src_len == 0, "No source files found!"),
-        (dst_len == 0, "No destination files found!"),
-        (src_len != dst_len, f"Source ({src_len}) and destination ({dst_len}) file counts don't match!"),
+        (dst_len == 0, "No sync target files found!"),
+        (src_len != dst_len, f"Source ({src_len}) and sync target ({dst_len}) file counts don't match!"),
         (task in (Task.AUDIO_SYNC_DIR, Task.AUDIO_SYNC_FIL) and src_len != sub_len, 
         f"Audio ({src_len}) and subtitle ({sub_len}) file counts don't match!"),
     ]

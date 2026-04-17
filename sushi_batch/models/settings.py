@@ -38,7 +38,7 @@ class Settings():
         self.src_copy_global_tags = False
         self.src_copy_track_tags = False
 
-        # Destination file settings
+        # Sync target file settings
         self.dst_copy_audio_tracks = False
         self.dst_copy_attachments = True
         self.dst_copy_chapters = True
@@ -113,7 +113,7 @@ class Settings():
             (Section.SRC, "Copy global tags", self.src_copy_global_tags),
             (Section.SRC, "Copy track tags", self.src_copy_track_tags, DIVIDER_FLAG),
             
-            # Destination File Section
+            # Sync Target File Section
             (Section.DST, "Only copy audio track used for sync", self.dst_copy_audio_tracks),
             (Section.DST, "Copy attachments", self.dst_copy_attachments),
             (Section.DST, "Copy chapters", self.dst_copy_chapters),

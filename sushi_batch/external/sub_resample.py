@@ -87,7 +87,7 @@ class SubResampler:
 
         video_resolution = (job.dst_vid_width, job.dst_vid_height)
         if None in video_resolution:
-            cu.print_error(f"{log_prefix} Destination video resolution is unknown. Cannot determine if subtitle resampling is needed.", nl_before=False, wait=False)
+            cu.print_error(f"{log_prefix} Sync target video resolution is unknown. Cannot determine if subtitle resampling is needed.", nl_before=False, wait=False)
             return False
         
         script_resolution = cls._get_script_resolution(f"{job.dst_file}.sushi{job.src_sub_ext}")
