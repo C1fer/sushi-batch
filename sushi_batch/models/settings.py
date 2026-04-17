@@ -25,7 +25,7 @@ class Settings():
         self.queue_theme = QueueTheme.CARD
         self.merge_files_after_execution = True
         self.resample_subs_on_merge = False
-        self.delete_generated_files_after_merge = True
+        self.delete_generated_files_after_merge = False
         self.save_sushi_logs = True
         self.save_aegisub_resample_logs = False
         self.save_mkvmerge_logs = False
