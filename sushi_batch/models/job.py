@@ -24,7 +24,9 @@ class Job:
         dst_vid_height=None,
         status=Status.PENDING,
         result=None,
-        merged=None
+        merged=None,
+        merged_file=None,
+        resample_done=None,
     ):
         self.idx = idx
         self.src_file = self._normalize_path(src_file)
@@ -45,6 +47,9 @@ class Job:
         self.status = status
         self.result = result
         self.merged = merged
+        self.merged_file = self._normalize_path(merged_file)
+        self.resample_done = resample_done
+
 
     @staticmethod
     def _normalize_path(file_path):

@@ -41,7 +41,11 @@ class SubResampler:
             if settings.config.save_aegisub_resample_logs:
                 log_filepath = SubProcessLogger.set_log_path(job.dst_file, "Aegisub Resample Logs")
                 SubProcessLogger.save_log_output(log_filepath, stdout)
-            return True if aegisub_resample.returncode == 0 else False
+
+            if aegisub_resample.returncode == 0:
+                job.resample_done = True
+                return True
+            return False
             
         except Exception as e:
             cu.print_error(f"Subtitle resampling error: {e}")

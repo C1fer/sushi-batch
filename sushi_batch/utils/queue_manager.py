@@ -37,6 +37,16 @@ def _status_style(status):
             return (cu.fore.LIGHTRED_EX, "Failed", "x", cu.fore.RED)
         case _:
             return (cu.fore.LIGHTYELLOW_EX, "Pending", "~", cu.fore.LIGHTYELLOW_EX)
+        
+def _merge_status_style(merge_status):
+    """Return display metadata for a job's merge status."""
+    match merge_status:
+        case True:
+            return (cu.fore.LIGHTGREEN_EX, "Completed", "✓", cu.fore.GREEN)
+        case False:
+            return (cu.fore.LIGHTYELLOW_EX, "Pending", "~", cu.fore.LIGHTYELLOW_EX)
+        case _:
+            return (cu.fore.LIGHTBLACK_EX, "Unknown", "?", cu.fore.LIGHTBLACK_EX)
 
 def show_classic_queue(queued_jobs, current_task):
     """ Show Job List contents (Classic Theme) """
@@ -123,12 +133,23 @@ def show_card_queue(queued_jobs, current_task):
             }
             if job.status == Status.COMPLETED:
                 status_section["children"].append(("Avg Shift", f"{detail_color}{job.result}"))
-                if job.merged is not None:
-                    merge_status = f"{cu.fore.GREEN}Yes" if job.merged else f"{cu.fore.LIGHTYELLOW_EX}Pending"
-                    status_section["children"].append(("Merged", merge_status))
             elif job.status == Status.FAILED:
                 status_section["children"].append(("Error", f"{detail_color}{job.result}"))
             sections.append(status_section)
+
+            if job.merged is not None:
+                merged_color, merged_label, merged_icon, merged_child_color = _merge_status_style(job.merged)
+
+                sections.append(
+                    {
+                        "label": "Merge Status",
+                        "value": merged_color + merged_icon + " " + merged_label,
+                        "children": [
+                            ("Generated File", f"{merged_child_color}{job.merged_file}") if job.merged_file is not None else None,
+                            ("Resampled", f"{merged_child_color}Yes") if job.resample_done else None,
+                        ],
+                    }
+                )
         
         sections = [
             {

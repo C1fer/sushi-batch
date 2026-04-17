@@ -105,7 +105,7 @@ class MKVMerge:
     def run(job, use_resampled_sub=False):
         try:     
             args = MKVMerge._get_merge_args(job, use_resampled_sub)
-            output_file = args[2]
+            output_file = path.normpath(args[2])
 
             log_prefix = f"[Job {job.idx} - MKVMerge]"
             file_display = f"{cu.fore.LIGHTMAGENTA_EX}{output_file}{cu.Style.RESET_ALL}"
@@ -130,11 +130,13 @@ class MKVMerge:
                     case 0:
                         sp.ok("✅")
                         job.merged = True
+                        job.merged_file = output_file
                     case 1:
                         lines = stdout.splitlines()
                         warnings = "\n".join([x.replace("Warning: ", f"{log_prefix} Warning: ") for x in lines if x.startswith("Warning:")])
                         sp.ok("⚠️ ")
                         sp.write(f"{cu.fore.LIGHTYELLOW_EX}{warnings}\n")
+                        job.merged_file = output_file
                         job.merged = True
                     case 2:
                         lines = stdout.splitlines()
