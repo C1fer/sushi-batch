@@ -163,9 +163,10 @@ class JobQueue:
 
         input("\nPress Enter to go back... ")
 
-    def clear(self):
+    def clear(self, trigger_file_cleanup=True):
         """ Clear queue contents """
-        self._clean_generated_files(self.contents.copy())
+        if trigger_file_cleanup:
+            self._clean_generated_files(self.contents.copy())
 
         self.contents.clear()
         self.save()

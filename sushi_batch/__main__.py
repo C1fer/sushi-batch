@@ -33,6 +33,30 @@ def handle_sync_option_selected(task):
     if jobs:
         qm.temp_queue_options(JobQueue(jobs), task)
 
+
+def _load_startup_data():
+    """Load startup data and allow recovery by resetting the failing state."""
+    while True:
+        try:
+            s.config.handle_load()
+        except Exception:
+            cu.print_error("An error occurred while loading settings.", False)
+            if cu.confirm_action("Restore default settings and restart? (Y/N): "):
+                s.config.restore()
+                cu.print_success("Settings restored. Initializing...", wait=True)
+                break
+            raise
+
+        try:
+            qm.main_queue.load()
+        except Exception:
+            cu.print_error("An error occurred while loading the job queue.",False,)
+            if cu.confirm_action("Clear queue data and restart? (Y/N): "):
+                qm.main_queue.clear(trigger_file_cleanup=False)
+                cu.print_success("Queue data cleared. Initializing...", wait=True)
+                break
+            raise
+
 def show_main_menu():
     options = {
         "1": "Video-based Sync  (Directory Select)",
@@ -58,12 +82,8 @@ def main():
         cu.print_error("FFmpeg could not be found! \nInstall or add the program to PATH before running the tool", False)
         sys.exit(1)
 
-    # Load settings and queue contents on startup
     try:
-        cu.print_subheader("Loading settings")
-        s.config.handle_load()
-        cu.print_subheader("Loading queue")
-        qm.main_queue.load()
+        _load_startup_data()
     except Exception as e:
         init_trace = traceback.format_exc().rstrip()
         cu.print_error(f"---INIT ERROR---\nStartup initialization failed: {type(e).__name__}: {e}\n{init_trace}", False)
