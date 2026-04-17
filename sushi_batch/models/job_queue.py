@@ -4,6 +4,7 @@ from os import path
 from sushi_batch.external.ffmpeg import FFmpeg
 
 from ..utils import console_utils as cu
+from ..utils import utils
 from ..utils.json_utils import JobDecoder, JobEncoder
 from ..external.mkv_merge import MKVMerge
 from ..external.sub_sync import Sushi
@@ -104,6 +105,12 @@ class JobQueue:
             return False
         return True
 
+    def clean_generated_files(self, job_list):
+        """Delete files generated for the specified jobs.
+        This includes intermediate subtitle files generated for syncing and resampling.
+        """
+        utils.clean_generated_files(job_list)
+        
 
     def merge_completed_video_tasks(self, job_list):
         """ Generate a new video file from completed video tasks """
@@ -132,6 +139,10 @@ class JobQueue:
                 pass
             MKVMerge.run(job, use_resampled_sub=use_resampled_sub)
             self.save()
+
+        if settings.config.delete_generated_files_after_merge:
+            successfully_merged_jobs = [job for job in completed_jobs if job.merged]
+            self.clean_generated_files(successfully_merged_jobs)
 
         input("\nPress Enter to go back... ")
 
