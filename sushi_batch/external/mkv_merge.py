@@ -79,7 +79,7 @@ class MKVMerge:
         if not s.config.sub_forced_flag:
             args.extend(["--forced-display-flag", "0: 0"])
 
-        sub_suffix = ".sushi_resampled.ass" if use_resampled_sub else ".sushi.ass"
+        sub_suffix = f".sushi_resampled{job.src_sub_ext}" if use_resampled_sub else f".sushi{job.src_sub_ext}"
         args.append(f"{job.dst_file}{sub_suffix}")
 
     @staticmethod

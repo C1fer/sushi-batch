@@ -9,14 +9,14 @@ from .subprocess_logger import SubProcessLogger
 import re
 class SubResampler:
     is_installed = utils.is_app_installed("aegisub-cli")
-    whitelisted_resample_extensions = {"ass", "ssa"}
+    whitelisted_resample_extensions = {".ass", ".ssa"}
     
     @staticmethod
     def _get_args(job):
         return [
             "aegisub-cli",
-            f"{job.dst_file}.sushi.ass",
-            f"{job.dst_file}.sushi_resampled.ass",
+            f"{job.dst_file}.sushi{job.src_sub_ext}",
+            f"{job.dst_file}.sushi_resampled{job.src_sub_ext}",
             "tool/resampleres",
             "--video",
             job.dst_file,
@@ -57,35 +57,44 @@ class SubResampler:
         playres_x = None
         playres_y = None
 
-        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
-            for line in f:
-                if "PlayResX" in line:
-                    playres_x = int(re.findall(r"\d+", line)[0])
-                elif "PlayResY" in line:
-                    playres_y = int(re.findall(r"\d+", line)[0])
+        try: 
+            with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    if "PlayResX" in line:
+                        playres_x = int(re.findall(r"\d+", line)[0])
+                    elif "PlayResY" in line:
+                        playres_y = int(re.findall(r"\d+", line)[0])
 
-                if playres_x and playres_y:
-                    break
+                    if playres_x and playres_y:
+                        break
+        except Exception:
+            return None, None
 
         return playres_x, playres_y
     
     @classmethod
     def is_resample_needed(cls, job):
         """Determines if subtitle resampling is needed based on script and video resolution"""
-  
+        if job.src_sub_ext is None:
+            cu.print_error("Source subtitle file extension is unknown. Cannot determine if resampling is needed.")
+            return False
+        
+        if job.src_sub_ext not in cls.whitelisted_resample_extensions:
+            cu.print_error(f"Subtitle format {job.src_sub_ext} is not supported for resampling. Skipping resample.")
+            return False
 
         video_resolution = (job.dst_vid_width, job.dst_vid_height)
         if None in video_resolution:
             cu.print_error("Destination video resolution is unknown. Cannot determine if subtitle resampling is needed.")
             return False
         
-        script_resolution = cls._get_script_resolution(f"{job.dst_file}.sushi.ass")
+        script_resolution = cls._get_script_resolution(f"{job.dst_file}.sushi{job.src_sub_ext}")
         if None in script_resolution:
             cu.print_error("Script resolution could not be determined from subtitle file. Cannot determine if resampling is needed.")
             return False
         
-        is_needed = video_resolution != script_resolution
-        if not is_needed:
+        if video_resolution == script_resolution:
             print(f"{cu.fore.LIGHTYELLOW_EX}Subtitle resampling not needed. Script resolution matches video resolution.")
+            return False
 
-        return is_needed
+        return True

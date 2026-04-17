@@ -217,6 +217,7 @@ class JobQueue:
             "src_sub_display": src_sub_selected.display_name,
             "src_sub_lang": Stream.get_stream_lang(src_sub_streams, src_sub_selected.id),
             "src_sub_name": Stream.get_stream_name(src_sub_streams, src_sub_selected.id),
+            "src_sub_ext": Stream.get_subtitle_extension(src_sub_streams, src_sub_selected.id),
             "dst_vid_width": dst_media_info.get('video', [{}])[0].get('width'),
             "dst_vid_height": dst_media_info.get('video', [{}])[0].get('height')
         }

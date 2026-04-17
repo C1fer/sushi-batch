@@ -17,6 +17,7 @@ class Job:
         src_sub_display=None,
         src_sub_lang=None,
         src_sub_name=None,
+        src_sub_ext = None,
         dst_vid_width=None,
         dst_vid_height=None,
         status=Status.PENDING,
@@ -36,8 +37,10 @@ class Job:
         self.src_sub_display = src_sub_display
         self.src_sub_lang = src_sub_lang
         self.src_sub_name = src_sub_name
+        self.src_sub_ext = src_sub_ext
+        self.dst_vid_width = dst_vid_width
+        self.dst_vid_height = dst_vid_height
         self.status = status
         self.result = result
         self.merged = merged
-        self.dst_vid_width = dst_vid_width
-        self.dst_vid_height = dst_vid_height
+       
