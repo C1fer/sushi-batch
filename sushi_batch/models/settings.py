@@ -23,12 +23,14 @@ class Settings():
 
         # General settings
         self.queue_theme = QueueTheme.CARD
-        self.merge_files_after_execution = True
-        self.resample_subs_on_merge = False
-        self.delete_generated_files_after_merge = False
         self.save_sushi_logs = True
         self.save_aegisub_resample_logs = False
         self.save_mkvmerge_logs = False
+
+        # Workflow Settings
+        self.merge_files_after_execution = True
+        self.resample_subs_on_merge = False
+        self.delete_generated_files_after_merge = False
         
         # Source file settings
         self.src_copy_attachments = True
@@ -91,22 +93,25 @@ class Settings():
     def _generate_settings_table(self):
         """Create and return settings table"""
         tb = PrettyTable(["Section", "Name", "Value"])
+        DIVIDER_FLAG = True
         
         rows = [
             # General Section
             (Section.GEN, "Queue Theme", self.queue_theme),
-            (Section.GEN, "Merge synced sub automatically", self.merge_files_after_execution),
-            (Section.GEN, "Resample synced sub resolution before merging", self.resample_subs_on_merge),
-            (Section.GEN, "Delete generated subtitle files after merging", self.delete_generated_files_after_merge),
             (Section.GEN, "Save Sushi logs", self.save_sushi_logs),
             (Section.GEN, "Save Aegisub-CLI resample logs", self.save_aegisub_resample_logs),
-            (Section.GEN, "Save MKVMerge logs", self.save_mkvmerge_logs, True),
+            (Section.GEN, "Save MKVMerge logs", self.save_mkvmerge_logs, DIVIDER_FLAG),
+
+            # Workflow Section
+            (Section.WORKFLOW, "Merge synced sub automatically", self.merge_files_after_execution),
+            (Section.WORKFLOW, "Resample synced sub resolution before merging", self.resample_subs_on_merge),
+            (Section.WORKFLOW, "Delete generated subtitle files after merging", self.delete_generated_files_after_merge, DIVIDER_FLAG),
 
             # Source File Section
             (Section.SRC, "Copy attachments", self.src_copy_attachments),
             (Section.SRC, "Copy chapters", self.src_copy_chapters),
             (Section.SRC, "Copy global tags", self.src_copy_global_tags),
-            (Section.SRC, "Copy track tags", self.src_copy_track_tags, True),
+            (Section.SRC, "Copy track tags", self.src_copy_track_tags, DIVIDER_FLAG),
             
             # Destination File Section
             (Section.DST, "Only copy audio track used for sync", self.dst_copy_audio_tracks),
@@ -114,7 +119,7 @@ class Settings():
             (Section.DST, "Copy chapters", self.dst_copy_chapters),
             (Section.DST, "Copy subtitles", self.dst_copy_subtitle_tracks),
             (Section.DST, "Copy global tags", self.dst_copy_global_tags),
-            (Section.DST, "Copy track tags", self.dst_copy_track_tags, True),
+            (Section.DST, "Copy track tags", self.dst_copy_track_tags, DIVIDER_FLAG),
             
             # Synced Subtitle Section
             (Section.SUB, "Set default flag", self.sub_default_flag),

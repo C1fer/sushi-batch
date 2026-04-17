@@ -53,6 +53,7 @@ class Status(Enum):
 
 class Section(Enum):
     GEN = "General"
+    WORKFLOW = "Workflow"
     SRC = "Source File"
     DST = "Destination File"
     SUB = "Synced subtitle"
