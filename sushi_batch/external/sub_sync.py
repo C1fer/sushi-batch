@@ -88,7 +88,7 @@ class Sushi:
                 lines = stderr.strip().splitlines()
 
                 if sushi.returncode == 0:
-                    job.status = Status.COMPLETED
+                    job.sync_status = Status.COMPLETED
                     job.result = Sushi._calc_avg_shift(lines)
                     sp.ok("✅")
                 else:
@@ -96,5 +96,5 @@ class Sushi:
                     raise subprocess.SubprocessError(error_msg)
             except Exception as e:
                 sp.fail("❌")
-                job.status = Status.FAILED
+                job.sync_status = Status.FAILED
                 job.result = str(e)

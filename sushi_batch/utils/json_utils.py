@@ -9,7 +9,7 @@ class JobEncoder(JSONEncoder):
         if isinstance(obj, Job):
             dct = obj.__dict__.copy()
             dct["task"] = obj.task.name
-            dct["status"] = obj.status.name
+            dct["status"] = obj.sync_status.name
             return dct
         return super().default(obj) 
 

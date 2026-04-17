@@ -28,7 +28,7 @@ def _has_any_track_data(job):
         )
     )
 
-def _status_style(status):
+def _get_sync_status_style(status):
     """Return display metadata for a job status."""
     match status:
         case Status.COMPLETED:
@@ -71,14 +71,14 @@ def show_classic_queue(queued_jobs, current_task):
             print(f"{cu.fore.LIGHTMAGENTA_EX}Sync Target Audio Track: {dst_audio}")
 
         if current_task == Task.JOB_QUEUE: 
-            match job.status:
+            match job.sync_status:
                 case Status.PENDING:
-                    print(f"{cu.fore.LIGHTYELLOW_EX}Status: Pending")
+                    print(f"{cu.fore.LIGHTYELLOW_EX}Sync Status: Pending")
                 case Status.COMPLETED:
-                    print(f"{cu.fore.LIGHTGREEN_EX}Status: Completed")
+                    print(f"{cu.fore.LIGHTGREEN_EX}Sync Status: Completed")
                     print(f"{cu.fore.GREEN}Average Shift: {job.result}")
                 case Status.FAILED:
-                    print(f"{cu.fore.LIGHTRED_EX}Status: Failed")
+                    print(f"{cu.fore.LIGHTRED_EX}Sync Status: Failed")
                     print(f"{cu.fore.RED}Error: {job.result}")
 
             match job.merged:
@@ -93,7 +93,7 @@ def show_card_queue(queued_jobs, current_task):
     """Show job list using card-style blocks (Card Theme)."""
     for idx, job in enumerate(queued_jobs, start=1):
         job.idx = idx
-        status_color, status_label, status_icon, detail_color = _status_style(job.status)
+        status_color, status_label, status_icon, detail_color = _get_sync_status_style(job.sync_status)
 
         print(f"\n{cu.fore.LIGHTBLUE_EX}┌─ Job {idx}")
 
@@ -127,13 +127,13 @@ def show_card_queue(queued_jobs, current_task):
 
         if current_task == Task.JOB_QUEUE:
             status_section = {
-                "label": "Status",
+                "label": "Sync Status",
                 "value": f"{status_color}{status_icon} {status_label}",
                 "children": [],
             }
-            if job.status == Status.COMPLETED:
+            if job.sync_status == Status.COMPLETED:
                 status_section["children"].append(("Avg Shift", f"{detail_color}{job.result}"))
-            elif job.status == Status.FAILED:
+            elif job.sync_status == Status.FAILED:
                 status_section["children"].append(("Error", f"{detail_color}{job.result}"))
             sections.append(status_section)
 
@@ -177,7 +177,7 @@ def show_yaml_queue(queued_jobs, current_task):
     """Show job list in a YAML/config style format (YAML-like Theme)."""
     for idx, job in enumerate(queued_jobs, start=1):
         job.idx = idx
-        status_color, status_label, _, detail_color = _status_style(job.status)
+        status_color, status_label, _, detail_color = _get_sync_status_style(job.sync_status)
 
         print(f"\n{cu.fore.LIGHTBLUE_EX}Job {idx}:")
         print(f"{cu.fore.LIGHTBLACK_EX}  source_file: {cu.fore.LIGHTBLUE_EX}{job.src_file}")
@@ -197,10 +197,10 @@ def show_yaml_queue(queued_jobs, current_task):
             print(f"{cu.fore.LIGHTBLACK_EX}    sync_target_audio: {cu.fore.LIGHTMAGENTA_EX}{dst_audio if dst_audio is not None else 'null'}")
 
         if current_task == Task.JOB_QUEUE:
-            print(f"{cu.fore.LIGHTBLACK_EX}  status: {status_color}{status_label.lower()}")
-            if job.status == Status.COMPLETED:
+            print(f"{cu.fore.LIGHTBLACK_EX}  sync_status: {status_color}{status_label.lower()}")
+            if job.sync_status == Status.COMPLETED:
                 print(f"{cu.fore.LIGHTBLACK_EX}  average_shift: {detail_color}{job.result}")
-            elif job.status == Status.FAILED:
+            elif job.sync_status == Status.FAILED:
                 print(f"{cu.fore.LIGHTBLACK_EX}  error: {detail_color}{job.result}")
             
             match job.merged:

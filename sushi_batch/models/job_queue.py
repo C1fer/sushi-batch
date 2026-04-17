@@ -78,12 +78,12 @@ class JobQueue:
     def run_jobs(self, selected_jobs_indexes):
         """ Run jobs selected by user"""
         if selected_jobs_indexes == JobSelection.ALL:
-            jobs_to_run = [job for job in self.contents if job.status == Status.PENDING]
+            jobs_to_run = [job for job in self.contents if job.sync_status == Status.PENDING]
         else:
             jobs_to_run = [
                 self.contents[job_idx - 1]
                 for job_idx in selected_jobs_indexes
-                if self.contents[job_idx - 1].status == Status.PENDING
+                if self.contents[job_idx - 1].sync_status == Status.PENDING
             ]
 
         if not jobs_to_run:
@@ -123,7 +123,7 @@ class JobQueue:
         """Delete files generated for the specified jobs.
         This includes intermediate subtitle files generated for syncing and resampling.
         """
-        if any(job.status == Status.COMPLETED for job in job_list):
+        if any(job.sync_status == Status.COMPLETED for job in job_list):
             if confirm_deletion and not cu.confirm_action("Delete generated subtitle files? (Y/N): "):
                 return
 
@@ -133,7 +133,7 @@ class JobQueue:
         """ Generate a new video file from completed video tasks """
         completed_jobs = [
             job for job in job_list
-            if job.status == Status.COMPLETED 
+            if job.sync_status == Status.COMPLETED 
             and job.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL)
             and not job.merged
         ]
@@ -175,7 +175,7 @@ class JobQueue:
         jobs_to_remove = [
             idx
             for idx, (job) in enumerate(self.contents, start=1)
-            if job.status != Status.PENDING
+            if job.sync_status != Status.PENDING
         ]
 
         if jobs_to_remove:
