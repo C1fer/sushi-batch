@@ -4,7 +4,7 @@ from os import path
 from sushi_batch.external.ffmpeg import FFmpeg
 
 from ..utils import console_utils as cu
-from ..utils import utils
+from ..utils import file_utils as fu
 from ..utils.json_utils import JobDecoder, JobEncoder
 from ..external.mkv_merge import MKVMerge
 from ..external.sub_sync import Sushi
@@ -57,12 +57,23 @@ class JobQueue:
 
     def remove_jobs(self, selected_jobs_indexes):
         """Remove selected jobs from queue"""
-        self.contents = [
-            job
-            for idx, job in enumerate(self.contents, start=1)
-            if idx not in selected_jobs_indexes
-        ]
-        self.save()
+        try:
+            jobs_to_remove = [
+                job
+                for idx, job in enumerate(self.contents, start=1)
+                if idx in selected_jobs_indexes
+            ]
+            
+            self._clean_generated_files(jobs_to_remove)
+
+            self.contents = [
+                job
+                for idx, job in enumerate(self.contents, start=1)
+                if idx not in selected_jobs_indexes
+            ]
+            self.save()
+        except Exception as e:
+            cu.print_error(f"Error removing jobs: {e}")
 
     def run_jobs(self, selected_jobs_indexes):
         """ Run jobs selected by user"""
@@ -105,13 +116,16 @@ class JobQueue:
             return False
         return True
 
-    def clean_generated_files(self, job_list):
+    def _clean_generated_files(self, job_list, confirm_deletion=True):
         """Delete files generated for the specified jobs.
         This includes intermediate subtitle files generated for syncing and resampling.
         """
-        utils.clean_generated_files(job_list)
-        
+        if any(job.status == Status.COMPLETED for job in job_list):
+            if confirm_deletion and not cu.confirm_action("Delete generated subtitle files? (Y/N): "):
+                return
 
+            fu.clean_generated_files(job_list)
+        
     def merge_completed_video_tasks(self, job_list):
         """ Generate a new video file from completed video tasks """
         completed_jobs = [
@@ -142,12 +156,14 @@ class JobQueue:
 
         if settings.config.delete_generated_files_after_merge:
             successfully_merged_jobs = [job for job in completed_jobs if job.merged]
-            self.clean_generated_files(successfully_merged_jobs)
+            self._clean_generated_files(successfully_merged_jobs, confirm_deletion=False)
 
         input("\nPress Enter to go back... ")
 
     def clear(self):
         """ Clear queue contents """
+        self._clean_generated_files(self.contents.copy())
+
         self.contents.clear()
         self.save()
 
