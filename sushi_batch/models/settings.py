@@ -24,8 +24,8 @@ class Settings():
         # General settings
         self.queue_theme = QueueTheme.CARD
         self.merge_files_after_execution = True
-        self.delete_generated_files_after_merge = True
         self.resample_subs_on_merge = False
+        self.delete_generated_files_after_merge = True
         self.save_sushi_logs = True
         self.save_aegisub_resample_logs = False
         self.save_mkvmerge_logs = False
@@ -97,7 +97,7 @@ class Settings():
             (Section.GEN, "Queue Theme", self.queue_theme),
             (Section.GEN, "Merge synced sub automatically", self.merge_files_after_execution),
             (Section.GEN, "Resample synced sub resolution before merging", self.resample_subs_on_merge),
-            (Section.GEN, "Delete generated files after merge", self.delete_generated_files_after_merge),
+            (Section.GEN, "Delete generated subtitle files after merging", self.delete_generated_files_after_merge),
             (Section.GEN, "Save Sushi logs", self.save_sushi_logs),
             (Section.GEN, "Save Aegisub-CLI resample logs", self.save_aegisub_resample_logs),
             (Section.GEN, "Save MKVMerge logs", self.save_mkvmerge_logs, True),
