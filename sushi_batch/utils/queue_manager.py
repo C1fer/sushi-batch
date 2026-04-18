@@ -198,17 +198,22 @@ def show_yaml_queue(queued_jobs, current_task):
 
         if current_task == Task.JOB_QUEUE:
             print(f"{cu.fore.LIGHTBLACK_EX}  sync_status: {status_color}{status_label.lower()}")
-            if job.sync_status == Status.COMPLETED:
+            if job.sync_status == Status.FAILED:
+                print(f"{cu.fore.LIGHTBLACK_EX}  error: {detail_color}{job.result}")
+            elif job.sync_status == Status.COMPLETED:
                 print(f"{cu.fore.LIGHTBLACK_EX}  average_shift: {detail_color}{job.result}")
                 match job.merged:
                     case True:
-                        print(f"{cu.fore.GREEN}  merged: true")
+                        merge_color, merge_label, _, merge_child_color = _merge_status_style(job.merged)
+                        print(f"{cu.fore.LIGHTBLACK_EX}  merge_status: {merge_color}{merge_label.lower()}")
+                        if job.merged_file:
+                            print(f"{cu.fore.LIGHTBLACK_EX}  merged_file: {merge_child_color}{job.merged_file}")
+                        if job.resample_done:
+                            print(f"{cu.fore.LIGHTBLACK_EX}  resampled: {merge_child_color}true")
                     case False:
-                        print(f"{cu.fore.LIGHTYELLOW_EX}  merged: pending")
+                        print(f"{cu.fore.LIGHTYELLOW_EX}  merge_status: pending")
                     case _:
                         pass
-            elif job.sync_status == Status.FAILED:
-                print(f"{cu.fore.LIGHTBLACK_EX}  error: {detail_color}{job.result}")
             
            
     
