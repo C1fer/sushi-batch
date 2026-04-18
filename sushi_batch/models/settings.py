@@ -101,9 +101,11 @@ class Settings():
                 return f"{cu.Fore.RED}Disabled{cu.style_reset}"
             case QueueTheme():
                 theme_name = QUEUE_THEMES.get(value, "Unknown")
-                return f"{cu.Fore.CYAN}{theme_name}{cu.style_reset}"
+                return f"{cu.Fore.MAGENTA}{theme_name}{cu.style_reset}"
             case _:
-                return f"{cu.Fore.YELLOW}{value}{cu.style_reset}"
+                _color = cu.Fore.YELLOW if value else cu.Fore.LIGHTBLACK_EX
+                _value = value if value else "Not set"
+                return f"{_color}{_value}{cu.style_reset}"
             
     def _generate_settings_table(self):
         """Create and return settings table"""
