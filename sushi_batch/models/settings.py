@@ -10,7 +10,7 @@ from .enums import Section, QueueTheme
 
 queue_themes_display = {
     QueueTheme.CLASSIC: "Classic",
-    QueueTheme.CARD: "Card-style",
+    QueueTheme.CARD: "Card",
     QueueTheme.YAML: "YAML-inspired"
 }
 
