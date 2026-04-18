@@ -5,10 +5,15 @@ from yaspin import yaspin
 from ..models import settings
 from ..models.enums import Status, Task
 
+from ..utils import console_utils as cu
+
 from .subprocess_logger import SubProcessLogger
 
 
 class Sushi:
+    error_flag = "---SUSHI: CRITICAL ERROR---"
+    avg_shift_flag = "Total average shift:"
+
     @staticmethod
     def _get_args(job):
         args = [
@@ -25,31 +30,45 @@ class Sushi:
             # Sushi defaults to first audio and sub track if index is not provided
             # Use custom track indexes if specified
             if job.src_aud_id is not None:
-                args.extend(["--src-audio", job.src_aud_id])
+                args.extend(["--src-audio", str(job.src_aud_id)])
 
             if job.src_sub_id is not None:
-                args.extend(["--src-script", job.src_sub_id])
+                args.extend(["--src-script", str(job.src_sub_id)])
 
             if job.dst_aud_id is not None:
-                args.extend(["--dst-audio", job.dst_aud_id])
+                args.extend(["--dst-audio", str(job.dst_aud_id)])
 
         return args
 
-    @staticmethod
-    def _calc_avg_shift(output):
-        """ Calculate average shift from Sushi output """
-        shifts = [
-            float(line.split()[2].removesuffix(","))
-            for line in output
-            if "shift:" in line
-        ]
-        avg_shift = round(sum(shifts) / len(shifts), 3)
+    @classmethod
+    def _calc_avg_shift(cls, output):
+        """Extract average shift from Sushi output."""
+        try:
+            for line in output:
+                if line.startswith(cls.avg_shift_flag):
+                    shift_str = line.split(cls.avg_shift_flag)[1].strip().split()[0]
+                    formatted_shift = shift_str if shift_str.startswith("-") else f"+{shift_str}" 
+                    return formatted_shift
 
-        return f"{avg_shift:.3f} sec"
+        except Exception as e:
+            return "Unknown (Couldn't parse shift value: {0})".format(str(e))
+
+    @classmethod
+    def _get_error_message(cls, lines):
+        """Extract a useful error message using Sushi critical error flag location."""
+        try:
+            error_idx = lines.index(cls.error_flag)
+            if error_idx + 1 < len(lines):
+                return lines[error_idx + 1]
+            return cls.error_flag
+        except ValueError:
+            return lines[-1] if lines else "Unknown Sushi error"
 
     @staticmethod
     def run(job):
-        with yaspin(text=f"Job {job.idx}", color="cyan", timer=True) as sp:
+        file_display = f"{cu.fore.MAGENTA}{job.dst_file}{cu.Style.RESET_ALL}"
+        title = f"[Job {job.idx} - Sushi] Syncing subtitles to {file_display}"
+        with yaspin(text=title, color="cyan", timer=True) as sp:
             try: 
                 args = Sushi._get_args(job)
                 sushi = subprocess.Popen(
@@ -69,12 +88,13 @@ class Sushi:
                 lines = stderr.strip().splitlines()
 
                 if sushi.returncode == 0:
-                    job.status = Status.COMPLETED
+                    job.sync_status = Status.COMPLETED
                     job.result = Sushi._calc_avg_shift(lines)
                     sp.ok("✅")
                 else:
-                    raise subprocess.SubprocessError(lines[-1])
+                    error_msg = Sushi._get_error_message(lines)
+                    raise subprocess.SubprocessError(error_msg)
             except Exception as e:
                 sp.fail("❌")
-                job.status = Status.FAILED
+                job.sync_status = Status.FAILED
                 job.result = str(e)

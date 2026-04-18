@@ -1,7 +1,10 @@
 import json
 from os import path
 
+from sushi_batch.external.ffmpeg import FFmpeg
+
 from ..utils import console_utils as cu
+from ..utils import file_utils as fu
 from ..utils.json_utils import JobDecoder, JobEncoder
 from ..external.mkv_merge import MKVMerge
 from ..external.sub_sync import Sushi
@@ -21,6 +24,7 @@ class JobQueue:
         """Save queue contents to JSON file"""
         with open(self.file_path, "w", encoding="utf-8") as data_file:
             json.dump(self.contents, data_file, cls=JobEncoder, indent=4)
+        return 0
 
     def load(self):
         """Load queue contents from JSON file"""
@@ -53,29 +57,40 @@ class JobQueue:
 
     def remove_jobs(self, selected_jobs_indexes):
         """Remove selected jobs from queue"""
-        self.contents = [
-            job
-            for idx, job in enumerate(self.contents, start=1)
-            if idx not in selected_jobs_indexes
-        ]
-        self.save()
+        try:
+            jobs_to_remove = [
+                job
+                for idx, job in enumerate(self.contents, start=1)
+                if idx in selected_jobs_indexes
+            ]
+            
+            self._clean_generated_files(jobs_to_remove)
+
+            self.contents = [
+                job
+                for idx, job in enumerate(self.contents, start=1)
+                if idx not in selected_jobs_indexes
+            ]
+            self.save()
+        except Exception as e:
+            cu.print_error(f"Error removing jobs: {e}")
 
     def run_jobs(self, selected_jobs_indexes):
         """ Run jobs selected by user"""
         if selected_jobs_indexes == JobSelection.ALL:
-            jobs_to_run = [job for job in self.contents if job.status == Status.PENDING]
+            jobs_to_run = [job for job in self.contents if job.sync_status == Status.PENDING]
         else:
             jobs_to_run = [
                 self.contents[job_idx - 1]
                 for job_idx in selected_jobs_indexes
-                if self.contents[job_idx - 1].status == Status.PENDING
+                if self.contents[job_idx - 1].sync_status == Status.PENDING
             ]
 
         if not jobs_to_run:
             cu.print_error("\nNo pending jobs to run!") 
             return
 
-        cu.print_subheader("Running jobs")           
+        cu.print_subheader("Executing synchronization jobs")           
         for job in jobs_to_run:
             Sushi.run(job)
             self.save() 
@@ -88,11 +103,37 @@ class JobQueue:
             else:
                 cu.print_error("\nMKVMerge could not be found. Video files cannot be merged.")
 
+    def _resample_before_merge(self, job):
+        """Resample subtitle file before merging. 
+        Skipped if script and video resolutions match.
+        """
+        if not SubResampler.is_resample_needed(job):
+            return False
+        
+        resample_done = SubResampler.run(job)
+        if resample_done:
+            cu.print_success(f"[Job {job.idx} - SubResampler] Resampling completed successfully.", nl_before=False, wait=False)
+            return True
+        else:
+            cu.print_warning(f"[Job {job.idx} - SubResampler] Subtitle could not be resampled. Merging synced subtitle instead.", nl_before=False, wait=False)
+            return False
+        
+
+    def _clean_generated_files(self, job_list, confirm_deletion=True):
+        """Delete files generated for the specified jobs.
+        This includes intermediate subtitle files generated for syncing and resampling.
+        """
+        if any(job.sync_status == Status.COMPLETED for job in job_list):
+            if confirm_deletion and not cu.confirm_action("Delete generated subtitle files? (Y/N): "):
+                return
+
+            fu.clean_generated_files(job_list)
+        
     def merge_completed_video_tasks(self, job_list):
         """ Generate a new video file from completed video tasks """
         completed_jobs = [
             job for job in job_list
-            if job.status == Status.COMPLETED 
+            if job.sync_status == Status.COMPLETED 
             and job.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL)
             and not job.merged
         ]
@@ -102,26 +143,31 @@ class JobQueue:
             return
 
         cu.print_subheader("Merging files")
-
-        can_resample = settings.config.resample_subs_on_merge
-
-        if can_resample and not SubResampler.is_installed:
-            cu.print_error("Aegisub-CLI could not be found. Subtitle resampling is disabled.")
+        
+        do_resample = True
+        if settings.config.resample_subs_on_merge and not SubResampler.is_installed:
+            do_resample = False
+            cu.print_error("Aegisub-CLI could not be found. Subtitle resampling will be skipped.")
 
         for job in completed_jobs:
-            if can_resample and SubResampler.is_installed:
-                resample_result = SubResampler.run(job)
-                MKVMerge.run(job, use_resampled_sub=resample_result)
-                if not resample_result:
-                    print(f"{cu.fore.LIGHTYELLOW_EX}Subtitle could not be resampled. Merged synced subtitle instead.")
-            else:
-                MKVMerge.run(job)
+            use_resampled_sub = False
+            if do_resample:
+                use_resampled_sub = self._resample_before_merge(job)
+                pass
+            MKVMerge.run(job, use_resampled_sub=use_resampled_sub)
             self.save()
+
+        if settings.config.delete_generated_files_after_merge:
+            successfully_merged_jobs = [job for job in completed_jobs if job.merged]
+            self._clean_generated_files(successfully_merged_jobs, confirm_deletion=False)
 
         input("\nPress Enter to go back... ")
 
-    def clear(self):
+    def clear(self, trigger_file_cleanup=True):
         """ Clear queue contents """
+        if trigger_file_cleanup:
+            self._clean_generated_files(self.contents.copy())
+
         self.contents.clear()
         self.save()
 
@@ -130,7 +176,7 @@ class JobQueue:
         jobs_to_remove = [
             idx
             for idx, (job) in enumerate(self.contents, start=1)
-            if job.status != Status.PENDING
+            if job.sync_status != Status.PENDING
         ]
 
         if jobs_to_remove:
@@ -175,10 +221,13 @@ class JobQueue:
         return next(stream for stream in streams if int(stream.id) == stream_choice)
 
     def _get_stream_indexes(self, job, select_streams):
-        """"Get source and destination media stream indexes"""
-        src_aud_streams = Stream.get_streams(job.src_file, "audio")
-        src_sub_streams = Stream.get_streams(job.src_file, "subtitle")
-        dst_aud_streams = Stream.get_streams(job.dst_file, "audio")
+        src_media_info = FFmpeg.get_clean_probe_info(job.src_file)
+        dst_media_info = FFmpeg.get_clean_probe_info(job.dst_file)
+
+        """"Get source and sync target media stream indexes"""
+        src_aud_streams = Stream.get_audio_streams_from_probe(src_media_info['audio']) if 'audio' in src_media_info else []
+        src_sub_streams = Stream.get_sub_streams_from_probe(src_media_info['subtitle']) if 'subtitle' in src_media_info else []
+        dst_aud_streams = Stream.get_audio_streams_from_probe(dst_media_info['audio']) if 'audio' in dst_media_info else []
 
         if select_streams:
             print(f"{cu.fore.LIGHTYELLOW_EX}\nJob {job.idx}")
@@ -188,7 +237,8 @@ class JobQueue:
 
         src_aud_selected = _select_stream(src_aud_streams, "Select a source audio stream: ")
         src_sub_selected = _select_stream(src_sub_streams, "Select a source subtitle stream: ")
-        dst_aud_selected = _select_stream(dst_aud_streams, "Select a destination audio stream: ")
+        dst_aud_selected = _select_stream(dst_aud_streams, "Select a sync target audio stream: ")
+        
         streams_info = {
             "src_aud_id": src_aud_selected.id,
             "src_aud_display": src_aud_selected.display_name,
@@ -198,6 +248,9 @@ class JobQueue:
             "src_sub_display": src_sub_selected.display_name,
             "src_sub_lang": Stream.get_stream_lang(src_sub_streams, src_sub_selected.id),
             "src_sub_name": Stream.get_stream_name(src_sub_streams, src_sub_selected.id),
+            "src_sub_ext": Stream.get_subtitle_extension(src_sub_streams, src_sub_selected.id),
+            "dst_vid_width": dst_media_info.get('video', [{}])[0].get('width'),
+            "dst_vid_height": dst_media_info.get('video', [{}])[0].get('height')
         }
         return streams_info
 
@@ -211,54 +264,3 @@ class JobQueue:
             for job in unqueued_jobs:
                 indexes = self._get_stream_indexes(job, True)
                 job.__dict__.update(indexes)
-
-    def show(self, task):
-        """ Show Job List contents """
-        cu.clear_screen()
-
-        title = "Job Queue" if task == Task.JOB_QUEUE else "Jobs"
-        cu.print_header(f"{title}")
-
-        for job in self.contents:
-            job.idx = self.contents.index(job) + 1
-            print(f"\n{cu.fore.LIGHTBLACK_EX}Job {job.idx}")
-            print(f"{cu.fore.LIGHTBLUE_EX}Source file: {job.src_file}")
-            print(f"{cu.fore.LIGHTYELLOW_EX}Destination file: {job.dst_file}")
-
-            if job.sub_file is not None:
-                print(f"{cu.fore.LIGHTCYAN_EX }Subtitle file: {job.sub_file}")
-
-            if job.src_aud_display is not None:
-                print(f"{cu.fore.LIGHTMAGENTA_EX}Source Audio Track: {job.src_aud_display}")
-
-            if job.src_sub_display is not None:
-                print(f"{cu.fore.LIGHTCYAN_EX}Source Subtitle Track: {job.src_sub_display}")
-
-            if job.dst_aud_display is not None:
-                print(f"{cu.fore.YELLOW}Destination Audio Track: {job.dst_aud_display}")
-
-            if job.src_aud_id is not None and job.src_aud_display is None:
-                print(f"{cu.fore.LIGHTMAGENTA_EX}Source Audio Track ID: {job.src_aud_id}")
-
-            if job.src_sub_id is not None and job.src_sub_display is None:
-                print(f"{cu.fore.LIGHTCYAN_EX}Source Subtitle Track ID: {job.src_sub_id}")
-
-            if job.dst_aud_id is not None and job.dst_aud_display is None:
-                print(f"{cu.fore.YELLOW}Destination Audio Track ID: {job.dst_aud_id}")
-
-            if task == Task.JOB_QUEUE: 
-                match job.status:
-                    case Status.PENDING:
-                        print(f"{cu.fore.LIGHTBLACK_EX}Status: Pending")
-                    case Status.COMPLETED:
-                        print(f"{cu.fore.LIGHTGREEN_EX}Status: Completed")
-                        print(f"{cu.fore.GREEN}Average Shift: {job.result}")
-                    case Status.FAILED:
-                        print(f"{cu.fore.LIGHTRED_EX}Status: Failed")
-                        print(f"{cu.fore.RED}Error: {job.result}")
-
-                match job.merged:
-                    case True:
-                        print(f"{cu.fore.LIGHTGREEN_EX}Merged: Yes")
-                    case False:
-                        print(f"{cu.fore.LIGHTBLACK_EX}Merged: No")

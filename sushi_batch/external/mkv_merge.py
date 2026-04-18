@@ -48,7 +48,7 @@ class MKVMerge:
     def _add_destination_file_args(args, job):
         """Add destination file specific arguments."""
         if s.config.dst_copy_audio_tracks:
-            args.extend(["--audio-tracks", job.dst_aud_id])
+            args.extend(["--audio-tracks", str(job.dst_aud_id)])
         if not s.config.dst_copy_attachments:
             args.append("--no-attachments")
         if not s.config.dst_copy_chapters:
@@ -79,7 +79,7 @@ class MKVMerge:
         if not s.config.sub_forced_flag:
             args.extend(["--forced-display-flag", "0: 0"])
 
-        sub_suffix = ".sushi_resampled.ass" if use_resampled_sub else ".sushi.ass"
+        sub_suffix = f".sushi_resampled{job.src_sub_ext}" if use_resampled_sub else f".sushi{job.src_sub_ext}"
         args.append(f"{job.dst_file}{sub_suffix}")
 
     @staticmethod
@@ -105,9 +105,12 @@ class MKVMerge:
     def run(job, use_resampled_sub=False):
         try:     
             args = MKVMerge._get_merge_args(job, use_resampled_sub)
-            output_file = args[2]
+            output_file = path.normpath(args[2])
 
-            with yaspin(text=f"{path.basename(output_file)}", color="magenta", timer=True) as sp:
+            log_prefix = f"[Job {job.idx} - MKVMerge]"
+            file_display = f"{cu.fore.LIGHTMAGENTA_EX}{output_file}{cu.Style.RESET_ALL}"
+            spinner_title = f"{log_prefix} Generating {file_display}"
+            with yaspin(text=spinner_title, color="magenta", timer=True) as sp:
                 mkv_merge = subprocess.Popen(
                     args=args,
                     stdout=subprocess.PIPE,
@@ -127,16 +130,19 @@ class MKVMerge:
                     case 0:
                         sp.ok("✅")
                         job.merged = True
+                        job.merged_file = output_file
                     case 1:
                         lines = stdout.splitlines()
-                        warnings = "\n".join([x for x in lines if x.startswith("Warning:")])
+                        warnings = "\n".join([x.replace("Warning: ", f"{log_prefix} Warning: ") for x in lines if x.startswith("Warning:")])
                         sp.ok("⚠️ ")
                         sp.write(f"{cu.fore.LIGHTYELLOW_EX}{warnings}\n")
+                        job.merged_file = output_file
                         job.merged = True
                     case 2:
                         lines = stdout.splitlines()
-                        error = [x for x in lines if x.startswith("Error:")]
+                        error = [x.replace("Error: ", f"{log_prefix} Error: ") for x in lines if x.startswith("Error:")]
                         sp.fail("❌")
                         sp.write(f"{cu.fore.LIGHTRED_EX}{error[0]}\n")
+                print()  # Add extra newline after spinner output for readability
         except Exception as e:
-                cu.print_error(f"Merge error: {e}")
+                cu.print_error(f"Merge Error: {e}")

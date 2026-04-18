@@ -1,35 +1,37 @@
-[tool.poetry]
+[build-system]
+requires = ["hatchling>=1.24.0"]
+build-backend = "hatchling.build"
+
+[project]
 name = "sushi-batch"
-version = "0.3.0"
+version = "0.4.1"
 description = "Batch Subtitle Synchronization Tool"
-authors = ["C1fer"]
-license = "MIT"
 readme = "README.md"
-repository = "https://github.com/C1fer/sushi-batch"
-packages = [
-    { include = "sushi_batch" }
-]
+requires-python = ">=3.13,<4.0"
+license = { text = "MIT" }
+authors = [{ name = "C1fer" }]
 keywords = ["subtitle", "sync"]
 classifiers = [
-    'Development Status :: 5 - Production/Stable',
-    'Programming Language :: Python :: 3.13',
-    'Topic :: Multimedia :: Sound/Audio',
-    'Topic :: Text Processing',
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Text Processing",
+]
+dependencies = [
+    "art>=6.1,<7",
+    "colorama>=0.4.6,<0.5",
+    "prettytable>=3.9.0,<4",
+    "sushi-sub-next>=0.6.5,<0.7",
+    "yaspin>=3.0.1,<4",
+    "pyqt6>=6.5.2,<7",
 ]
 
-[tool.poetry.dependencies]
-python = ">=3.13,<4.0"
-art = "^6.1"
-colorama = "^0.4.6"
-prettytable = "^3.9.0"
-sushi-sub-next = "^0.6.3"
-yaspin = "^3.0.1"
-pyqt6 = "^6.5.2"
+[project.urls]
+Repository = "https://github.com/C1fer/sushi-batch"
 
-[tool.poetry.scripts]
-sushi-batch="sushi_batch.__main__:main"
-sushi_batch="sushi_batch.__main__:main"
+[project.scripts]
+sushi-batch = "sushi_batch.__main__:main"
+sushi_batch = "sushi_batch.__main__:main"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.hatch.build.targets.wheel]
+packages = ["sushi_batch"]

@@ -5,11 +5,17 @@ __pycache__/
 #Build wheels
 dist/
 
-# Poetry lock file
-poetry.lock
-
 # VS Code settings
 .vscode/
 
 # Local virtual environment
 .venv/
+
+# Media files
+.mkv
+.mp4
+.avi
+.wav
+.ass
+.ssa
+.srt

@@ -2,6 +2,7 @@ from .utils import utils
 utils.check_required_packages() # Check if required packages are installed
 
 import sys
+import traceback
 
 from art import text2art
 
@@ -12,8 +13,12 @@ from .models import settings as s
 from .models.enums import Task
 from .external.ffmpeg import FFmpeg
 from .models.job_queue import JobQueue
+from importlib.metadata import version
 
-VERSION = "0.3.0"
+try: 
+    VERSION = version("sushi-batch")
+except Exception:
+    VERSION = None
 
 def handle_sync_option_selected(task):
     jobs = None
@@ -28,6 +33,31 @@ def handle_sync_option_selected(task):
     if jobs:
         qm.temp_queue_options(JobQueue(jobs), task)
 
+
+def _load_startup_data():
+    """Load startup data and allow recovery by resetting the failing state."""
+    while True:
+        try:
+            s.config.handle_load()
+        except Exception:
+            cu.print_error("An error occurred while loading settings.", False)
+            if cu.confirm_action("Restore default settings and restart? (Y/N): "):
+                s.config.restore()
+                cu.print_success("Settings restored. Initializing...", wait=True)
+                break
+            raise
+
+        try:
+            qm.main_queue.load()
+        except Exception:
+            cu.print_error("An error occurred while loading the job queue.",False,)
+            if cu.confirm_action("Clear queue data and restart? (Y/N): "):
+                qm.main_queue.clear(trigger_file_cleanup=False)
+                cu.print_success("Queue data cleared. Initializing...", wait=True)
+                break
+            raise
+        return
+
 def show_main_menu():
     options = {
         "1": "Video-based Sync  (Directory Select)",
@@ -40,7 +70,8 @@ def show_main_menu():
         "8": "Exit",
     }
 
-    header = text2art("Sushi Batch") + f"Version: {VERSION}"
+    version_str = f"Version: {VERSION}" if VERSION else ""
+    header = text2art("Sushi Batch") + version_str 
 
     cu.clear_screen()
     cu.print_header(header)
@@ -52,12 +83,12 @@ def main():
         cu.print_error("FFmpeg could not be found! \nInstall or add the program to PATH before running the tool", False)
         sys.exit(1)
 
-    # Load settings and queue contents on startup
     try:
-        s.config.handle_load()
-        qm.main_queue.load()
+        _load_startup_data()
     except Exception as e:
-        cu.print_error(f"Error initializing app: {e}")
+        init_trace = traceback.format_exc().rstrip()
+        cu.print_error(f"---INIT ERROR---\nStartup initialization failed: {type(e).__name__}: {e}\n{init_trace}", False)
+        sys.exit(1)
 
     sync_tasks = {
         1: (Task.VIDEO_SYNC_DIR, "Video-based Sync (Directory mode)"),

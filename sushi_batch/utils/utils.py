@@ -34,7 +34,6 @@ def clear_logs(dirpath):
     except OSError as e:
         print(e)
 
-
 def check_required_packages():
     _PACKAGES = ["art", "colorama", "sushi", "prettytable", "yaspin"]
 

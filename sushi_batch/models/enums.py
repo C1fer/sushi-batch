@@ -2,19 +2,22 @@ from enum import Enum
 
 
 class Formats(Enum):
-    AUDIO = (".aac", ".flac", ".m4a", ".opus", ".wav")
+    AUDIO = (".aac", ".ac3", ".eac3", ".flac", ".m4a", ".mp3", ".opus", ".pcm", ".wav")
     VIDEO = (".avi", ".mp4", ".mkv", ".webm")
     SUBTITLE = (".ass", ".ssa", ".srt")
 
 
 class FileTypes(Enum):
     AUDIO = [
-        "All Audio Formats (*.aac *.flac *.m4a *.mp3 *.opus *.wav)",
+        "All Audio Formats (*.aac *.ac3 *.eac3 *.flac *.m4a *.mp3 *.opus *.pcm *.wav)",
         "AAC (*.aac)",
+        "AC3 (*.ac3)",
+        "EAC3 (*.eac3)",
         "FLAC (*.flac)",
         "M4A (*.m4a)",
         "MP3 (*.mp3)",
         "Opus (*.opus)",
+        "PCM (*.pcm)",
         "WAV (*.wav)",
     ]
 
@@ -50,11 +53,18 @@ class Status(Enum):
 
 class Section(Enum):
     GEN = "General"
-    SRC = "Source File"
-    DST = "Destination File"
-    SUB = "Synced subtitle"
+    WORKFLOW = "Workflow"
+    MERGE_SRC = "Merge: Source"
+    MERGE_DST = "Merge: Sync Target"
+    MERGE_SUB = "Merge: Synced Subtitle"
 
 
 class JobSelection(Enum):
     ALL = "all"
     SELECTED = "selected"
+
+
+class QueueTheme(Enum):
+    CLASSIC = "classic"
+    CARD = "card"
+    YAML = "yaml-like" 
