@@ -5,14 +5,29 @@ from prettytable import PrettyTable
 
 from ..utils import console_utils as cu
 from ..utils.json_utils import SettingsDecoder, SettingsEncoder
+from ..utils.prompts import choice_prompt, confirm_prompt
 
 from .enums import Section, QueueTheme
 
-queue_themes_display = {
+QUEUE_THEMES = {
     QueueTheme.CLASSIC: "Classic",
     QueueTheme.CARD: "Card",
     QueueTheme.YAML: "YAML-inspired"
 }
+
+MENU_OPTIONS = [
+    (1, "Change option value"),
+    (2, "Restore default settings"),
+    (3, "Return to main menu")
+]
+
+SETTING_SECTION_OPTIONS = [
+    (1, Section.GEN.value),
+    (2, Section.WORKFLOW.value),
+    (3, Section.MERGE_SRC.value),
+    (4, Section.MERGE_DST.value),
+    (5, Section.MERGE_SUB.value)
+]
 
 class Settings():
 
@@ -85,7 +100,7 @@ class Settings():
             case False:
                 return f"{cu.Fore.RED}Disabled{cu.style_reset}"
             case QueueTheme():
-                theme_name = queue_themes_display.get(value, "Unknown")
+                theme_name = QUEUE_THEMES.get(value, "Unknown")
                 return f"{cu.Fore.CYAN}{theme_name}{cu.style_reset}"
             case _:
                 return f"{cu.Fore.YELLOW}{value}{cu.style_reset}"
@@ -139,46 +154,37 @@ class Settings():
         
         return tb
 
-    def handle_options(self):
+    def handle_menu_options(self):
         """Display and handle options in new menu"""
-        options = {
-            "1" : "Change option value",
-            "2" : "Restore default settings",
-            "3" : "Return to main menu"
-        }
-
         while True:
             cu.clear_screen()
             cu.print_header("App Settings\n")
             tbl = self._generate_settings_table()
             print(tbl)
-            cu.show_menu_options(options)
 
-            choice = cu.get_choice(1,3)
+            choice = choice_prompt.get(options=MENU_OPTIONS)
             match choice:
                 case 1:
-                    opt, opt_label = self.select_option(tbl.rows)
-                    self.update_value(opt, opt_label)
-                case 2 if cu.confirm_action():
+                    selected = self.select_setting_to_update(tbl.rows)
+                    self.update_value(selected)
+                case 2 if confirm_prompt.get():
                     self.restore()
                 case 3:
                     break
 
     def select_queue_theme(self):
         """Display queue theme options and update setting based on user selection"""
-        for idx, display in enumerate(queue_themes_display.values(), 1):
-            print(f"{idx}) {display}")
+        options = [(idx, theme_label) for idx, theme_label in enumerate(QUEUE_THEMES.values(), 1)]
+        choice = choice_prompt.get(options=options, nl_before=False)
+        
 
-        choice = cu.get_choice(1, len(queue_themes_display))
-        selected_mode = list(queue_themes_display.keys())[choice - 1]
-        return selected_mode
-    
-    def update_value(self, option, option_label):
+        return list(QUEUE_THEMES.keys())[choice - 1]  # Map selected index back to QueueTheme enum
+
+    def update_value(self, option):
         """Update value for selected option"""
         curr_val = getattr(self, option)
         new_val = None
         
-        print(f"Option: {cu.fore.YELLOW}{option_label}")
         print(f"\nCurrent value: {self._get_formatted_value(curr_val)}\n")
         
         match curr_val:
@@ -186,28 +192,33 @@ class Settings():
                 new_val = self.select_queue_theme()
             case bool():
                 prompt = "Disable" if curr_val else "Enable"
-                if cu.confirm_action(f"{prompt} option? (Y/N): "):
+                if confirm_prompt.get(f"{prompt} option?"):
                     new_val = not curr_val  
             case str():
                 user_input = input("New value: ")
-                if cu.confirm_action():
+                if confirm_prompt.get():
                     new_val = user_input
                     
         if new_val is not None:       
             setattr(self, option, new_val)
             self._save()
     
-    def select_option(self, rows):
-        """Display options and get user selection"""
-        idx = cu.get_choice(1, len(rows), "Select option to modify: ")
-    
-        sel_option_label = rows[idx - 1][2]
+    def select_setting_to_update(self, rows):
+        """Prompt user to select a setting to update and return the corresponding attribute name"""
+        selected_section_idx = choice_prompt.get("Select section: ", SETTING_SECTION_OPTIONS)
+        section_val = SETTING_SECTION_OPTIONS[selected_section_idx - 1][1]
+        section_rows = [
+            (idx, row[2])
+            for idx, row
+            in enumerate(rows, 1)
+            if row[1] == section_val
+        ]
+
+        selected_option_id = choice_prompt.get("Select setting to modify: ", section_rows)
     
         attr_names = list(self.__dict__)[2:]  # Exclude data_path and file_path
-        sel_option = attr_names[idx - 1]
+        return attr_names[selected_option_id - 1]
         
-        return sel_option, sel_option_label
-    
     def restore(self):
         """Restore default settings"""
         self.__init__()
