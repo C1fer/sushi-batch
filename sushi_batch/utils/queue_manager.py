@@ -77,20 +77,20 @@ def main_queue_options(task):
                 main_queue.run_jobs(JobSelection.ALL)
             case 2:
                 selected_jobs = main_queue.select_jobs(prompt_message=TO_RUN_SELECTED_PROMPT)
-                if selected_jobs and confirm_prompt.get():
+                if selected_jobs and confirm_prompt.get("Run selected jobs?"):
                     main_queue.run_jobs(selected_jobs)
 
     def _handle_remove_options():
         remove_choice = choice_prompt.get(message=TO_REMOVE_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_remove"], nl_before=False)
         match remove_choice:
-            case 1 if confirm_prompt.get():
+            case 1 if confirm_prompt.get("Clear job queue?"):
                 main_queue.clear(trigger_file_cleanup=True)
                 cu.print_success("All jobs removed from queue.")
             case 2 if confirm_prompt.get():
                 main_queue.clear_completed_and_failed_jobs()
             case 3:
                 selected_jobs = main_queue.select_jobs(prompt_message=TO_REMOVE_SELECTED_PROMPT)
-                if selected_jobs and confirm_prompt.get():
+                if selected_jobs and confirm_prompt.get("Remove selected jobs from queue?"):
                     main_queue.remove_jobs(selected_jobs)
                     _show_continue_confirmation(selected_jobs, is_removing=True)
            
@@ -135,7 +135,7 @@ def temp_queue_options(temp_queue, task):
                 return _run_and_queue_all()
             case 2:
                 selected_jobs = temp_queue.select_jobs(prompt_message=TO_RUN_SELECTED_PROMPT)
-                if selected_jobs and confirm_prompt.get():
+                if selected_jobs and confirm_prompt.get("Run selected jobs and add to main queue?", nl_after=True):
                     main_queue.add_jobs(selected_jobs, temp_queue.contents, task)
                     temp_queue.run_jobs(selected_jobs)
                     return True
@@ -147,7 +147,7 @@ def temp_queue_options(temp_queue, task):
                 return _queue_without_running_all()
             case 2:
                 selected_jobs = temp_queue.select_jobs(prompt_message=TO_ADD_SELECTED_PROMPT)
-                if selected_jobs and confirm_prompt.get():
+                if selected_jobs and confirm_prompt.get("Add selected jobs to main queue?", nl_after=True):
                     main_queue.add_jobs(selected_jobs, temp_queue.contents, task)
                     _show_continue_confirmation(selected_jobs)
                     return True

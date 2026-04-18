@@ -1,14 +1,12 @@
 import json
 from os import path
 
-from prompt_toolkit import prompt
-
 from sushi_batch.external.ffmpeg import FFmpeg
 
 from ..utils import console_utils as cu
 from ..utils import file_utils as fu
 from ..utils.json_utils import JobDecoder, JobEncoder
-from ..utils.prompts import choice_prompt, checklist_dialog
+from ..utils.prompts import choice_prompt, checklist_dialog, confirm_prompt
 from ..external.mkv_merge import MKVMerge
 from ..external.sub_sync import Sushi
 from ..external.sub_resample import SubResampler
@@ -51,7 +49,7 @@ class JobQueue:
 
     def _set_video_job_indexes(self, jobs_to_queue):
         """Set audio and subtitle track indexes for video sync jobs"""
-        if cu.confirm_action("\nSpecify audio and sub track indexes for job(s)? (Y/N): "):
+        if confirm_prompt.get("Select source/target tracks manually?"):
             self._set_stream_indexes(jobs_to_queue)
         else:
             for job in jobs_to_queue:
@@ -121,13 +119,12 @@ class JobQueue:
             cu.print_warning(f"[Job {job.idx} - SubResampler] Subtitle could not be resampled. Merging synced subtitle instead.", nl_before=False, wait=False)
             return False
         
-
     def _clean_generated_files(self, job_list, confirm_deletion=True):
         """Delete files generated for the specified jobs.
         This includes intermediate subtitle files generated for syncing and resampling.
         """
         if any(job.sync_status == Status.COMPLETED for job in job_list):
-            if confirm_deletion and not cu.confirm_action("Delete generated subtitle files? (Y/N): "):
+            if confirm_deletion and not confirm_prompt.get("Delete generated subtitle files?"):
                 return
 
             fu.clean_generated_files(job_list)
@@ -264,7 +261,7 @@ class JobQueue:
 
     def _set_stream_indexes(self, unqueued_jobs):
         """"Set audio and subtitle track indexes for video sync jobs"""
-        if len(unqueued_jobs) > 1 and cu.confirm_action("\nSet default stream index for all jobs? (Y/N): "):
+        if len(unqueued_jobs) > 1 and confirm_prompt.get("Set tracks from first job as default?", suffix=" (Y/N = choose per job): ", nl_before=True):
             default_indexes = self._get_stream_indexes(unqueued_jobs[0], True) # Use first job as reference
             for job in unqueued_jobs:
                 job.__dict__.update(default_indexes)
