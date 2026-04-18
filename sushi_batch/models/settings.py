@@ -5,7 +5,7 @@ from prettytable import PrettyTable
 
 from ..utils import console_utils as cu
 from ..utils.json_utils import SettingsDecoder, SettingsEncoder
-from ..utils.prompts import choice_prompt, confirm_prompt
+from ..utils.prompts import choice_prompt, confirm_prompt, input_prompt
 
 from .enums import Section, QueueTheme
 
@@ -195,7 +195,7 @@ class Settings():
                 if confirm_prompt.get(f"{prompt} option?"):
                     new_val = not curr_val  
             case str():
-                user_input = input("New value: ")
+                user_input = input_prompt.get(allow_empty=True)
                 if confirm_prompt.get():
                     new_val = user_input
                     
