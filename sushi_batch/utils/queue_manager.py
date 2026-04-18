@@ -1,7 +1,7 @@
 from random import choice
 
 from ..models.job_queue import JobQueue
-from ..models.enums import JobSelection, Task
+from ..models.enums import JobSelection, Task, Status
 from ..models import settings as s
 
 from ..external.mkv_merge import MKVMerge
@@ -12,40 +12,46 @@ from .queue_themes import QUEUE_RENDERERS
 
 MAIN_QUEUE_OPTIONS= {
     "top": [
-        (1, "Run jobs"),    
-        (2, "Remove jobs"),
-        (3, "Merge completed video jobs"),
-        (4, "Go back"),
+        (1, "Run Jobs"),    
+        (2, "Remove Jobs"),
+        (3, "Merge Video Jobs"),
+        (4, "Go Back"),
     ],
     "sub_run": [
-        (1, "All pending"),
+        (1, "All Pending"),
         (2, "Selected"),
-        (3, "Go back"),
+        (3, "Go Back"),
     ],
     "sub_remove": [
         (1, "All"),
-        (2, "Completed and failed"),
+        (2, "Completed and Failed"),
         (3, "Selected"),
-        (4, "Go back"),
+        (4, "Go Back"),
     ],
+    "sub_merge": [
+        (1, "All Completed"),
+        (2, "Selected"),
+        (3, "Go Back"),
+    ]
 }
 
 TEMP_QUEUE_OPTIONS= {
     "top": [
-        (1, "Run and add to main queue"),    
-        (2, "Queue without running"),
-        (3, "Return to main menu"),
+        (1, "Run and Add to Main Queue"),    
+        (2, "Queue Without Running"),
+        (3, "Return to Main Menu"),
     ],
     "sub_run_add": [
         (1, "All"),
         (2, "Selected"),
-        (3, "Go back"),
+        (3, "Go Back"),
     ],
 }
 
 TO_ADD_SELECTED_PROMPT = "Select which jobs to queue:"
 TO_REMOVE_SELECTED_PROMPT = "Select which jobs to remove from queue:"
 TO_RUN_SELECTED_PROMPT = "Select which jobs to run:"
+TO_MERGE_SELECTED_PROMPT = "Select which video jobs to merge:"
 
 main_queue = JobQueue()
 
@@ -66,17 +72,19 @@ def show_queue(queue, current_task):
     
     renderer = QUEUE_RENDERERS.get(s.config.queue_theme, lambda q, t: cu.print_error("Invalid queue theme selected."))
     renderer(queue, current_task)
-    
-    
-
+     
 def main_queue_options(task):
     def _handle_run_options():
         run_choice = choice_prompt.get(message=TO_RUN_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_run"], nl_before=False)
         match run_choice:
             case 1 if confirm_prompt.get():
-                main_queue.run_jobs(JobSelection.ALL)
+                _jobs = [job for job in main_queue.contents if job.sync_status == Status.PENDING]
+                main_queue.run_jobs(_jobs)
             case 2:
-                selected_jobs = main_queue.select_jobs(prompt_message=TO_RUN_SELECTED_PROMPT)
+                selected_jobs = main_queue.select_jobs(
+                    prompt_message=TO_RUN_SELECTED_PROMPT,
+                    filter_fn=lambda j: j.sync_status == Status.PENDING,
+                )
                 if selected_jobs and confirm_prompt.get("Run selected jobs?"):
                     main_queue.run_jobs(selected_jobs)
 
@@ -93,7 +101,27 @@ def main_queue_options(task):
                 if selected_jobs and confirm_prompt.get("Remove selected jobs from queue?"):
                     main_queue.remove_jobs(selected_jobs)
                     _show_continue_confirmation(selected_jobs, is_removing=True)
-           
+
+    def _handle_merge_options():
+        if not  MKVMerge.is_installed:
+            cu.print_error("\nMKVMerge could not be found! Install MKVMerge to enable merging functionality.")
+            return
+        
+        merge_choice = choice_prompt.get(message=TO_MERGE_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_merge"], nl_before=False)
+        match merge_choice:
+            case 1:
+                main_queue.merge_completed_video_jobs(JobSelection.ALL)
+            case 2:
+                selected_jobs = main_queue.select_jobs(
+                    prompt_message=TO_MERGE_SELECTED_PROMPT,
+                    filter_fn=lambda j: (
+                        j.sync_status == Status.COMPLETED
+                        and j.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL)
+                        and not j.merged
+                    ),
+                )
+                if selected_jobs and confirm_prompt.get("Merge selected jobs?"):
+                    main_queue.merge_completed_video_jobs(JobSelection.SELECTED, selected_jobs)
 
     while True:
         show_queue(main_queue.contents, task)
@@ -106,11 +134,8 @@ def main_queue_options(task):
                 _handle_remove_options()
                 if not main_queue.contents:
                     break
-            case 3 if confirm_prompt.get():
-                if MKVMerge.is_installed:
-                    main_queue.merge_completed_video_tasks(main_queue.contents)
-                else:
-                    cu.print_error("\nMKVMerge could not be found!")
+            case 3:
+                _handle_merge_options()
             case _:
                 break
 
@@ -118,12 +143,12 @@ def main_queue_options(task):
 def temp_queue_options(temp_queue, task):
     """Handle options for the temporary job queue created after file selection."""
     def _run_and_queue_all():
-        main_queue.add_jobs(JobSelection.ALL, temp_queue.contents, task)
-        temp_queue.run_jobs(JobSelection.ALL)
+        main_queue.add_jobs(temp_queue.contents, task)
+        temp_queue.run_jobs(temp_queue.contents)
         return True
 
     def _queue_without_running_all():
-        main_queue.add_jobs(JobSelection.ALL, temp_queue.contents, task)
+        main_queue.add_jobs(temp_queue.contents, task)
         _show_continue_confirmation(temp_queue.contents)
         return True
 
@@ -136,7 +161,7 @@ def temp_queue_options(temp_queue, task):
             case 2:
                 selected_jobs = temp_queue.select_jobs(prompt_message=TO_RUN_SELECTED_PROMPT)
                 if selected_jobs and confirm_prompt.get("Run selected jobs and add to main queue?", nl_after=True):
-                    main_queue.add_jobs(selected_jobs, temp_queue.contents, task)
+                    main_queue.add_jobs(selected_jobs, task)
                     temp_queue.run_jobs(selected_jobs)
                     return True
 
@@ -148,7 +173,7 @@ def temp_queue_options(temp_queue, task):
             case 2:
                 selected_jobs = temp_queue.select_jobs(prompt_message=TO_ADD_SELECTED_PROMPT)
                 if selected_jobs and confirm_prompt.get("Add selected jobs to main queue?", nl_after=True):
-                    main_queue.add_jobs(selected_jobs, temp_queue.contents, task)
+                    main_queue.add_jobs(selected_jobs, task)
                     _show_continue_confirmation(selected_jobs)
                     return True
 

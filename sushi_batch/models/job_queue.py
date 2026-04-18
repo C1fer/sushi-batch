@@ -33,19 +33,20 @@ class JobQueue:
             with open(self.file_path, "r", encoding="utf-8") as data_file:
                 self.contents = json.load(data_file, cls=JobDecoder)
 
-    def add_jobs(self, selected_jobs_indexes, unqueued_jobs, task):
+    def add_jobs(self, jobs_to_add, task):
         """Add selected jobs to queue"""
-        jobs_to_queue = (
-            unqueued_jobs.copy()
-            if selected_jobs_indexes == JobSelection.ALL
-            else [unqueued_jobs[job_idx - 1] for job_idx in selected_jobs_indexes]
-        )
+        try:
+            if not jobs_to_add:
+                cu.print_error("No jobs to add to queue!")
+                return
 
-        if task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL):
-            self._set_video_job_indexes(jobs_to_queue)
+            if task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL):
+                self._set_video_job_indexes(jobs_to_add)
 
-        self.contents.extend(jobs_to_queue)
-        self.save()
+            self.contents.extend(jobs_to_add)
+            self.save()
+        except Exception as e:
+            cu.print_error(f"Error adding jobs to queue: {e}")
 
     def _set_video_job_indexes(self, jobs_to_queue):
         """Set audio and subtitle track indexes for video sync jobs"""
@@ -56,53 +57,45 @@ class JobQueue:
                 indexes = self._get_stream_indexes(job, False)
                 job.__dict__.update(indexes)
 
-    def remove_jobs(self, selected_jobs_indexes):
+    def remove_jobs(self, jobs_to_remove):
         """Remove selected jobs from queue"""
+        job_ids_to_remove = {job.idx for job in jobs_to_remove}
         try:
-            jobs_to_remove = [
-                job
-                for idx, job in enumerate(self.contents, start=1)
-                if idx in selected_jobs_indexes
-            ]
-            
-            self._clean_generated_files(jobs_to_remove)
-
             self.contents = [
                 job
-                for idx, job in enumerate(self.contents, start=1)
-                if idx not in selected_jobs_indexes
+                for job in self.contents
+                if job.idx not in job_ids_to_remove
             ]
+
+            self._clean_generated_files(jobs_to_remove)
             self.save()
         except Exception as e:
             cu.print_error(f"Error removing jobs: {e}")
 
-    def run_jobs(self, selected_jobs_indexes):
+    def run_jobs(self, jobs_to_run=[]):
         """ Run jobs selected by user"""
-        if selected_jobs_indexes == JobSelection.ALL:
-            jobs_to_run = [job for job in self.contents if job.sync_status == Status.PENDING]
-        else:
-            jobs_to_run = [
-                self.contents[job_idx - 1]
-                for job_idx in selected_jobs_indexes
-                if self.contents[job_idx - 1].sync_status == Status.PENDING
-            ]
+        try:
+            if not jobs_to_run:
+                cu.print_error("\nNo pending jobs to run!") 
+                return
 
-        if not jobs_to_run:
-            cu.print_error("\nNo pending jobs to run!") 
-            return
+            cu.print_subheader("Executing synchronization jobs")           
+            for job in jobs_to_run:
+                Sushi.run(job)
+                self.save()
 
-        cu.print_subheader("Executing synchronization jobs")           
-        for job in jobs_to_run:
-            Sushi.run(job)
-            self.save() 
+            contains_video_tasks = any(
+                job.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL)
+                for job in jobs_to_run
+            )
 
-        contains_video_tasks = any(job.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL) for job in jobs_to_run)
-
-        if settings.config.merge_files_after_execution and contains_video_tasks:
-            if MKVMerge.is_installed:
-                self.merge_completed_video_tasks(jobs_to_run)
-            else:
-                cu.print_error("\nMKVMerge could not be found. Video files cannot be merged.")
+            if settings.config.merge_files_after_execution and contains_video_tasks:
+                if MKVMerge.is_installed:
+                    self.merge_completed_video_tasks(jobs_to_run)
+                else:
+                    cu.print_error("\nMKVMerge could not be found. Video files cannot be merged.")
+        except Exception as e:
+            cu.print_error(f"Error running jobs: {e}")
 
     def _resample_before_merge(self, job):
         """Resample subtitle file before merging. 
@@ -129,14 +122,14 @@ class JobQueue:
 
             fu.clean_generated_files(job_list)
         
-    def merge_completed_video_tasks(self, job_list):
+    def merge_completed_video_jobs(self, selection_type, selected_jobs=None):
         """ Generate a new video file from completed video tasks """
         completed_jobs = [
-            job for job in job_list
+            job for job in self.contents
             if job.sync_status == Status.COMPLETED 
             and job.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL)
             and not job.merged
-        ]
+        ]  if selection_type == JobSelection.ALL else selected_jobs
 
         if not completed_jobs:
             cu.print_error("No completed jobs to merge!")
@@ -174,8 +167,8 @@ class JobQueue:
     def clear_completed_and_failed_jobs(self):
         """ Clear completed and failed jobs from queue """
         jobs_to_remove = [
-            idx
-            for idx, (job) in enumerate(self.contents, start=1)
+            job
+            for job in self.contents
             if job.sync_status != Status.PENDING
         ]
 
@@ -185,12 +178,17 @@ class JobQueue:
         else:
             cu.print_error("No completed or failed jobs to remove!")
 
-    def select_jobs(self, prompt_title="Job Selection", prompt_message=""):
-        """ Select jobs from queue in a checkbox dialog and return the selected ids"""
+    def select_jobs(self, prompt_title="Job Selection", prompt_message="", filter_fn=None):
+        """Select jobs from queue in a checkbox dialog and return objects.
+
+        filter_fn receives each job and should return True when that job should
+        be shown/selectable in the dialog.
+        """
         options = [   
             (job.idx, f"Job {job.idx} - {path.basename(job.src_file)} -> {path.basename(job.dst_file)} [{job.sync_status.name}]") 
             for job 
             in self.contents
+            if (True if filter_fn is None else filter_fn(job))
         ]
 
         choice = checklist_dialog.get(title=prompt_title, message=prompt_message, options=options)   
@@ -202,7 +200,12 @@ class JobQueue:
         selected_display = '\n'.join(j[1] for j in options if j[0] in choice)
         cu.print_warning(f"{cu.fore.LIGHTYELLOW_EX}Selected \n{cu.fore.LIGHTBLUE_EX}{selected_display}\n", wait=False)
 
-        return choice
+        return [
+            job 
+            for job 
+            in self.contents 
+            if job.idx in choice and (True if filter_fn is None else filter_fn(job))
+        ]
 
     def _get_stream_choice(self, streams, prompt, isTarget):
         """"Get user-selected stream from list"""
