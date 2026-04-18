@@ -177,9 +177,8 @@ class Settings():
     def select_queue_theme(self):
         """Display queue theme options and update setting based on user selection"""
         options = [(idx, theme_label) for idx, theme_label in enumerate(QUEUE_THEMES.values(), 1)]
-        choice = choice_prompt.get(options=options, nl_before=False)
+        choice = choice_prompt.get(options=options, nl_before=False, nl_after=False)
         
-
         return list(QUEUE_THEMES.keys())[choice - 1]  # Map selected index back to QueueTheme enum
 
     def update_value(self, option):

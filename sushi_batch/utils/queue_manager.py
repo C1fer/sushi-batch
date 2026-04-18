@@ -291,6 +291,12 @@ def main_queue_options(task):
 
 def temp_queue_options(temp_queue, task):
     """Handle options for the temporary job queue returned after file selection."""
+    def _show_continue_confirmation(jobs):
+        count = len(jobs)
+        job_count = "1 job" if count == 1 else f"{count} jobs"
+        input(f"\n{cu.fore.LIGHTGREEN_EX}{job_count} queued. Press Enter to continue...")
+
+    
     while True:
         show_queue(temp_queue.contents, task)
        
@@ -308,13 +314,13 @@ def temp_queue_options(temp_queue, task):
                     break
             case 3 if confirm_prompt.get():
                 main_queue.add_jobs(JobSelection.ALL, temp_queue.contents, task)
-                cu.print_success(f"{len(temp_queue.contents)} job(s) added to queue.")
+                _show_continue_confirmation(temp_queue.contents)
                 break
             case 4:
                 selected_jobs = temp_queue.select_jobs("Select jobs to add to the queue (e.g: 1, 5-10): ")
                 if selected_jobs and confirm_prompt.get():
                     main_queue.add_jobs(selected_jobs, temp_queue.contents, task)
-                    cu.print_success(f"{len(selected_jobs)} job(s) added to queue.")
+                    _show_continue_confirmation(selected_jobs)
                     break
             case 5 if confirm_prompt.get():
                 break

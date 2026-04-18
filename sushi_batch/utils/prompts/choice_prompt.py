@@ -25,7 +25,7 @@ def _validate_choice_options(options):
     else:
         raise TypeError("Options must be a dict or a list/tuple of (value, label) pairs.")
     
-def get(message="Select an option: ", options=None, nl_before=True, show_toolbar=False, **kwargs): 
+def get(message="Select an option: ", options=None, nl_before=True, nl_after=True, show_toolbar=False, **kwargs): 
     """Use prompt_toolkit to display a choice prompt with the given options."""
     normalized_options = options if options is not None else kwargs.get("options")
     _validate_choice_options(normalized_options)
@@ -35,10 +35,14 @@ def get(message="Select an option: ", options=None, nl_before=True, show_toolbar
     kwargs.setdefault("style", DEFAULT_STYLE)
     kwargs.setdefault("bottom_toolbar", DEFAULT_TOOLBAR if show_toolbar else None)
 
-    if nl_before:
+    is_frame_enabled = kwargs.get("show_frame", False)
+
+    if nl_before and not message.strip().startswith("\n") and not is_frame_enabled:
         print()
 
-    return choice(
-        message, 
-        **kwargs
-    )
+    user_choice = choice(message, **kwargs)
+
+    if nl_after and not message.strip().endswith("\n") and not is_frame_enabled:
+        print()
+        
+    return user_choice

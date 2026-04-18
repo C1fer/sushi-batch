@@ -6,6 +6,7 @@ from sushi_batch.external.ffmpeg import FFmpeg
 from ..utils import console_utils as cu
 from ..utils import file_utils as fu
 from ..utils.json_utils import JobDecoder, JobEncoder
+from ..utils.prompts import choice_prompt
 from ..external.mkv_merge import MKVMerge
 from ..external.sub_sync import Sushi
 from ..external.sub_resample import SubResampler
@@ -214,11 +215,26 @@ class JobQueue:
             cu.print_error("Invalid choice! Please select valid jobs.")
             return None
 
-    def _get_stream_choice(self, streams, prompt):
+    def _get_stream_choice(self, streams, prompt, isTarget):
         """"Get user-selected stream from list"""
-        Stream.show_streams(streams)
-        stream_choice = cu.get_choice(int(streams[0].id), int(streams[-1].id), prompt)
-        return next(stream for stream in streams if int(stream.id) == stream_choice)
+        if len(streams) == 1:
+            print(prompt)
+            _stream_color = cu.fore.YELLOW if isTarget else cu.fore.LIGHTBLUE_EX
+            _stream_label = f"{_stream_color}{streams[0].display_name}"
+            cu.print_warning(f"{cu.fore.LIGHTBLACK_EX}Only 1 stream available. Automatically selected: {_stream_label}", wait=False)
+            return streams[0]
+
+        options = [(int(stream.id), stream.display_name) for stream in streams]
+       
+        selected_stream_id = choice_prompt.get(prompt, options)
+        return next(stream for stream in streams if int(stream.id) == selected_stream_id)
+
+    def _show_stream_select_header(self, job):
+        src_label = f"{cu.fore.LIGHTBLUE_EX}{path.basename(job.src_file)}"
+        dst_label = f"{cu.fore.YELLOW}{path.basename(job.dst_file)}"
+        label = f"{cu.fore.MAGENTA}\nJob {job.idx}: {src_label}{cu.fore.MAGENTA} -> {dst_label}"
+        print(label)
+        print('-' * len(label))
 
     def _get_stream_indexes(self, job, select_streams):
         src_media_info = FFmpeg.get_clean_probe_info(job.src_file)
@@ -230,14 +246,14 @@ class JobQueue:
         dst_aud_streams = Stream.get_audio_streams_from_probe(dst_media_info['audio']) if 'audio' in dst_media_info else []
 
         if select_streams:
-            print(f"{cu.fore.LIGHTYELLOW_EX}\nJob {job.idx}")
+            self._show_stream_select_header(job)
 
-        def _select_stream(streams, prompt):
-            return self._get_stream_choice(streams, prompt) if select_streams else streams[0]
+        def _select_stream(streams, prompt, isTarget=False):
+            return self._get_stream_choice(streams, prompt, isTarget) if select_streams else streams[0]
 
         src_aud_selected = _select_stream(src_aud_streams, "Select a source audio stream: ")
         src_sub_selected = _select_stream(src_sub_streams, "Select a source subtitle stream: ")
-        dst_aud_selected = _select_stream(dst_aud_streams, "Select a sync target audio stream: ")
+        dst_aud_selected = _select_stream(dst_aud_streams, "Select a target audio stream: ", isTarget=True)
         
         streams_info = {
             "src_aud_id": src_aud_selected.id,
