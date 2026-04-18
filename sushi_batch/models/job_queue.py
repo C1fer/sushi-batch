@@ -1,12 +1,14 @@
 import json
 from os import path
 
+from prompt_toolkit import prompt
+
 from sushi_batch.external.ffmpeg import FFmpeg
 
 from ..utils import console_utils as cu
 from ..utils import file_utils as fu
 from ..utils.json_utils import JobDecoder, JobEncoder
-from ..utils.prompts import choice_prompt
+from ..utils.prompts import choice_prompt, checklist_dialog
 from ..external.mkv_merge import MKVMerge
 from ..external.sub_sync import Sushi
 from ..external.sub_resample import SubResampler
@@ -186,34 +188,24 @@ class JobQueue:
         else:
             cu.print_error("No completed jobs to clear!")
 
-    def select_jobs(self, prompt):
-        """ Select jobs from queue based on user input """
-        user_input = input(f"\n{cu.fore.LIGHTBLACK_EX}{prompt}")
-        selected_jobs_indexes = user_input.replace(" ", "").split(",")
+    def select_jobs(self, prompt_title="Job Selection", prompt_message=""):
+        """ Select jobs from queue in a checkbox dialog and return the selected jobs"""
+        options = [   
+            (job.idx, f"Job {job.idx} - {path.basename(job.src_file)} -> {path.basename(job.dst_file)} [{job.sync_status.name}]") 
+            for job 
+            in self.contents
+        ]
 
-        valid_job_indexes = []
-        job_list_range = range(1, len(self.contents) + 1)
-
-        for idx in selected_jobs_indexes:
-            if idx.isnumeric():
-                job_index = int(idx)
-                if job_index in job_list_range:
-                    valid_job_indexes.append(job_index)
-
-            # Check if item is a range of jobs (e.g., "15-20")
-            elif "-" in idx:
-                start, end = map(int, idx.split("-"))
-                for job_index in range(start, end + 1):
-                    if job_index in job_list_range:
-                        valid_job_indexes.append(job_index)
-
-        if valid_job_indexes:
-            valid_job_indexes.sort()
-            print(f"{cu.fore.LIGHTYELLOW_EX}Selected jobs: {valid_job_indexes}\n")
-            return valid_job_indexes
-        else:
-            cu.print_error("Invalid choice! Please select valid jobs.")
+        choice = checklist_dialog.get(title=prompt_title, message=prompt_message, options=options)   
+        if not choice:
+            cu.print_error("No jobs selected!")
             return None
+        
+
+        selected_display = '\n'.join(j[1] for j in options if j[0] in choice)
+        cu.print_warning(f"{cu.fore.LIGHTYELLOW_EX}Selected \n{cu.fore.LIGHTBLUE_EX}{selected_display}\n", wait=False)
+
+        return [job for job in self.contents if job.idx in choice], selected_display
 
     def _get_stream_choice(self, streams, prompt, isTarget):
         """"Get user-selected stream from list"""
