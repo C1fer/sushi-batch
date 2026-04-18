@@ -56,6 +56,7 @@ def _load_startup_data():
                 cu.print_success("Queue data cleared. Initializing...", wait=True)
                 break
             raise
+        return
 
 def show_main_menu():
     options = {
