@@ -24,6 +24,7 @@ dependencies = [
     "sushi-sub-next>=0.6.5,<0.7",
     "yaspin>=3.0.1,<4",
     "pyqt6>=6.5.2,<7",
+    "prompt-toolkit>=3.0.52",
 ]
 
 [project.urls]

@@ -6,6 +6,7 @@ import traceback
 
 from art import text2art
 
+from .utils.prompts import choice_prompt
 from .utils import console_utils as cu
 from .utils import file_utils
 from .utils import queue_manager as qm
@@ -19,6 +20,24 @@ try:
     VERSION = version("sushi-batch")
 except Exception:
     VERSION = None
+
+MENU_OPTIONS = [
+    (1, "Video-based Sync (Directory mode)"),
+    (2, "Video-based Sync (File-select mode)"),
+    (3, "Audio-based Sync (Directory mode)"),
+    (4, "Audio-based Sync (File-select mode)"),
+    (5, "View Job Queue"),
+    (6, "Settings"),
+    (7, "Clear Logs"),
+    (8, "Exit"),
+]
+
+SYNC_TASK_DISPLAY = {
+    1: (Task.VIDEO_SYNC_DIR, "Video-based Sync (Directory mode)"),
+    2: (Task.VIDEO_SYNC_FIL, "Video-based Sync (File-select mode)"),
+    3: (Task.AUDIO_SYNC_DIR, "Audio-based Sync (Directory mode)"),
+    4: (Task.AUDIO_SYNC_FIL, "Audio-based Sync (File-select mode)"),
+} 
 
 def handle_sync_option_selected(task):
     jobs = None
@@ -59,23 +78,11 @@ def _load_startup_data():
         return
 
 def show_main_menu():
-    options = {
-        "1": "Video-based Sync  (Directory Select)",
-        "2": "Video-based Sync  (File Select)",
-        "3": "Audio-based Sync  (Directory Select)",
-        "4": "Audio-based Sync  (File Select)",
-        "5": "Show Job Queue",
-        "6": "Show Settings",
-        "7": "Clear Logs",
-        "8": "Exit",
-    }
-
     version_str = f"Version: {VERSION}" if VERSION else ""
     header = text2art("Sushi Batch") + version_str 
 
     cu.clear_screen()
     cu.print_header(header)
-    cu.show_menu_options(options)
 
 
 def main():
@@ -90,23 +97,17 @@ def main():
         cu.print_error(f"---INIT ERROR---\nStartup initialization failed: {type(e).__name__}: {e}\n{init_trace}", False)
         sys.exit(1)
 
-    sync_tasks = {
-        1: (Task.VIDEO_SYNC_DIR, "Video-based Sync (Directory mode)"),
-        2: (Task.VIDEO_SYNC_FIL, "Video-based Sync (File-select mode)"),
-        3: (Task.AUDIO_SYNC_DIR, "Audio-based Sync (Directory mode)"),
-        4: (Task.AUDIO_SYNC_FIL, "Audio-based Sync (File-select mode)"),
-    } 
 
     while True:
         show_main_menu()
-        selected_option = cu.get_choice(1, 8)
+        selected_option = choice_prompt.get("Select an option: ", MENU_OPTIONS, show_toolbar=True, show_frame=True)
         
         if selected_option not in (7, 8):
             cu.clear_screen()   
 
         match selected_option:
             case 1 | 2 | 3 | 4:
-                task, header = sync_tasks[selected_option]
+                task, header = SYNC_TASK_DISPLAY[selected_option]
                 cu.print_header(header)
                 handle_sync_option_selected(task)
             case 5:
