@@ -98,37 +98,37 @@ class Settings():
         rows = [
             # General Section
             (Section.GEN, "Queue Theme", self.queue_theme),
-            (Section.GEN, "Save Sushi logs", self.save_sushi_logs),
+            (Section.GEN, "Save Sushi sync logs", self.save_sushi_logs),
             (Section.GEN, "Save Aegisub-CLI resample logs", self.save_aegisub_resample_logs),
             (Section.GEN, "Save MKVMerge logs", self.save_mkvmerge_logs, DIVIDER_FLAG),
 
             # Workflow Section
-            (Section.WORKFLOW, "Merge synced sub automatically", self.merge_files_after_execution),
-            (Section.WORKFLOW, "Resample synced sub resolution before merging", self.resample_subs_on_merge),
-            (Section.WORKFLOW, "Delete generated subtitle files after merging", self.delete_generated_files_after_merge, DIVIDER_FLAG),
+            (Section.WORKFLOW, "Merge automatically on sync completion", self.merge_files_after_execution),
+            (Section.WORKFLOW, "Resample synced sub before merge", self.resample_subs_on_merge),
+            (Section.WORKFLOW, "Delete generated subtitle files after merge", self.delete_generated_files_after_merge, DIVIDER_FLAG),
 
             # Source File Section
-            (Section.SRC, "Copy attachments", self.src_copy_attachments),
-            (Section.SRC, "Copy chapters", self.src_copy_chapters),
-            (Section.SRC, "Copy global tags", self.src_copy_global_tags),
-            (Section.SRC, "Copy track tags", self.src_copy_track_tags, DIVIDER_FLAG),
+            (Section.MERGE_SRC, "Copy attachments", self.src_copy_attachments),
+            (Section.MERGE_SRC, "Copy chapters", self.src_copy_chapters),
+            (Section.MERGE_SRC, "Copy global tags", self.src_copy_global_tags),
+            (Section.MERGE_SRC, "Copy track tags", self.src_copy_track_tags, DIVIDER_FLAG),
             
             # Sync Target File Section
-            (Section.DST, "Only copy audio track used for sync", self.dst_copy_audio_tracks),
-            (Section.DST, "Copy attachments", self.dst_copy_attachments),
-            (Section.DST, "Copy chapters", self.dst_copy_chapters),
-            (Section.DST, "Copy subtitles", self.dst_copy_subtitle_tracks),
-            (Section.DST, "Copy global tags", self.dst_copy_global_tags),
-            (Section.DST, "Copy track tags", self.dst_copy_track_tags, DIVIDER_FLAG),
+            (Section.MERGE_DST, "Copy only selected sync audio track", self.dst_copy_audio_tracks),
+            (Section.MERGE_DST, "Copy attachments", self.dst_copy_attachments),
+            (Section.MERGE_DST, "Copy chapters", self.dst_copy_chapters),
+            (Section.MERGE_DST, "Copy subtitles", self.dst_copy_subtitle_tracks),
+            (Section.MERGE_DST, "Copy global tags", self.dst_copy_global_tags),
+            (Section.MERGE_DST, "Copy track tags", self.dst_copy_track_tags, DIVIDER_FLAG),
             
             # Synced Subtitle Section
-            (Section.SUB, "Set default flag", self.sub_default_flag),
-            (Section.SUB, "Set forced flag", self.sub_forced_flag),
-            (Section.SUB, "Use custom track name", self.sub_custom_trackname),
+            (Section.MERGE_SUB, "Set default flag", self.sub_default_flag),
+            (Section.MERGE_SUB, "Set forced flag", self.sub_forced_flag),
+            (Section.MERGE_SUB, "Use custom track name", self.sub_custom_trackname),
         ]
         
         if self.sub_custom_trackname:
-            rows.append((Section.SUB, "Default track name", self.sub_trackname))
+            rows.append((Section.MERGE_SUB, "Default track name", self.sub_trackname))
         
         for row in rows:
             section, option, value = row[:3]
