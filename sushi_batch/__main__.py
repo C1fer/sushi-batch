@@ -6,7 +6,7 @@ import traceback
 
 from art import text2art
 
-from .utils.prompts import choice_prompt
+from .utils.prompts import choice_prompt, confirm_prompt
 from .utils import console_utils as cu
 from .utils import file_utils
 from .utils import queue_manager as qm
@@ -118,7 +118,7 @@ def main():
             case 6:
                 s.config.handle_options()
             case 7:
-                if cu.confirm_action():
+                if confirm_prompt.get("Are you sure you want to clear the logs? This action cannot be undone. (Y/N): "):
                     utils.clear_logs(s.config.data_path)
                     cu.print_success("Logs cleared.")
             case 8:
