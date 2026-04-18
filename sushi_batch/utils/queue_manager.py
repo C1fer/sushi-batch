@@ -137,7 +137,7 @@ def show_card_queue(queued_jobs, current_task):
                 status_section["children"].append(("Error", f"{detail_color}{job.result}"))
             sections.append(status_section)
 
-            if job.merged is not None:
+            if job.merged is not None and job.sync_status == Status.COMPLETED:
                 merged_color, merged_label, merged_icon, merged_child_color = _merge_status_style(job.merged)
 
                 sections.append(
@@ -200,16 +200,17 @@ def show_yaml_queue(queued_jobs, current_task):
             print(f"{cu.fore.LIGHTBLACK_EX}  sync_status: {status_color}{status_label.lower()}")
             if job.sync_status == Status.COMPLETED:
                 print(f"{cu.fore.LIGHTBLACK_EX}  average_shift: {detail_color}{job.result}")
+                match job.merged:
+                    case True:
+                        print(f"{cu.fore.GREEN}  merged: true")
+                    case False:
+                        print(f"{cu.fore.LIGHTYELLOW_EX}  merged: pending")
+                    case _:
+                        pass
             elif job.sync_status == Status.FAILED:
                 print(f"{cu.fore.LIGHTBLACK_EX}  error: {detail_color}{job.result}")
             
-            match job.merged:
-                case True:
-                    print(f"{cu.fore.GREEN}  merged: true")
-                case False:
-                    print(f"{cu.fore.LIGHTYELLOW_EX}  merged: pending")
-                case _:
-                    pass
+           
     
 def show_queue(queue, current_task):
     """Display the current job queue with status and options.
