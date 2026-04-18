@@ -1,57 +1,23 @@
-from .utils import utils
-utils.check_required_packages() # Check if required packages are installed
-
 import sys
 import traceback
 
-from art import text2art
-
-from .utils.prompts import choice_prompt, confirm_prompt
-from .utils import console_utils as cu
-from .utils import file_utils
-from .utils import queue_manager as qm
-from .models import settings as s
-from .models.enums import Task
-from .external.ffmpeg import FFmpeg
-from .models.job_queue import JobQueue
 from importlib.metadata import version
+
+from .utils import console_utils as cu
+from .models import settings as s
+from .external.ffmpeg import FFmpeg
+from .utils import queue_manager as qm
+
+from .ui.main_menu import run_main_menu
+
+from .utils import utils
+
+utils.check_required_packages() # Check if required packages are installed
 
 try: 
     VERSION = version("sushi-batch")
 except Exception:
     VERSION = None
-
-MENU_OPTIONS = [
-    (1, "Video-based Sync (Directory mode)"),
-    (2, "Video-based Sync (File-select mode)"),
-    (3, "Audio-based Sync (Directory mode)"),
-    (4, "Audio-based Sync (File-select mode)"),
-    (5, "View Job Queue"),
-    (6, "Settings"),
-    (7, "Clear Logs"),
-    (8, "Exit"),
-]
-
-SYNC_TASK_DISPLAY = {
-    1: (Task.VIDEO_SYNC_DIR, "Video-based Sync (Directory mode)"),
-    2: (Task.VIDEO_SYNC_FIL, "Video-based Sync (File-select mode)"),
-    3: (Task.AUDIO_SYNC_DIR, "Audio-based Sync (Directory mode)"),
-    4: (Task.AUDIO_SYNC_FIL, "Audio-based Sync (File-select mode)"),
-} 
-
-def handle_sync_option_selected(task):
-    jobs = None
-
-    if task in (Task.AUDIO_SYNC_DIR, Task.VIDEO_SYNC_DIR):
-        src, dst = file_utils.get_directories()
-        if src and dst:
-            jobs = file_utils.search_directories(src, dst, task)
-    else:
-        jobs = file_utils.select_files(task)
-
-    if jobs:
-        qm.temp_queue_options(JobQueue(jobs), task)
-
 
 def _load_startup_data():
     """Load startup data and allow recovery by resetting the failing state."""
@@ -77,14 +43,6 @@ def _load_startup_data():
             raise
         return
 
-def show_main_menu():
-    version_str = f"Version: {VERSION}" if VERSION else ""
-    header = text2art("Sushi Batch") + version_str 
-
-    cu.clear_screen()
-    cu.print_header(header)
-
-
 def main():
     if not FFmpeg.is_installed:
         cu.print_error("FFmpeg could not be found! \nInstall or add the program to PATH before running the tool", False)
@@ -97,33 +55,10 @@ def main():
         cu.print_error(f"---INIT ERROR---\nStartup initialization failed: {type(e).__name__}: {e}\n{init_trace}", False)
         sys.exit(1)
 
-
-    while True:
-        show_main_menu()
-        selected_option = choice_prompt.get("Select an option: ", MENU_OPTIONS, show_toolbar=True, show_frame=True)
-        
-        if selected_option not in (7, 8):
-            cu.clear_screen()   
-
-        match selected_option:
-            case 1 | 2 | 3 | 4:
-                task, header = SYNC_TASK_DISPLAY[selected_option]
-                cu.print_header(header)
-                handle_sync_option_selected(task)
-            case 5:
-                if qm.main_queue.contents:
-                    qm.main_queue_options(Task.JOB_QUEUE)
-                else:
-                    cu.print_error("No jobs queued!")
-            case 6:
-                s.config.handle_options()
-            case 7:
-                if confirm_prompt.get("Are you sure you want to clear the logs? This action cannot be undone. (Y/N): "):
-                    utils.clear_logs(s.config.data_path)
-                    cu.print_success("Logs cleared.")
-            case 8:
-                sys.exit(0)
+    run_main_menu(VERSION, s.config)
 
     
 if __name__ == "__main__":
     main()
+
+
