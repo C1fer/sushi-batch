@@ -9,7 +9,7 @@ class JobEncoder(JSONEncoder):
         if isinstance(obj, Job):
             dct = obj.__dict__.copy()
             dct["task"] = obj.task.name
-            dct["status"] = obj.sync_status.name
+            dct["sync_status"] = obj.sync_status.name
             return dct
         return super().default(obj) 
 
@@ -21,8 +21,8 @@ class JobDecoder(JSONDecoder):
     def object_hook(self, dct):
         if "task" in dct:
             dct["task"] = Task[dct["task"]]
-        if "status" in dct:
-            dct["status"] = Status[dct["status"]]
+        if "sync_status" in dct:
+            dct["sync_status"] = Status[dct["sync_status"]]
 
         return Job(**dct)
 
