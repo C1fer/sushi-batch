@@ -174,7 +174,7 @@ class JobQueue:
         self.contents.clear()
         self.save()
 
-    def clear_completed_jobs(self):
+    def clear_completed_and_failed_jobs(self):
         """ Clear completed and failed jobs from queue """
         jobs_to_remove = [
             idx
@@ -184,12 +184,12 @@ class JobQueue:
 
         if jobs_to_remove:
             self.remove_jobs(jobs_to_remove)
-            cu.print_success("Completed jobs cleared from queue.")
+            cu.print_success("Completed and failed jobs removed from queue.")
         else:
-            cu.print_error("No completed jobs to clear!")
+            cu.print_error("No completed or failed jobs to remove!")
 
     def select_jobs(self, prompt_title="Job Selection", prompt_message=""):
-        """ Select jobs from queue in a checkbox dialog and return the selected jobs"""
+        """ Select jobs from queue in a checkbox dialog and return the selected ids"""
         options = [   
             (job.idx, f"Job {job.idx} - {path.basename(job.src_file)} -> {path.basename(job.dst_file)} [{job.sync_status.name}]") 
             for job 
@@ -205,7 +205,7 @@ class JobQueue:
         selected_display = '\n'.join(j[1] for j in options if j[0] in choice)
         cu.print_warning(f"{cu.fore.LIGHTYELLOW_EX}Selected \n{cu.fore.LIGHTBLUE_EX}{selected_display}\n", wait=False)
 
-        return [job for job in self.contents if job.idx in choice], selected_display
+        return choice
 
     def _get_stream_choice(self, streams, prompt, isTarget):
         """"Get user-selected stream from list"""
