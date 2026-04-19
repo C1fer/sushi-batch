@@ -78,13 +78,32 @@ def get_queue_stats(queue = None):
         "completed": sum(1 for job in _queue if job.sync_status == Status.COMPLETED),
         "failed": sum(1 for job in _queue if job.sync_status == Status.FAILED),
     }
-   
+
+def get_stats_bar(queue=None):
+    """Generate a formatted status bar with per-field colors."""
+    stats = get_queue_stats(queue)
+    separator_classname = ("class:bottom-toolbar.sep", " | ")
+    return [
+        ("", " Sync Stats  ->    "), 
+        ("class:bottom-toolbar.label", "Total: "),
+        ("class:bottom-toolbar.total", str(stats["total"])),
+        separator_classname,
+        ("class:bottom-toolbar.label", "Pending: "),
+        ("class:bottom-toolbar.pending", str(stats["pending"])),
+        separator_classname,
+        ("class:bottom-toolbar.label", "Completed: "),
+        ("class:bottom-toolbar.completed", str(stats["completed"])),
+        separator_classname,
+        ("class:bottom-toolbar.label", "Failed: "),
+        ("class:bottom-toolbar.failed", str(stats["failed"])),
+    ]
+
 def show_main_queue(task):
     """Display the main job queue and handle user interactions."""
-    def _handle_run_options():
-        run_choice = choice_prompt.get(message=TO_RUN_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_run"], nl_before=False)
+    def _handle_run_options(toolbar_stats=None):
+        run_choice = choice_prompt.get(message=TO_RUN_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_run"], nl_before=False, bottom_toolbar=toolbar_stats)
         match run_choice:
-            case 1 if confirm_prompt.get():
+            case 1 if confirm_prompt.get(bottom_toolbar=toolbar_stats):
                 _jobs = [job for job in main_queue.contents if job.sync_status == Status.PENDING]
                 main_queue.run_jobs(_jobs)
             case 2:
@@ -92,29 +111,29 @@ def show_main_queue(task):
                     prompt_message=TO_RUN_SELECTED_PROMPT,
                     filter_fn=lambda j: j.sync_status == Status.PENDING,
                 )
-                if selected_jobs and confirm_prompt.get("Run selected jobs?"):
+                if selected_jobs and confirm_prompt.get("Run selected jobs?", bottom_toolbar=toolbar_stats):
                     main_queue.run_jobs(selected_jobs)
 
-    def _handle_remove_options():
-        remove_choice = choice_prompt.get(message=TO_REMOVE_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_remove"], nl_before=False)
+    def _handle_remove_options(toolbar_stats=None):
+        remove_choice = choice_prompt.get(message=TO_REMOVE_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_remove"], nl_before=False, bottom_toolbar=toolbar_stats)
         match remove_choice:
-            case 1 if confirm_prompt.get("Clear job queue?", destructive=True):
+            case 1 if confirm_prompt.get("Clear job queue?", destructive=True, bottom_toolbar=toolbar_stats):
                 main_queue.clear(trigger_file_cleanup=True)
                 cu.print_success("All jobs removed from queue.")
-            case 2 if confirm_prompt.get(destructive=True):
+            case 2 if confirm_prompt.get(destructive=True, bottom_toolbar=toolbar_stats):
                 main_queue.clear_completed_and_failed_jobs()
             case 3:
                 selected_jobs = main_queue.select_jobs(prompt_message=TO_REMOVE_SELECTED_PROMPT)
-                if selected_jobs and confirm_prompt.get("Remove selected jobs from queue?", destructive=True):
+                if selected_jobs and confirm_prompt.get("Remove selected jobs from queue?", destructive=True, bottom_toolbar=toolbar_stats):
                     main_queue.remove_jobs(selected_jobs)
                     _show_continue_confirmation(selected_jobs, is_removing=True)
 
-    def _handle_merge_options():
+    def _handle_merge_options(toolbar_stats=None):
         if not  MKVMerge.is_installed:
             cu.print_error("\nMKVMerge could not be found! Install MKVMerge to enable merging functionality.")
             return
         
-        merge_choice = choice_prompt.get(message=TO_MERGE_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_merge"], nl_before=False)
+        merge_choice = choice_prompt.get(message=TO_MERGE_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_merge"], nl_before=False, bottom_toolbar=toolbar_stats)
         match merge_choice:
             case 1:
                 main_queue.merge_completed_video_jobs(JobSelection.ALL)
@@ -127,22 +146,24 @@ def show_main_queue(task):
                         and not j.merged
                     ),
                 )
-                if selected_jobs and confirm_prompt.get("Merge selected jobs?"):
+                if selected_jobs and confirm_prompt.get("Merge selected jobs?", bottom_toolbar=toolbar_stats):
                     main_queue.merge_completed_video_jobs(JobSelection.SELECTED, selected_jobs)
 
+    
     while True:
         _show_queue_items(main_queue.contents, task)
+        bottom_toolbar = get_stats_bar()
         
-        top_lvl_choice = choice_prompt.get(options=MAIN_QUEUE_OPTIONS["top"])
+        top_lvl_choice = choice_prompt.get(options=MAIN_QUEUE_OPTIONS["top"], bottom_toolbar=bottom_toolbar)
         match top_lvl_choice:
             case 1:
-                _handle_run_options()
+                _handle_run_options(toolbar_stats=bottom_toolbar)
             case 2:
-                _handle_remove_options()
+                _handle_remove_options(toolbar_stats=bottom_toolbar)
                 if not main_queue.contents:
                     break
             case 3:
-                _handle_merge_options()
+                _handle_merge_options(toolbar_stats=bottom_toolbar)
             case _:
                 break
 

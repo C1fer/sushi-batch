@@ -1,18 +1,23 @@
 
 from prompt_toolkit import prompt
-from prompt_toolkit.styles import Style 
+from prompt_toolkit.styles import Style, merge_styles 
 
-from ...utils.constants import COLOR_ACCENT
+from ...utils import constants
 from ...utils.console_utils import print_error
 
 DEFAULT_STYLE = Style.from_dict({
-    "message": COLOR_ACCENT 
+    "message": constants.COLOR_ACCENT,
+    "bottom-toolbar": f"fg:{constants.COLOR_BG_DARK} bg:{constants.COLOR_MUTED_LIGHTER}"
 })
 
 
 def get(message="New value: ", allow_empty=False, **kwargs):
     """Prompt user for input."""
+    caller_style = kwargs.pop("style", None)
+    kwargs["style"] = merge_styles([DEFAULT_STYLE, caller_style]) if caller_style else DEFAULT_STYLE
+
     _message = [("class:message", f"{message}")]
+
     
     while True:
         user_input = prompt(_message, style=DEFAULT_STYLE, **kwargs)

@@ -1,5 +1,5 @@
 from prompt_toolkit.shortcuts import choice
-from prompt_toolkit.styles import Style 
+from prompt_toolkit.styles import Style, merge_styles
 
 from ...utils import constants 
 
@@ -7,9 +7,8 @@ from ...utils import constants
 DEFAULT_STYLE = Style.from_dict({
     "frame.border": constants.COLOR_MUTED,
     "selected-option": f"fg:{constants.COLOR_ACCENT} bold",
-    "bottom-toolbar": "#ffffff bg:#333333 noreverse",
+    **constants.BOTTOM_TOOLBAR_STATS_STYLES
 })
-
 
 def _validate_choice_options(options):
     """Validate that options are in the correct format for choice prompt."""
@@ -30,7 +29,9 @@ def get(message="Select an option: ", options=None, nl_before=True, nl_after=Tru
 
     kwargs["options"] = normalized_options
     kwargs.setdefault("mouse_support", True)
-    kwargs.setdefault("style", DEFAULT_STYLE)
+
+    caller_style = kwargs.pop("style", None)
+    kwargs["style"] = merge_styles([DEFAULT_STYLE, caller_style]) if caller_style else DEFAULT_STYLE
 
     is_frame_enabled = kwargs.get("show_frame", False)
 
