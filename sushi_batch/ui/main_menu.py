@@ -1,4 +1,9 @@
+import re
+
 from art import text2art
+
+from ..external.mkv_merge import MKVMerge
+from ..external.sub_resample import SubResampler
 
 from ..models.enums import Task
 from ..models.job_queue import JobQueue
@@ -9,9 +14,13 @@ from .prompts import choice_prompt
 
 from .settings_menu import show_settings_menu
 
+DEFAULT_TOOLBAR = " Use arrow/number keys or mouse to select an option. Press Enter to confirm."
+
 VIDEO_SYNC_INFO = """Selected tracks are extracted from reference and target videos. Subtitle is adjusted to sync with the target audio.
 The generated subtitle can later be merged with the target video in the Job Queue."""
+
 AUDIO_SYNC_INFO = "Provided audio tracks are analyzed to determine timing differences. Subtitle is adjusted to sync with the target audio." 
+
 SYNC_MODES_INFO = """
 Directory Mode: Choose source and target folders; matching files are paired automatically by filename.
 File-select Mode: Choose source and target files manually."""
@@ -44,8 +53,6 @@ MENU_OPTIONS = {
 }
 
 
-DEFAULT_TOOLBAR = " Use arrow/number keys or mouse to select an option. Press Enter to confirm."
-
 def handle_sync_option_selection(task):
     jobs = None
 
@@ -60,7 +67,6 @@ def handle_sync_option_selection(task):
         return qm.show_temp_queue(JobQueue(jobs), task)
 
     return False
-
 
 def _show_sync_submenu(is_video_sync=True):
     submenu_key = "sub_video_sync" if is_video_sync else "sub_audio_sync"
@@ -116,18 +122,31 @@ def _handle_main_menu_selection(selected_option, settings_obj):
 
     return True
 
+
+def _get_menu_info(version):
+    header = text2art("\nSushi Batch")
+
+    version_info = f"{cu.fore.LIGHTBLACK_EX}Version: {cu.fore.YELLOW}{version}"
+    mkvmerge_status = cu.get_formatted_install_status("MKVMerge", False, not_found_label="Not Found (Merging Disabled)")
+    sub_resampler_status = cu.get_formatted_install_status("Aegisub-CLI", False, not_found_label="Not Found (Subtitle Resampling Disabled)")
+    status_bar = f"{version_info}   {mkvmerge_status}   {sub_resampler_status}"
+   
+    visible_status = re.sub(r"\x1b\[[0-9;]*m", "", status_bar)
+    box_width = len(visible_status) + 4
+    box_display =  f"{cu.fore.RESET}+{'-' * (box_width - 2)}+"
+    status_box = "\n".join([box_display, f"| {status_bar} |", box_display])
+
+    return header + status_box
+
 def run_main_menu(version, settings_obj):
     if settings_obj is None:
         cu.print_error("Invalid settings object provided.", False)
         return
     
-    version_str = f"Version: {version}" if version else ""
-    header = text2art("Sushi Batch") + version_str
-
+    printable_header = _get_menu_info(version)
     while True:
         cu.clear_screen()
-        cu.print_header(header)
-
+        cu.print_header(printable_header)
         selected_option = choice_prompt.get(
             "Select an option: ", 
             MENU_OPTIONS["top"], 
