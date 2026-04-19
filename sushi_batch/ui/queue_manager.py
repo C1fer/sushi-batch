@@ -5,7 +5,7 @@ from ..models import settings as s
 from ..external.mkv_merge import MKVMerge
 
 from ..utils import console_utils as cu
-from ..utils.prompts import choice_prompt, confirm_prompt
+from .prompts import confirm_prompt, choice_prompt
 from .queue_themes import QUEUE_RENDERERS
 
 MAIN_QUEUE_OPTIONS= {

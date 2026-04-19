@@ -3,8 +3,8 @@ from prompt_toolkit import prompt
 from prompt_toolkit.styles import Style 
 from prompt_toolkit.cursor_shapes import CursorShape
 
-from ..constants import COLOR_ACCENT, COLOR_DESTRUCTIVE
-from ..console_utils import print_error
+from ...utils.constants import COLOR_ACCENT, COLOR_DESTRUCTIVE
+from ...utils.console_utils import print_error
 
 def get(message="Are you sure?", suffix=" (Y/N): ", nl_before=False, nl_after=False, destructive=False, **kwargs):
     """Prompt user for a yes/no confirmation."""

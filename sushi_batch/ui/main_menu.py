@@ -5,7 +5,7 @@ from ..models.job_queue import JobQueue
 from ..utils import console_utils as cu
 from ..utils import file_utils
 from . import queue_manager as qm
-from ..utils.prompts import choice_prompt
+from .prompts import choice_prompt
 
 from .settings_menu import show_settings_menu
 
@@ -57,7 +57,7 @@ def handle_sync_option_selection(task):
         jobs = file_utils.select_files(task)
 
     if jobs:
-        return qm.temp_queue_options(JobQueue(jobs), task)
+        return qm.show_temp_queue(JobQueue(jobs), task)
 
     return False
 
@@ -106,7 +106,7 @@ def _handle_main_menu_selection(selected_option, settings_obj):
             _show_sync_submenu(is_video_sync=False)
         case 3:
             if qm.main_queue.contents:
-                qm.main_queue_options(Task.JOB_QUEUE)
+                qm.show_main_queue(Task.JOB_QUEUE)
             else:
                 cu.print_error("No jobs queued!")
         case 4:

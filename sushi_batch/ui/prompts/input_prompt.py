@@ -2,8 +2,8 @@
 from prompt_toolkit import prompt
 from prompt_toolkit.styles import Style 
 
-from ..constants import COLOR_ACCENT
-from ..console_utils import print_error
+from ...utils.constants import COLOR_ACCENT
+from ...utils.console_utils import print_error
 
 DEFAULT_STYLE = Style.from_dict({
     "message": COLOR_ACCENT 

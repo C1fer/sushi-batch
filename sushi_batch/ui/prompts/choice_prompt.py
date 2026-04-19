@@ -1,7 +1,7 @@
 from prompt_toolkit.shortcuts import choice
 from prompt_toolkit.styles import Style 
 
-from .. import constants 
+from ...utils import constants 
 
 
 DEFAULT_STYLE = Style.from_dict({

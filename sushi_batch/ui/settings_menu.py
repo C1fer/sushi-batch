@@ -1,11 +1,11 @@
 from prettytable import PrettyTable
 
+from .prompts import choice_prompt, confirm_prompt, input_prompt
+
 from ..models.settings import Settings
 
 from ..utils import console_utils as cu
 from ..utils import file_utils as fu
-from ..utils.prompts import choice_prompt, confirm_prompt, input_prompt
-
 from ..models.enums import Section, QueueTheme
 
 GO_BACK_OPTION_LABEL = "Go Back"

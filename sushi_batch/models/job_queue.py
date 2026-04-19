@@ -2,11 +2,12 @@ import json
 from os import path
 
 from sushi_batch.external.ffmpeg import FFmpeg
+from ..ui.prompts import checklist_dialog, choice_prompt
 
 from ..utils import console_utils as cu
 from ..utils import file_utils as fu
 from ..utils.json_utils import JobDecoder, JobEncoder
-from ..utils.prompts import choice_prompt, checklist_dialog, confirm_prompt
+from ..ui.prompts import confirm_prompt
 from ..external.mkv_merge import MKVMerge
 from ..external.sub_sync import Sushi
 from ..external.sub_resample import SubResampler

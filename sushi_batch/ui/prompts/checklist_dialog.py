@@ -1,7 +1,7 @@
 from prompt_toolkit.shortcuts import checkboxlist_dialog
 from prompt_toolkit.styles import Style
 
-from .. import constants as c
+from ...utils import constants as c
 
 DEFAULT_TOOLBAR = "  Arrows: Move | Space/Mouse Click: Select | Tab: Actions | Enter: Confirm  \n\n"
 
