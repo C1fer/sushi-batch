@@ -5,7 +5,7 @@ from .. import constants
 
 
 DEFAULT_STYLE = Style.from_dict({
-    # "frame.border": "#56b6c2",
+    "frame.border": constants.COLOR_MUTED,
     "selected-option": f"fg:{constants.COLOR_ACCENT} bold",
     "bottom-toolbar": "#ffffff bg:#333333 noreverse",
 })

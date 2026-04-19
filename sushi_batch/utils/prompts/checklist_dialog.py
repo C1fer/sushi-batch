@@ -8,6 +8,7 @@ DEFAULT_TOOLBAR = " Arrows: Move | Space/Mouse Click: Select | Tab: Actions | En
 DEFAULT_STYLE = Style.from_dict({
     "dialog": f"bg:{c.COLOR_BG_DARK}",
     "dialog frame.label": f"fg:{c.COLOR_ACCENT} bold",
+    "dialog frame.border": f"fg:{c.COLOR_MUTED}",
     "dialog.body": f"fg:{c.COLOR_TEXT} bg:{c.COLOR_BG_DARK}",
 
     "button": f"fg:{c.COLOR_ACCENT} bold",
