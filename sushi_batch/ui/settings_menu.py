@@ -47,49 +47,54 @@ def _get_formatted_value(value):
             _value = value if value else "Not set"
             return f"{_color}{_value}{cu.style_reset}"
         
-def _generate_settings_table(obj):
-    """Create and return settings table"""
-    tb = PrettyTable(["Section", "Name", "Value"])
-    DIVIDER_FLAG = True
-    
+def _get_settings_rows(obj):
+    """Return the settings rows used by the table and selection flow."""
+    divider_flag = True
+
     rows = [
         # General Section
-        (Section.GEN, "Queue Theme", obj.queue_theme),
-        (Section.GEN, "Save Sushi sync logs", obj.save_sushi_logs),
-        (Section.GEN, "Save Aegisub-CLI resample logs", obj.save_aegisub_resample_logs),
-        (Section.GEN, "Save MKVMerge logs", obj.save_mkvmerge_logs, DIVIDER_FLAG),
+        (Section.GEN, "Queue Theme", "queue_theme", obj.queue_theme),
+        (Section.GEN, "Save Sushi sync logs", "save_sushi_logs", obj.save_sushi_logs),
+        (Section.GEN, "Save Aegisub-CLI resample logs", "save_aegisub_resample_logs", obj.save_aegisub_resample_logs),
+        (Section.GEN, "Save MKVMerge logs", "save_mkvmerge_logs", obj.save_mkvmerge_logs, divider_flag),
 
         # Workflow Section
-        (Section.WORKFLOW, "Merge automatically on sync completion", obj.merge_files_after_execution),
-        (Section.WORKFLOW, "Resample synced sub before merge", obj.resample_subs_on_merge),
-        (Section.WORKFLOW, "Delete generated subtitle files after merge", obj.delete_generated_files_after_merge, DIVIDER_FLAG),
+        (Section.WORKFLOW, "Merge automatically on sync completion", "merge_files_after_execution", obj.merge_files_after_execution),
+        (Section.WORKFLOW, "Resample synced sub before merge", "resample_subs_on_merge", obj.resample_subs_on_merge),
+        (Section.WORKFLOW, "Delete generated subtitle files after merge", "delete_generated_files_after_merge", obj.delete_generated_files_after_merge, divider_flag),
 
         # Source File Section
-        (Section.MERGE_SRC, "Copy attachments", obj.src_copy_attachments),
-        (Section.MERGE_SRC, "Copy chapters", obj.src_copy_chapters),
-        (Section.MERGE_SRC, "Copy global tags", obj.src_copy_global_tags),
-        (Section.MERGE_SRC, "Copy track tags", obj.src_copy_track_tags, DIVIDER_FLAG),
+        (Section.MERGE_SRC, "Copy attachments", "src_copy_attachments", obj.src_copy_attachments),
+        (Section.MERGE_SRC, "Copy chapters", "src_copy_chapters", obj.src_copy_chapters),
+        (Section.MERGE_SRC, "Copy global tags", "src_copy_global_tags", obj.src_copy_global_tags),
+        (Section.MERGE_SRC, "Copy track tags", "src_copy_track_tags", obj.src_copy_track_tags, divider_flag),
         
         # Sync Target File Section
-        (Section.MERGE_DST, "Copy only selected sync audio track", obj.dst_copy_audio_tracks),
-        (Section.MERGE_DST, "Copy attachments", obj.dst_copy_attachments),
-        (Section.MERGE_DST, "Copy chapters", obj.dst_copy_chapters),
-        (Section.MERGE_DST, "Copy subtitles", obj.dst_copy_subtitle_tracks),
-        (Section.MERGE_DST, "Copy global tags", obj.dst_copy_global_tags),
-        (Section.MERGE_DST, "Copy track tags", obj.dst_copy_track_tags, DIVIDER_FLAG),
+        (Section.MERGE_DST, "Copy only selected sync audio track", "dst_copy_audio_tracks", obj.dst_copy_audio_tracks),
+        (Section.MERGE_DST, "Copy attachments", "dst_copy_attachments", obj.dst_copy_attachments),
+        (Section.MERGE_DST, "Copy chapters", "dst_copy_chapters", obj.dst_copy_chapters),
+        (Section.MERGE_DST, "Copy subtitles", "dst_copy_subtitle_tracks", obj.dst_copy_subtitle_tracks),
+        (Section.MERGE_DST, "Copy global tags", "dst_copy_global_tags", obj.dst_copy_global_tags),
+        (Section.MERGE_DST, "Copy track tags", "dst_copy_track_tags", obj.dst_copy_track_tags, divider_flag),
         
         # Synced Subtitle Section
-        (Section.MERGE_SUB, "Set default flag", obj.sub_default_flag),
-        (Section.MERGE_SUB, "Set forced flag", obj.sub_forced_flag),
-        (Section.MERGE_SUB, "Use custom track name", obj.sub_custom_trackname),
+        (Section.MERGE_SUB, "Set default flag", "sub_default_flag", obj.sub_default_flag),
+        (Section.MERGE_SUB, "Set forced flag", "sub_forced_flag", obj.sub_forced_flag),
+        (Section.MERGE_SUB, "Use custom track name", "sub_custom_trackname", obj.sub_custom_trackname),
     ]
-    
+
     if obj.sub_custom_trackname:
-        rows.append((Section.MERGE_SUB, "Default track name", obj.sub_trackname))
+        rows.append((Section.MERGE_SUB, "Default track name", "sub_trackname", obj.sub_trackname))
+
+    return rows
+
+def _generate_settings_table(rows):
+    """Create and return settings table"""
+    tb = PrettyTable(["Section", "Name", "Value"])
     
     for row in rows:
-        section, option, value = row[:3]
-        has_divider = len(row) > 3 and row[3]
+        section, option, _, value = row[:4]
+        has_divider = len(row) > 4 and row[4]
         tb.add_row([section.value, option, _get_formatted_value(value)], divider=has_divider)
     
     tb.add_autoindex("Option")
@@ -98,15 +103,15 @@ def _generate_settings_table(obj):
 
 def _select_queue_theme():
     """Display queue theme options and update setting based on user selection"""
-    theme_mapping = {idx: name for idx, (_, name) in enumerate(QUEUE_THEMES.items(), 1)}
-    options = [(idx, name) for idx, name in theme_mapping.items()]
-    options.append((len(theme_mapping) + 1, GO_BACK_OPTION_LABEL))
+    go_back_id = len(QUEUE_THEMES) + 1
+    options = [(idx, label) for idx, label in enumerate(QUEUE_THEMES.values(), 1)]
+    options.append((go_back_id, GO_BACK_OPTION_LABEL))
 
-    choice_idx = choice_prompt.get(options=options, nl_before=False, nl_after=False)    
-    if choice_idx == len(options):
+    choice_idx = choice_prompt.get(options=options, nl_before=False, nl_after=False)
+    if choice_idx == go_back_id:
         return None
 
-    return theme_mapping.get(choice_idx)
+    return next(theme for theme, label in QUEUE_THEMES.items() if label == options[choice_idx - 1][1])
 
 def _update_value(obj, option):
     """Update value for selected option"""
@@ -131,19 +136,18 @@ def _update_value(obj, option):
         setattr(obj, option, new_val)
         obj._save()
 
-def _handle_option_choice(obj, section_options):
+def _handle_option_choice(section_options):
     """Handle user choice for setting inside a section"""
-    option_count = len(section_options)
-    section_options.append((option_count + 1, GO_BACK_OPTION_LABEL))
+    go_back_id = len(section_options) + 1
+    options = section_options + [(go_back_id, GO_BACK_OPTION_LABEL)]
 
-    selected_option_id = choice_prompt.get("Select setting to modify: ", section_options)
-    if selected_option_id == option_count + 1:
+    selected_option_id = choice_prompt.get("Select setting to modify: ", options)
+    if selected_option_id == go_back_id:
         return None # Go Back option selected at option level
 
-    attr_names = list(obj.__dict__)[2:]  # Exclude data_path and file_path
-    return attr_names[selected_option_id - 1]
+    return next(idx for idx, _ in options if idx == selected_option_id)
 
-def _select_setting_to_update(obj, rows):
+def _select_setting_to_update(rows):
     """Prompt user to select a setting to update and return the corresponding attribute name"""
     while True:
         selected_section_idx = choice_prompt.get("Select section: ", options=SECTION_SUB_OPTIONS, nl_after=False)
@@ -153,13 +157,14 @@ def _select_setting_to_update(obj, rows):
             return None # Go Back option selected at section level
 
         section_rows = [
-            (idx, row[2])
+            (idx, row[1])
             for idx, row in enumerate(rows, 1)
-            if row[1] == section_val
+            if row[0].value == section_val
         ]
-        selected_option = _handle_option_choice(obj, section_rows)
+        
+        selected_option = _handle_option_choice(section_rows)
         if selected_option:
-            return selected_option
+           return rows[selected_option - 1][2] # Return attribute name for selected setting
     
 
 def show_settings_menu(settings_obj):
@@ -171,13 +176,14 @@ def show_settings_menu(settings_obj):
     while True:
         cu.clear_screen()
         cu.print_header("App Settings\n")
-        tbl = _generate_settings_table(settings_obj)
+        table_rows = _get_settings_rows(settings_obj)
+        tbl = _generate_settings_table(table_rows)
         print(tbl)
 
         choice = choice_prompt.get(options=MENU_OPTIONS, nl_after=False)
         match choice:
             case 1:
-                selected = _select_setting_to_update(settings_obj, tbl.rows)
+                selected = _select_setting_to_update(table_rows)
                 if selected:
                     _update_value(settings_obj, selected)
             case 2 if confirm_prompt.get():
