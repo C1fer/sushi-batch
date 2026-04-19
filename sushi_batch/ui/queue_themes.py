@@ -1,6 +1,6 @@
 from ..models.enums import Task, Status, QueueTheme
 
-from . import console_utils as cu
+from ..utils import console_utils as cu
 
 
 def _get_track_values(job):

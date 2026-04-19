@@ -8,7 +8,7 @@ from ..models.job import Job
 from ..external.ffmpeg import FFmpeg
 
 from . import console_utils as cu
-from .file_dialogs import FileDialog
+from ..ui.file_dialogs import FileDialog
 
 
 def get_directories():
