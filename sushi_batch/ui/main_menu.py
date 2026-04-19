@@ -5,31 +5,49 @@ from ..models.job_queue import JobQueue
 from ..utils import console_utils as cu
 from ..utils import file_utils
 from ..utils import queue_manager as qm
-from ..utils import utils
-from ..utils.prompts import choice_prompt, confirm_prompt
+from ..utils.prompts import choice_prompt
 
 from .settings_menu import show_settings_menu
 
-MENU_OPTIONS = [
-    (1, "Video-based Sync (Directory mode)"),
-    (2, "Video-based Sync (File-select mode)"),
-    (3, "Audio-based Sync (Directory mode)"),
-    (4, "Audio-based Sync (File-select mode)"),
-    (5, "View Job Queue"),
-    (6, "Settings"),
-    (7, "Clear Logs"),
-    (8, "Exit"),
-]
+VIDEO_SYNC_INFO = "Selected tracks are extracted from reference and target videos. Subtitle is adjusted to sync with the target audio."
+AUDIO_SYNC_INFO = "Provided audio tracks are analyzed to determine timing differences. Subtitle is adjusted to sync with the target audio." 
+SYNC_MODES_INFO = """
+Directory Mode: Choose source and target folders; matching files are paired automatically by filename.
+File-select Mode: Choose source and target files manually.
+"""
 
-SYNC_TASK_DISPLAY = {
-    1: (Task.VIDEO_SYNC_DIR, "Video-based Sync (Directory mode)"),
-    2: (Task.VIDEO_SYNC_FIL, "Video-based Sync (File-select mode)"),
-    3: (Task.AUDIO_SYNC_DIR, "Audio-based Sync (Directory mode)"),
-    4: (Task.AUDIO_SYNC_FIL, "Audio-based Sync (File-select mode)"),
+#TODO: Move clear logs to settings menu and add option to clear specific logs based on settings
+MENU_OPTIONS = {
+    "top": [
+        (1, "Create Video Sync Job"),
+        (2, "Create Audio Sync Job"),
+        (3, "View Job Queue"),
+        (4, "Settings"),
+        (5, "Exit")
+    ],
+    "sub_video_sync": {
+        "title": "Create Video Sync Job",
+        "values": [
+            (1, "Directory Mode"),
+            (2, "File-select Mode"),
+            (3, "Go Back")
+        ],
+        
+    },
+    "sub_audio_sync": {
+        "title": "Create Audio Sync Job",
+        "values": [
+            (1, "Directory Mode"),
+            (2, "File-select Mode"),
+            (3, "Go Back")
+        ],
+    }
 }
 
 
-def handle_sync_option_selected(task):
+DEFAULT_TOOLBAR = " Use arrow/number keys or mouse to select an option. Press Enter to confirm."
+
+def handle_sync_option_selection(task):
     jobs = None
 
     if task in (Task.AUDIO_SYNC_DIR, Task.VIDEO_SYNC_DIR):
@@ -43,48 +61,77 @@ def handle_sync_option_selected(task):
         qm.temp_queue_options(JobQueue(jobs), task)
 
 
+def _show_sync_submenu(is_video_sync=True):
+    submenu_key = "sub_video_sync" if is_video_sync else "sub_audio_sync"
+    task_options = {
+        1: Task.VIDEO_SYNC_DIR if is_video_sync else Task.AUDIO_SYNC_DIR,
+        2: Task.VIDEO_SYNC_FIL if is_video_sync else Task.AUDIO_SYNC_FIL
+    }
+
+    while True:
+        cu.clear_screen()
+        cu.print_header(MENU_OPTIONS[submenu_key]["title"])
+        cu.print_subheader(VIDEO_SYNC_INFO if is_video_sync else AUDIO_SYNC_INFO)
+        print(f"{cu.fore.LIGHTBLACK_EX}{SYNC_MODES_INFO}")
+
+        selected_sub_option = choice_prompt.get(
+            "Select an option: ",
+            MENU_OPTIONS[submenu_key]["values"],
+            show_frame=True,
+            nl_before=True,
+        )
+
+        if selected_sub_option == 3:
+            return
+
+        task = task_options.get(selected_sub_option)
+        if task is None:
+            cu.print_error("Invalid choice! Please select a valid option.", False)
+            continue
+
+        handle_sync_option_selection(task)
+
+
 def _handle_main_menu_selection(selected_option, settings_obj):
+    if selected_option != 5:
+        cu.clear_screen()
+
     match selected_option:
-        case 1 | 2 | 3 | 4:
-            task, header = SYNC_TASK_DISPLAY[selected_option]
-            cu.print_header(header)
-            handle_sync_option_selected(task)
-        case 5:
+        case 1:
+            _show_sync_submenu(is_video_sync=True)
+        case 2:
+            _show_sync_submenu(is_video_sync=False)
+        case 3:
             if qm.main_queue.contents:
                 qm.main_queue_options(Task.JOB_QUEUE)
             else:
                 cu.print_error("No jobs queued!")
-        case 6:
+        case 4:
             show_settings_menu(settings_obj)
-        case 7:
-            if confirm_prompt.get("Are you sure you want to clear the logs? This action cannot be undone. (Y/N): "):
-                utils.clear_logs(settings_obj.data_path)
-                cu.print_success("Logs cleared.")
-        case 8:
+        case 5:
             return False
 
     return True
-
-
-def show_main_menu(version=None):
-    version_str = f"Version: {version}" if version else ""
-    header = text2art("Sushi Batch") + version_str
-
-    cu.clear_screen()
-    cu.print_header(header)
-
 
 def run_main_menu(version, settings_obj):
     if settings_obj is None:
         cu.print_error("Invalid settings object provided.", False)
         return
+    
+    version_str = f"Version: {version}" if version else ""
+    header = text2art("Sushi Batch") + version_str
 
     while True:
-        show_main_menu(version)
-        selected_option = choice_prompt.get("Select an option: ", MENU_OPTIONS, show_toolbar=True, show_frame=True)
+        cu.clear_screen()
+        cu.print_header(header)
 
-        if selected_option not in (7, 8):
-            cu.clear_screen()
+        selected_option = choice_prompt.get(
+            "Select an option: ", 
+            MENU_OPTIONS["top"], 
+            bottom_toolbar=DEFAULT_TOOLBAR,
+            nl_before=True,
+            show_frame=True
+        )
 
         if not _handle_main_menu_selection(selected_option, settings_obj):
             return
