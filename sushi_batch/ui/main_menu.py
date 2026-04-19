@@ -4,7 +4,7 @@ from ..models.enums import Task
 from ..models.job_queue import JobQueue
 from ..utils import console_utils as cu
 from ..utils import file_utils
-from ..utils import queue_manager as qm
+from . import queue_manager as qm
 from ..utils.prompts import choice_prompt
 
 from .settings_menu import show_settings_menu

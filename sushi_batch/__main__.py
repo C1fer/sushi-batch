@@ -6,13 +6,13 @@ from importlib.metadata import version
 from .utils import console_utils as cu
 from .models import settings as s
 from .external.ffmpeg import FFmpeg
-from .utils import queue_manager as qm
+from .ui import queue_manager as qm
 
 from .ui.main_menu import run_main_menu
 
 from .utils import utils
 
-utils.check_required_packages() # Check if required packages are installed
+utils.check_required_packages()
 
 try: 
     VERSION = version("sushi-batch")
@@ -60,5 +60,3 @@ def main():
     
 if __name__ == "__main__":
     main()
-
-

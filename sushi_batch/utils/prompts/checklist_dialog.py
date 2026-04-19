@@ -3,7 +3,7 @@ from prompt_toolkit.styles import Style
 
 from .. import constants as c
 
-DEFAULT_TOOLBAR = " Arrows: Move | Space/Mouse Click: Select | Tab: Actions | Enter: Confirm \n\n"
+DEFAULT_TOOLBAR = "  Arrows: Move | Space/Mouse Click: Select | Tab: Actions | Enter: Confirm  \n\n"
 
 DEFAULT_STYLE = Style.from_dict({
     "dialog": f"bg:{c.COLOR_BG_DARK}",
@@ -22,7 +22,7 @@ DEFAULT_STYLE = Style.from_dict({
     "selected": "bold",
 
     "message": f"fg:{c.COLOR_TEXT}",
-    "instructions": f"fg:{c.COLOR_SUCCESS} bg:{c.COLOR_BG_DARKER}",
+    "instructions": f"fg:{c.COLOR_MUTED} bg:{c.COLOR_BG_DARKER} bold",
 })
 
 def _validate_choice_options(options):

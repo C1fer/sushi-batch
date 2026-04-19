@@ -4,9 +4,9 @@ from ..models import settings as s
 
 from ..external.mkv_merge import MKVMerge
 
-from . import console_utils as cu
-from .prompts import choice_prompt, confirm_prompt
-from .queue_themes import QUEUE_RENDERERS
+from ..utils import console_utils as cu
+from ..utils.prompts import choice_prompt, confirm_prompt
+from ..utils.queue_themes import QUEUE_RENDERERS
 
 MAIN_QUEUE_OPTIONS= {
     "top": [
@@ -60,10 +60,8 @@ def _show_continue_confirmation(jobs, is_removing=False):
     action = "removed from" if is_removing else "added to"
     input(f"\n{cu.fore.LIGHTGREEN_EX}{job_count} {action} queue. Press Enter to continue...")
 
-def show_queue(queue, current_task):
-    """Display the current job queue with status and options.
-        Theme is chosen from settings.
-    """
+def _show_queue_items(queue, current_task):
+    """Display the current job queue in the selected theme. Theme is chosen from settings."""
     cu.clear_screen()
     title = "Job Queue" if current_task == Task.JOB_QUEUE else "Jobs"
     cu.print_header(f"{title}")
@@ -71,7 +69,8 @@ def show_queue(queue, current_task):
     renderer = QUEUE_RENDERERS.get(s.config.queue_theme, lambda q, t: cu.print_error("Invalid queue theme selected."))
     renderer(queue, current_task)
      
-def main_queue_options(task):
+def show_main_queue(task):
+    """Display the main job queue and handle user interactions."""
     def _handle_run_options():
         run_choice = choice_prompt.get(message=TO_RUN_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_run"], nl_before=False)
         match run_choice:
@@ -122,7 +121,7 @@ def main_queue_options(task):
                     main_queue.merge_completed_video_jobs(JobSelection.SELECTED, selected_jobs)
 
     while True:
-        show_queue(main_queue.contents, task)
+        _show_queue_items(main_queue.contents, task)
         
         top_lvl_choice = choice_prompt.get(options=MAIN_QUEUE_OPTIONS["top"])
         match top_lvl_choice:
@@ -137,8 +136,7 @@ def main_queue_options(task):
             case _:
                 break
 
-
-def temp_queue_options(temp_queue, task):
+def show_temp_queue(temp_queue, task):
     """Handle options for the temporary job queue created after file selection."""
     def _run_and_queue_all():
         main_queue.add_jobs(temp_queue.contents, task)
@@ -176,7 +174,7 @@ def temp_queue_options(temp_queue, task):
                     return True
 
     while True:
-        show_queue(temp_queue.contents, task)
+        _show_queue_items(temp_queue.contents, task)
         is_single_job = len(temp_queue.contents) == 1
         
         top_lvl_choice = choice_prompt.get(options=TEMP_QUEUE_OPTIONS["top"])
