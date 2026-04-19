@@ -9,14 +9,13 @@ from ..utils.prompts import choice_prompt
 
 from .settings_menu import show_settings_menu
 
-VIDEO_SYNC_INFO = "Selected tracks are extracted from reference and target videos. Subtitle is adjusted to sync with the target audio."
+VIDEO_SYNC_INFO = """Selected tracks are extracted from reference and target videos. Subtitle is adjusted to sync with the target audio.
+The generated subtitle can later be merged with the target video in the Job Queue."""
 AUDIO_SYNC_INFO = "Provided audio tracks are analyzed to determine timing differences. Subtitle is adjusted to sync with the target audio." 
 SYNC_MODES_INFO = """
 Directory Mode: Choose source and target folders; matching files are paired automatically by filename.
-File-select Mode: Choose source and target files manually.
-"""
+File-select Mode: Choose source and target files manually."""
 
-#TODO: Move clear logs to settings menu and add option to clear specific logs based on settings
 MENU_OPTIONS = {
     "top": [
         (1, "Create Video Sync Job"),
