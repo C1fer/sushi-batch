@@ -1,3 +1,4 @@
+import shutil
 from os import path, walk
 from pathlib import Path
 
@@ -8,7 +9,6 @@ from ..external.ffmpeg import FFmpeg
 
 from . import console_utils as cu
 from .file_dialogs import FileDialog
-
 
 
 def get_directories():
@@ -152,3 +152,13 @@ def clean_generated_files(job_list):
     except OSError as e:
         cu.print_error(f"Error deleting generated files: {e}")
 
+
+def clear_logs(dirpath):
+    try:
+        root = Path(dirpath)
+        for name in ("Sushi Logs", "Merge Logs", "Aegisub Resample Logs"):
+            target = root / name
+            if target.exists() and target.is_dir():
+                shutil.rmtree(target)
+    except OSError as e:
+        cu.print_error(f"Error clearing logs: {e}")

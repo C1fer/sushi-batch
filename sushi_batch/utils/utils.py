@@ -25,15 +25,6 @@ def is_app_env_var(app):
         return True
     
 
-def clear_logs(dirpath):
-    try:
-        for entry in os.listdir(dirpath):
-            if entry in("Sushi Logs", "Merge Logs", "Aegisub Resample Logs"):
-                entry_path = os.path.join(dirpath, entry)
-                shutil.rmtree(entry_path)  # Recursively delete the directory
-    except OSError as e:
-        print(e)
-
 def check_required_packages():
     _PACKAGES = ["art", "colorama", "sushi", "prettytable", "yaspin"]
 

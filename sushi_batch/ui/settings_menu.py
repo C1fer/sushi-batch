@@ -3,6 +3,7 @@ from prettytable import PrettyTable
 from ..models.settings import Settings
 
 from ..utils import console_utils as cu
+from ..utils import file_utils as fu
 from ..utils.prompts import choice_prompt, confirm_prompt, input_prompt
 
 from ..models.enums import Section, QueueTheme
@@ -18,7 +19,8 @@ QUEUE_THEMES = {
 MENU_OPTIONS = [
     (1, "Change a Setting"),
     (2, "Restore Default Settings"),
-    (3, "Return to Main Menu")
+    (3, "Clear Logs"),
+    (4, "Return to Main Menu")
 ]
 
 SECTION_SUB_OPTIONS = [
@@ -182,4 +184,9 @@ def show_settings_menu(settings_obj):
                 settings_obj.restore()
                 cu.print_success("Settings restored to default values.")
             case 3:
+                if confirm_prompt.get("Are you sure you want to clear the logs? This action cannot be undone.", nl_before=True):
+                    fu.clear_logs(settings_obj.data_path)
+                    cu.print_success("Logs cleared.")
+                break
+            case _:
                 break
