@@ -127,10 +127,11 @@ def _get_menu_info(version):
     header = text2art("\nSushi Batch")
 
     version_info = f"{cu.fore.LIGHTBLACK_EX}Version: {cu.fore.YELLOW}{version}"
-    mkvmerge_status = cu.get_formatted_install_status("MKVMerge", False, not_found_label="Not Found (Merging Disabled)")
-    sub_resampler_status = cu.get_formatted_install_status("Aegisub-CLI", False, not_found_label="Not Found (Subtitle Resampling Disabled)")
-    status_bar = f"{version_info}   {mkvmerge_status}   {sub_resampler_status}"
-   
+    mkvmerge_status = cu.get_formatted_install_status("MKVMerge", MKVMerge.is_installed, not_found_label="Not Found (Merging Disabled)")
+    sub_resampler_status = cu.get_formatted_install_status("Aegisub-CLI", SubResampler.is_installed, not_found_label="Not Found (Subtitle Resampling Disabled)")
+    pending_job_count = f"{cu.fore.LIGHTBLACK_EX}Pending Jobs: {cu.fore.LIGHTYELLOW_EX}{qm.get_queue_stats()['pending']}{cu.fore.RESET}"
+    status_bar = f"{version_info}   {pending_job_count}   {mkvmerge_status}   {sub_resampler_status}"
+    
     visible_status = re.sub(r"\x1b\[[0-9;]*m", "", status_bar)
     box_width = len(visible_status) + 4
     box_display =  f"{cu.fore.RESET}+{'-' * (box_width - 2)}+"

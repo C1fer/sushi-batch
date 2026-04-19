@@ -68,7 +68,17 @@ def _show_queue_items(queue, current_task):
     
     renderer = QUEUE_RENDERERS.get(s.config.queue_theme, lambda q, t: cu.print_error("Invalid queue theme selected."))
     renderer(queue, current_task)
-     
+
+def get_queue_stats(queue = None):    
+    """Return summary statistics for the job queue, including total jobs, pending, completed, and failed counts."""
+    _queue = queue if queue is not None else main_queue.contents
+    return {
+        "total": len(_queue),
+        "pending": sum(1 for job in _queue if job.sync_status == Status.PENDING),
+        "completed": sum(1 for job in _queue if job.sync_status == Status.COMPLETED),
+        "failed": sum(1 for job in _queue if job.sync_status == Status.FAILED),
+    }
+   
 def show_main_queue(task):
     """Display the main job queue and handle user interactions."""
     def _handle_run_options():
