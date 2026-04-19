@@ -89,14 +89,14 @@ def main_queue_options(task):
     def _handle_remove_options():
         remove_choice = choice_prompt.get(message=TO_REMOVE_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_remove"], nl_before=False)
         match remove_choice:
-            case 1 if confirm_prompt.get("Clear job queue?"):
+            case 1 if confirm_prompt.get("Clear job queue?", destructive=True):
                 main_queue.clear(trigger_file_cleanup=True)
                 cu.print_success("All jobs removed from queue.")
-            case 2 if confirm_prompt.get():
+            case 2 if confirm_prompt.get(destructive=True):
                 main_queue.clear_completed_and_failed_jobs()
             case 3:
                 selected_jobs = main_queue.select_jobs(prompt_message=TO_REMOVE_SELECTED_PROMPT)
-                if selected_jobs and confirm_prompt.get("Remove selected jobs from queue?"):
+                if selected_jobs and confirm_prompt.get("Remove selected jobs from queue?", destructive=True):
                     main_queue.remove_jobs(selected_jobs)
                     _show_continue_confirmation(selected_jobs, is_removing=True)
 

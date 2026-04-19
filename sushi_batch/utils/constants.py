@@ -5,6 +5,7 @@ subtitle_codec_extension_map = {
 }
 
 COLOR_ACCENT = "#56b6c2"
+COLOR_DESTRUCTIVE = "#4e9aa4"
 COLOR_MUTED = "#9aa0a6"
 COLOR_SUCCESS = "#98c379"
 COLOR_TEXT = "#ffffff"

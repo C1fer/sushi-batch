@@ -117,7 +117,7 @@ class JobQueue:
         This includes intermediate subtitle files generated for syncing and resampling.
         """
         if any(job.sync_status == Status.COMPLETED for job in job_list):
-            if confirm_deletion and not confirm_prompt.get("Delete generated subtitle files?"):
+            if confirm_deletion and not confirm_prompt.get("Delete generated subtitle files?", destructive=True):
                 return
 
             fu.clean_generated_files(job_list)

@@ -190,7 +190,7 @@ def show_settings_menu(settings_obj):
                 settings_obj.restore()
                 cu.print_success("Settings restored to default values.")
             case 3:
-                if confirm_prompt.get("Are you sure you want to clear the logs? This action cannot be undone.", nl_before=True):
+                if confirm_prompt.get("Are you sure you want to clear the logs? This action cannot be undone.", nl_before=True, destructive=True):
                     fu.clear_logs(settings_obj.data_path)
                     cu.print_success("Logs cleared.")
                     break
