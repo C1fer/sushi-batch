@@ -57,7 +57,9 @@ def handle_sync_option_selection(task):
         jobs = file_utils.select_files(task)
 
     if jobs:
-        qm.temp_queue_options(JobQueue(jobs), task)
+        return qm.temp_queue_options(JobQueue(jobs), task)
+
+    return False
 
 
 def _show_sync_submenu(is_video_sync=True):
@@ -88,7 +90,9 @@ def _show_sync_submenu(is_video_sync=True):
             cu.print_error("Invalid choice! Please select a valid option.", False)
             continue
 
-        handle_sync_option_selection(task)
+        should_return_to_main_menu = handle_sync_option_selection(task)
+        if should_return_to_main_menu:
+            return
 
 
 def _handle_main_menu_selection(selected_option, settings_obj):

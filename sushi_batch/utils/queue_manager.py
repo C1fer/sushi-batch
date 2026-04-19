@@ -1,5 +1,3 @@
-from random import choice
-
 from ..models.job_queue import JobQueue
 from ..models.enums import JobSelection, Task, Status
 from ..models import settings as s
@@ -186,10 +184,10 @@ def temp_queue_options(temp_queue, task):
             case 1:
                 exit_loop = _run_and_queue_all() if is_single_job else _handle_run_and_queue_multiple()
                 if exit_loop:
-                    break
+                    return True
             case 2:
                 exit_loop =_queue_without_running_all() if is_single_job else _handle_queue_without_running_multiple()
                 if exit_loop:
-                    break
+                    return True
             case 3:
-                break
+                return False

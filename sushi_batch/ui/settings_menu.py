@@ -193,6 +193,6 @@ def show_settings_menu(settings_obj):
                 if confirm_prompt.get("Are you sure you want to clear the logs? This action cannot be undone.", nl_before=True):
                     fu.clear_logs(settings_obj.data_path)
                     cu.print_success("Logs cleared.")
-                break
+                    break
             case _:
                 break
