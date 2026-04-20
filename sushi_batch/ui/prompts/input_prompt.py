@@ -16,11 +16,11 @@ def get(message="New value: ", allow_empty=False, **kwargs):
     caller_style = kwargs.pop("style", None)
     kwargs["style"] = merge_styles([DEFAULT_STYLE, caller_style]) if caller_style else DEFAULT_STYLE
 
-    _message = [("class:message", f"{message}")]
+    _message = [("class:message", f"> {message}")]
 
     
     while True:
-        user_input = prompt(_message, style=DEFAULT_STYLE, **kwargs)
+        user_input = prompt(_message, **kwargs)
         
         if not allow_empty and (user_input.isspace() or not user_input):
             print_error("Input cannot be empty!\n", False)
