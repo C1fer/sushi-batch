@@ -123,31 +123,31 @@ def _handle_main_menu_selection(selected_option, settings_obj):
     return True
 
 
-def _get_menu_info(version):
-    header = text2art("\nSushi Batch")
+def _get_status_box(version):
+    pending_jobs_count = qm.get_queue_stats(requested_key="pending")
+    pending_jobs_display = f"{cu.fore.LIGHTBLACK_EX}Pending Jobs: {cu.fore.LIGHTYELLOW_EX}{"None" if not pending_jobs_count else pending_jobs_count}{cu.fore.RESET}"
 
     version_info = f"{cu.fore.LIGHTBLACK_EX}Version: {cu.fore.YELLOW}{version}"
     mkvmerge_status = cu.get_formatted_install_status("MKVMerge", MKVMerge.is_installed, not_found_label="Not Found (Merging Disabled)")
     sub_resampler_status = cu.get_formatted_install_status("Aegisub-CLI", SubResampler.is_installed, not_found_label="Not Found (Subtitle Resampling Disabled)")
-    pending_job_count = f"{cu.fore.LIGHTBLACK_EX}Pending Jobs: {cu.fore.LIGHTYELLOW_EX}{qm.get_queue_stats()['pending']}{cu.fore.RESET}"
-    status_bar = f"{version_info}   {pending_job_count}   {mkvmerge_status}   {sub_resampler_status}"
+    status_bar = f"{version_info}   {pending_jobs_display}   {mkvmerge_status}   {sub_resampler_status}"
     
     visible_status = re.sub(r"\x1b\[[0-9;]*m", "", status_bar)
     box_width = len(visible_status) + 4
     box_display =  f"{cu.fore.RESET}+{'-' * (box_width - 2)}+"
     status_box = "\n".join([box_display, f"| {status_bar} |", box_display])
 
-    return header + status_box
+    return status_box
 
 def run_main_menu(version, settings_obj):
     if settings_obj is None:
         cu.print_error("Invalid settings object provided.", False)
         return
     
-    printable_header = _get_menu_info(version)
+    header = text2art("\nSushi Batch")
     while True:
         cu.clear_screen()
-        cu.print_header(printable_header)
+        cu.print_header(header + _get_status_box(version))
         selected_option = choice_prompt.get(
             "Select an option: ", 
             MENU_OPTIONS["top"], 

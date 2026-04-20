@@ -70,9 +70,21 @@ def _show_queue_items(queue, current_task):
     renderer = QUEUE_RENDERERS.get(s.config.queue_theme, lambda q, t: cu.print_error("Invalid queue theme selected."))
     renderer(queue, current_task)
 
-def get_queue_stats(queue = None):    
+def get_queue_stats(queue = None, requested_key=None):    
     """Return summary statistics for the job queue, including total jobs, pending, completed, and failed counts."""
     _queue = queue if queue is not None else main_queue.contents
+    _key = requested_key.lower() if requested_key else None
+    
+    match _key:
+        case "total":
+            return len(_queue)
+        case "pending":
+            return sum(1 for job in _queue if job.sync_status == Status.PENDING)
+        case "completed":
+            return sum(1 for job in _queue if job.sync_status == Status.COMPLETED)
+        case "failed":
+            return sum(1 for job in _queue if job.sync_status == Status.FAILED)
+
     return {
         "total": len(_queue),
         "pending": sum(1 for job in _queue if job.sync_status == Status.PENDING),
