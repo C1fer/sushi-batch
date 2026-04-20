@@ -4,15 +4,16 @@ from ..models import settings as s
 
 from ..external.mkv_merge import MKVMerge
 
+from ..utils import constants
 from ..utils import console_utils as cu
 from .prompts import confirm_prompt, choice_prompt
 from .queue_themes import QUEUE_RENDERERS
 
 MAIN_QUEUE_OPTIONS= {
     "top": [
-        (1, "Run Jobs"),    
+        (1, "Run Jobs"),
         (2, "Remove Jobs"),
-        (3, "Merge Video Jobs"),
+        (3, "Merge Completed Video Jobs", lambda args: MKVMerge.is_installed and args["to_merge"]),
         (4, "Go Back"),
     ],
     "sub_run": [
@@ -83,7 +84,7 @@ def get_stats_bar(queue=None):
     """Generate a formatted status bar with per-field colors."""
     stats = get_queue_stats(queue)
     separator_classname = ("class:bottom-toolbar.sep", " | ")
-    return [
+    bar = [
         ("", " Sync Stats  ->    "), 
         ("class:bottom-toolbar.label", "Total: "),
         ("class:bottom-toolbar.total", str(stats["total"])),
@@ -97,10 +98,15 @@ def get_stats_bar(queue=None):
         ("class:bottom-toolbar.label", "Failed: "),
         ("class:bottom-toolbar.failed", str(stats["failed"])),
     ]
+    return bar, stats["pending"]
 
 def show_main_queue(task):
     """Display the main job queue and handle user interactions."""
-    def _handle_run_options(toolbar_stats=None):
+    def _handle_run_options(toolbar_stats=None, pending_count=None):
+        if pending_count == 0:
+            cu.print_warning("No pending jobs to run.")
+            return
+
         run_choice = choice_prompt.get(message=TO_RUN_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_run"], nl_before=False, bottom_toolbar=toolbar_stats)
         match run_choice:
             case 1 if confirm_prompt.get(bottom_toolbar=toolbar_stats):
@@ -142,22 +148,31 @@ def show_main_queue(task):
                     prompt_message=TO_MERGE_SELECTED_PROMPT,
                     filter_fn=lambda j: (
                         j.sync_status == Status.COMPLETED
-                        and j.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL)
+                        and j.task in constants.VIDEO_TASKS
                         and not j.merged
                     ),
                 )
                 if selected_jobs and confirm_prompt.get("Merge selected jobs?", bottom_toolbar=toolbar_stats):
                     main_queue.merge_completed_video_jobs(JobSelection.SELECTED, selected_jobs)
-
     
     while True:
         _show_queue_items(main_queue.contents, task)
-        bottom_toolbar = get_stats_bar()
+        bottom_toolbar, pending_count = get_stats_bar()
+
+        validations = {
+            "to_merge": any(j for j in main_queue.contents if j.sync_status == Status.COMPLETED and j.task in constants.VIDEO_TASKS and not j.merged)
+        }
+
+        available_options = [
+            opt[:2]
+            for opt in MAIN_QUEUE_OPTIONS["top"]
+            if (opt[2](validations) if len(opt) > 2 else True)
+        ]
         
-        top_lvl_choice = choice_prompt.get(options=MAIN_QUEUE_OPTIONS["top"], bottom_toolbar=bottom_toolbar)
+        top_lvl_choice = choice_prompt.get(options=available_options, bottom_toolbar=bottom_toolbar)
         match top_lvl_choice:
             case 1:
-                _handle_run_options(toolbar_stats=bottom_toolbar)
+                _handle_run_options(toolbar_stats=bottom_toolbar, pending_count=pending_count)
             case 2:
                 _handle_remove_options(toolbar_stats=bottom_toolbar)
                 if not main_queue.contents:
@@ -178,7 +193,6 @@ def show_temp_queue(temp_queue, task):
         main_queue.add_jobs(temp_queue.contents, task)
         _show_continue_confirmation(temp_queue.contents)
         return True
-
 
     def _handle_run_and_queue_multiple():
         run_choice = choice_prompt.get(message=TO_RUN_SELECTED_PROMPT, options=TEMP_QUEUE_OPTIONS["sub_run_add"], nl_before=False)
