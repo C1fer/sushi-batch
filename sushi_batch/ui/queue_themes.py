@@ -119,16 +119,16 @@ def _show_card_theme(queued_jobs, current_task):
             )
 
         if current_task == Task.JOB_QUEUE:
-            status_section = {
+            sync_status_section = {
                 "label": "Sync Status",
                 "value": f"{status_color}{status_icon} {status_label}",
-                "children": [],
+                "children": [
+                    ("Average Shift", f"{detail_color}{job.result}") if job.sync_status == Status.COMPLETED else None,
+                    ("Error", f"{detail_color}{job.result}") if job.sync_status == Status.FAILED else None,
+
+                ],
             }
-            if job.sync_status == Status.COMPLETED:
-                status_section["children"].append(("Avg Shift", f"{detail_color}{job.result}"))
-            elif job.sync_status == Status.FAILED:
-                status_section["children"].append(("Error", f"{detail_color}{job.result}"))
-            sections.append(status_section)
+            sections.append(sync_status_section)
 
             if job.merged is not None and job.sync_status == Status.COMPLETED:
                 merged_color, merged_label, merged_icon, merged_child_color = _merge_status_style(job.merged)
@@ -140,6 +140,7 @@ def _show_card_theme(queued_jobs, current_task):
                         "children": [
                             ("Generated File", f"{merged_child_color}{job.merged_file}") if job.merged_file is not None else None,
                             ("Resampled", f"{merged_child_color}Yes") if job.resample_done else None,
+                            ("Finished with Warnings", f"{cu.fore.LIGHTYELLOW_EX}Yes (Check Logs)") if job.merge_has_warnings else None,
                         ],
                     }
                 )

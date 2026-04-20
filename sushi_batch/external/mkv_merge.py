@@ -13,8 +13,8 @@ from .subprocess_logger import SubProcessLogger
 class MKVMerge:
     is_installed = utils.is_app_installed("mkvmerge")
     
-    @staticmethod
-    def _get_out_filepath(dst_file_path):
+    @classmethod
+    def _get_out_filepath(cls, dst_file_path):
         """Generate a unique output file path for the merged MKV file."""
         file_dirname, base_name = path.split(dst_file_path)
         name, ext = path.splitext(base_name)
@@ -31,8 +31,8 @@ class MKVMerge:
 
         return output_filepath
     
-    @staticmethod
-    def _add_source_file_args(args, job):
+    @classmethod
+    def _add_source_file_args(cls, args, job):
         """Add source file specific arguments."""
         if not s.config.src_copy_attachments:
             args.append("--no-attachments")
@@ -44,8 +44,8 @@ class MKVMerge:
             args.append("--no-track-tags")
         args.append(job.src_file)
 
-    @staticmethod
-    def _add_destination_file_args(args, job):
+    @classmethod
+    def _add_destination_file_args(cls, args, job):
         """Add destination file specific arguments."""
         if s.config.dst_copy_audio_tracks:
             args.extend(["--audio-tracks", str(job.dst_aud_id)])
@@ -61,8 +61,8 @@ class MKVMerge:
             args.append("--no-track-tags")
         args.append(job.dst_file)
 
-    @staticmethod
-    def _add_subtitle_args(args, job, use_resampled_sub):
+    @classmethod
+    def _add_subtitle_args(cls, args, job, use_resampled_sub):
         """Add subtitle specific arguments."""
         trackname = (
             s.config.sub_trackname
@@ -82,8 +82,8 @@ class MKVMerge:
         sub_suffix = f".sushi_resampled{job.src_sub_ext}" if use_resampled_sub else f".sushi{job.src_sub_ext}"
         args.append(f"{job.dst_file}{sub_suffix}")
 
-    @staticmethod
-    def _get_merge_args(job, use_resampled_sub=False):
+    @classmethod
+    def _get_merge_args(cls, job, use_resampled_sub=False):
         output_file = MKVMerge._get_out_filepath(job.dst_file)
 
         args = [
@@ -95,16 +95,24 @@ class MKVMerge:
             "--no-subtitles",
         ]
 
-        MKVMerge._add_source_file_args(args, job)
-        MKVMerge._add_destination_file_args(args, job)
-        MKVMerge._add_subtitle_args(args, job, use_resampled_sub)
+        cls._add_source_file_args(args, job)
+        cls._add_destination_file_args(args, job)
+        cls._add_subtitle_args(args, job, use_resampled_sub)
 
         return args
 
-    @staticmethod
-    def run(job, use_resampled_sub=False):
+    @classmethod 
+    def _show_warnings(cls, output, log_prefix):
+        lines = output.splitlines()
+        warnings = "\n".join([x.replace("Warning: ", f"{log_prefix} Warning: ") for x in lines if x.startswith("Warning:")])
+        if warnings:
+            print(f"{cu.fore.LIGHTYELLOW_EX}{warnings}\n")
+           
+
+    @classmethod
+    def run(cls, job, use_resampled_sub=False):
         try:     
-            args = MKVMerge._get_merge_args(job, use_resampled_sub)
+            args = cls._get_merge_args(job, use_resampled_sub)
             output_file = path.normpath(args[2])
 
             log_prefix = f"[Job {job.idx} - MKVMerge]"
@@ -132,12 +140,12 @@ class MKVMerge:
                         job.merged = True
                         job.merged_file = output_file
                     case 1:
-                        lines = stdout.splitlines()
-                        warnings = "\n".join([x.replace("Warning: ", f"{log_prefix} Warning: ") for x in lines if x.startswith("Warning:")])
-                        sp.ok("⚠️ ")
-                        sp.write(f"{cu.fore.LIGHTYELLOW_EX}{warnings}\n")
+                        sp.ok("⚠️")
                         job.merged_file = output_file
                         job.merged = True
+                        job.has_warnings = True
+                        if not s.config.save_mkvmerge_logs:
+                            cls._show_warnings(stdout, log_prefix)
                     case 2:
                         lines = stdout.splitlines()
                         error = [x.replace("Error: ", f"{log_prefix} Error: ") for x in lines if x.startswith("Error:")]

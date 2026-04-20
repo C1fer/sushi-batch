@@ -23,10 +23,11 @@ class Job:
         dst_vid_width=None,
         dst_vid_height=None,
         sync_status=Status.PENDING,
-        sync_warnings=None,
+        sync_has_warnings=None,
         result=None,
         merged=None,
         merged_file=None,
+        merge_has_warnings=None,
         resample_done=None,
     ):
         self.idx = idx
@@ -45,13 +46,15 @@ class Job:
         self.dst_vid_width = dst_vid_width
         self.dst_vid_height = dst_vid_height
         self.sub_file = self._normalize_path(sub_file)
-        
+    
         self.task = task
         self.sync_status = sync_status
-        self.sync_warnings = sync_warnings or []
+        self.sync_has_warnings = sync_has_warnings
         self.result = result
+        
         self.merged = merged
         self.merged_file = self._normalize_path(merged_file)
+        self.merge_has_warnings = merge_has_warnings
         self.resample_done = resample_done
 
 
