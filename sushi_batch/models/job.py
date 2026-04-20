@@ -23,6 +23,7 @@ class Job:
         dst_vid_width=None,
         dst_vid_height=None,
         sync_status=Status.PENDING,
+        sync_warnings=None,
         result=None,
         merged=None,
         merged_file=None,
@@ -47,6 +48,7 @@ class Job:
         
         self.task = task
         self.sync_status = sync_status
+        self.sync_warnings = sync_warnings or []
         self.result = result
         self.merged = merged
         self.merged_file = self._normalize_path(merged_file)

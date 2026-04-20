@@ -49,6 +49,7 @@ def clear_screen():
     os.system("cls" if os.name == "nt" else "clear")
 
 
+
 def show_menu_options(options):
     print()
     for key, val in options.items():

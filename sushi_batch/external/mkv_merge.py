@@ -145,4 +145,4 @@ class MKVMerge:
                         sp.write(f"{cu.fore.LIGHTRED_EX}{error[0]}\n")
                 print()  # Add extra newline after spinner output for readability
         except Exception as e:
-                cu.print_error(f"Merge Error: {e}")
+                cu.print_error(f"Error generating merged file: {e}")

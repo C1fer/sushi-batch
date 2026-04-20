@@ -4,6 +4,7 @@ from os import path
 from sushi_batch.external.ffmpeg import FFmpeg
 from ..ui.prompts import checklist_dialog, choice_prompt
 
+from ..utils import utils
 from ..utils import console_utils as cu
 from ..utils import file_utils as fu
 from ..utils.json_utils import JobDecoder, JobEncoder
@@ -34,7 +35,7 @@ class JobQueue:
             with open(self.file_path, "r", encoding="utf-8") as data_file:
                 self.contents = json.load(data_file, cls=JobDecoder)
 
-    def add_jobs(self, jobs_to_add, task):
+    def _add_sync_jobs(self, jobs_to_add, task):
         """Add selected jobs to queue"""
         try:
             if not jobs_to_add:
@@ -48,6 +49,9 @@ class JobQueue:
             self.save()
         except Exception as e:
             cu.print_error(f"Error adding jobs to queue: {e}")
+    
+    def add_jobs(self, jobs_to_add, task):
+        return utils.interrupt_signal_handler(self._add_sync_jobs)(jobs_to_add, task)
 
     def _set_video_job_indexes(self, jobs_to_queue):
         """Set audio and subtitle track indexes for video sync jobs"""
@@ -58,7 +62,7 @@ class JobQueue:
                 indexes = self._get_stream_indexes(job, False)
                 job.__dict__.update(indexes)
 
-    def remove_jobs(self, jobs_to_remove):
+    def _remove_sync_jobs(self, jobs_to_remove):
         """Remove selected jobs from queue"""
         job_ids_to_remove = {job.idx for job in jobs_to_remove}
         try:
@@ -73,26 +77,31 @@ class JobQueue:
         except Exception as e:
             cu.print_error(f"Error removing jobs: {e}")
 
+    def remove_jobs(self, jobs_to_remove):
+        return utils.interrupt_signal_handler(self._remove_sync_jobs)(jobs_to_remove)
+    
     def run_jobs(self, jobs_to_run=[]):
         """ Run jobs selected by user"""
+        def _run_sub_sync(job, completed_video_jobs):
+            Sushi.run(job)
+            self.save()    
+            if job.sync_status == Status.COMPLETED and job.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL):
+                completed_video_jobs.append(job)
+
         try:
             if not jobs_to_run:
                 cu.print_error("\nNo pending jobs to run!") 
                 return
+           
+            cu.print_subheader("Running synchronization jobs")           
 
-            cu.print_subheader("Executing synchronization jobs")           
+            completed_video_jobs = []
             for job in jobs_to_run:
-                Sushi.run(job)
-                self.save()
-
-            contains_video_tasks = any(
-                job.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL)
-                for job in jobs_to_run
-            )
-
-            if settings.config.merge_files_after_execution and contains_video_tasks:
+                utils.interrupt_signal_handler(_run_sub_sync)(job, completed_video_jobs)
+            
+            if settings.config.merge_files_after_execution and completed_video_jobs:
                 if MKVMerge.is_installed:
-                    self.merge_completed_video_tasks(jobs_to_run)
+                    self.merge_completed_video_jobs(JobSelection.SELECTED, completed_video_jobs)
                 else:
                     cu.print_error("\nMKVMerge could not be found. Video files cannot be merged.")
         except Exception as e:
@@ -125,6 +134,14 @@ class JobQueue:
         
     def merge_completed_video_jobs(self, selection_type, selected_jobs=None):
         """ Generate a new video file from completed video tasks """
+        def _run_merge():
+            use_resampled_sub = False
+            if do_resample:
+                use_resampled_sub = self._resample_before_merge(job)
+                pass
+            MKVMerge.run(job, use_resampled_sub=use_resampled_sub)
+            self.save()
+
         completed_jobs = [
             job for job in self.contents
             if job.sync_status == Status.COMPLETED 
@@ -144,12 +161,7 @@ class JobQueue:
             cu.print_error("Aegisub-CLI could not be found. Subtitle resampling will be skipped.")
 
         for job in completed_jobs:
-            use_resampled_sub = False
-            if do_resample:
-                use_resampled_sub = self._resample_before_merge(job)
-                pass
-            MKVMerge.run(job, use_resampled_sub=use_resampled_sub)
-            self.save()
+            utils.interrupt_signal_handler(_run_merge)()
 
         if settings.config.delete_generated_files_after_merge:
             successfully_merged_jobs = [job for job in completed_jobs if job.merged]
@@ -157,13 +169,16 @@ class JobQueue:
 
         input("\nPress Enter to go back... ")
 
-    def clear(self, trigger_file_cleanup=True):
+    def _clear_queue(self, trigger_file_cleanup):
         """ Clear queue contents """
         if trigger_file_cleanup:
             self._clean_generated_files(self.contents.copy())
 
         self.contents.clear()
         self.save()
+
+    def clear(self, trigger_file_cleanup=True):
+        return utils.interrupt_signal_handler(self._clear_queue)(trigger_file_cleanup)
 
     def clear_completed_and_failed_jobs(self):
         """ Clear completed and failed jobs from queue """
