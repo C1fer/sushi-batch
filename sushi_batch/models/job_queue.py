@@ -55,7 +55,7 @@ class JobQueue:
 
     def _set_video_job_indexes(self, jobs_to_queue):
         """Set audio and subtitle track indexes for video sync jobs"""
-        if confirm_prompt.get("Select source/target tracks manually?"):
+        if confirm_prompt.get("Choose source and target tracks manually?", suffix=" (Y = manual, N = first available): ", nl_before=True):
             self._set_stream_indexes(jobs_to_queue)
         else:
             for job in jobs_to_queue:
@@ -280,7 +280,7 @@ class JobQueue:
 
     def _set_stream_indexes(self, unqueued_jobs):
         """"Set audio and subtitle track indexes for video sync jobs"""
-        if len(unqueued_jobs) > 1 and confirm_prompt.get("Set tracks from first job as default?", suffix=" (Y/N = choose per job): ", nl_before=True):
+        if len(unqueued_jobs) > 1 and confirm_prompt.get("Set tracks from first job as default?", suffix=" (Y = apply to all jobs, N = choose per job): ", nl_before=True):
             default_indexes = self._get_stream_indexes(unqueued_jobs[0], True) # Use first job as reference
             for job in unqueued_jobs:
                 job.__dict__.update(default_indexes)
