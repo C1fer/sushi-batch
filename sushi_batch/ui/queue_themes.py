@@ -8,6 +8,8 @@ from ..utils import console_utils as cu
 
 
 SYNC_EXCEED_WARNING = f"{cu.fore.LIGHTYELLOW_EX}High average shift detected. Check synced subtitle for accuracy."
+MERGE_WARNING_MESSAGE = f"{cu.fore.LIGHTYELLOW_EX}Merge completed with warnings. Check mkvmerge log for details."
+
 
 def _avg_shift_exceeds_threshold(avg_shift):
     """Determine if the average shift exceeds the defined safe threshold."""
@@ -153,7 +155,7 @@ def _show_card_theme(queued_jobs, current_task):
                         "children": [
                             ("Generated File", f"{merged_child_color}{job.merged_file}") if job.merged_file is not None else None,
                             ("Resampled", f"{merged_child_color}Yes") if job.resample_done else None,
-                            ("Finished with Warnings", f"{cu.fore.LIGHTYELLOW_EX}Yes (Check Logs)") if job.merge_has_warnings else None,
+                            ("Warning", MERGE_WARNING_MESSAGE) if job.merge_has_warnings else None,
                         ],
                     }
                 )
@@ -215,6 +217,8 @@ def _show_yaml_like_theme(queued_jobs, current_task):
                     case True:
                         merge_color, merge_label, _, merge_child_color = _merge_status_style(job.merged)
                         print(f"{cu.fore.LIGHTBLACK_EX}  merge_status: {merge_color}{merge_label.lower()}")
+                        if job.merge_has_warnings:
+                            print(f"{cu.fore.LIGHTBLACK_EX}  merge_warning: {MERGE_WARNING_MESSAGE}")
                         if job.merged_file:
                             print(f"{cu.fore.LIGHTBLACK_EX}  merged_file: {merge_child_color}{job.merged_file}")
                         if job.resample_done:
