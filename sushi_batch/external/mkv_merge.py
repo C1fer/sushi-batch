@@ -34,53 +34,49 @@ class MKVMerge:
     @classmethod
     def _add_source_file_args(cls, args, job):
         """Add source file specific arguments."""
-        if not s.config.src_copy_attachments:
-            args.append("--no-attachments")
-        if not s.config.src_copy_chapters:
-            args.append("--no-chapters")
-        if not s.config.src_copy_global_tags:
-            args.append("--no-global-tags")
-        if not s.config.src_copy_track_tags:
-            args.append("--no-track-tags")
-        args.append(job.src_file)
+        args.extend(filter(lambda v: v is not None,
+            [
+                "--no-audio",
+                "--no-video",
+                "--no-subtitles",
+                "--no-attachments" if not s.config.src_copy_attachments else None,
+                "--no-chapters" if not s.config.src_copy_chapters else None,
+                "--no-global-tags" if not s.config.src_copy_global_tags else None,
+                "--no-track-tags" if not s.config.src_copy_track_tags else None,
+                job.src_file
+            ]
+        ))
 
     @classmethod
     def _add_destination_file_args(cls, args, job):
         """Add destination file specific arguments."""
-        if s.config.dst_copy_audio_tracks:
-            args.extend(["--audio-tracks", str(job.dst_aud_id)])
-        if not s.config.dst_copy_attachments:
-            args.append("--no-attachments")
-        if not s.config.dst_copy_chapters:
-            args.append("--no-chapters")
-        if not s.config.dst_copy_global_tags:
-            args.append("--no-global-tags")
-        if not s.config.dst_copy_subtitle_tracks:
-            args.append("--no-subtitles")
-        if not s.config.dst_copy_track_tags:
-            args.append("--no-track-tags")
-        args.append(job.dst_file)
+        args.extend(filter(lambda v: v is not None,
+            [
+                *(["--audio-tracks", str(job.dst_aud_id)] if s.config.dst_copy_audio_tracks else [None]),
+                "--no-attachments" if not s.config.dst_copy_attachments else None,
+                "--no-chapters" if not s.config.dst_copy_chapters else None,
+                "--no-global-tags" if not s.config.dst_copy_global_tags else None,
+                "--no-subtitles" if not s.config.dst_copy_subtitle_tracks else None,
+                "--no-track-tags" if not s.config.dst_copy_track_tags else None,
+                job.dst_file
+            ]
+        ))
 
     @classmethod
     def _add_subtitle_args(cls, args, job, use_resampled_sub):
         """Add subtitle specific arguments."""
-        trackname = (
-            s.config.sub_trackname
-            if s.config.sub_custom_trackname
-            else job.src_sub_name
-        )
-        args.extend([
-            "--language", f"0: {job.src_sub_lang}",
-            "--track-name", f"0: {trackname}",
-        ])
-
-        if not s.config.sub_default_flag:
-            args.extend(["--default-track-flag", "0: 0"])
-        if not s.config.sub_forced_flag:
-            args.extend(["--forced-display-flag", "0: 0"])
-
+        trackname = s.config.sub_trackname if s.config.sub_custom_trackname else job.src_sub_name
         sub_suffix = f".sushi_resampled{job.src_sub_ext}" if use_resampled_sub else f".sushi{job.src_sub_ext}"
-        args.append(f"{job.dst_file}{sub_suffix}")
+        
+        args.extend([
+            "--language", f"0:{job.src_sub_lang}",
+            "--track-name", f"0:{trackname}",
+            "--default-track-flag",
+            "0:0" if not s.config.sub_default_flag else "0:1",
+            "--forced-display-flag",
+            "0:0" if not s.config.sub_forced_flag else "0:1",
+            f"{job.dst_file}{sub_suffix}"
+        ])
 
     @classmethod
     def _get_merge_args(cls, job, use_resampled_sub=False):
@@ -90,15 +86,11 @@ class MKVMerge:
             "mkvmerge",
             "--output",
             output_file,
-            "--no-audio",
-            "--no-video",
-            "--no-subtitles",
         ]
 
         cls._add_source_file_args(args, job)
         cls._add_destination_file_args(args, job)
         cls._add_subtitle_args(args, job, use_resampled_sub)
-
         return args
 
     @classmethod 
@@ -108,7 +100,6 @@ class MKVMerge:
         if warnings:
             print(f"{cu.fore.LIGHTYELLOW_EX}{warnings}\n")
            
-
     @classmethod
     def run(cls, job, use_resampled_sub=False):
         try:     
@@ -139,11 +130,12 @@ class MKVMerge:
                         sp.ok("✅")
                         job.merged = True
                         job.merged_file = output_file
+                        job.merge_has_warnings = False
                     case 1:
                         sp.ok("⚠️")
                         job.merged_file = output_file
                         job.merged = True
-                        job.has_warnings = True
+                        job.merge_has_warnings = True
                         if not s.config.save_mkvmerge_logs:
                             cls._show_warnings(stdout, log_prefix)
                     case 2:
