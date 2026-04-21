@@ -1,35 +1,45 @@
 import json
 import subprocess 
 
+from pathlib import Path
+
 from ..utils import utils
 from ..utils import console_utils as cu
 
-
 class FFmpeg:
     is_installed = utils.is_app_installed("ffprobe")
-    @staticmethod
-    def get_probe_output(filepath, stream_type=None):
+
+    @classmethod
+    def _get_probe_args(cls, filepath, stream_selector=None):
+        """Construct ffprobe arguments for extracting stream information."""
+        args = [
+            'ffprobe',
+            '-v', 'quiet',
+            '-print_format', 'json=compact=1',
+            '-show_streams',
+            '-show_entries',
+            'stream=index,codec_name,codec_type,sample_rate,channel_layout,bits_per_raw_sample,width,height:'
+            'stream_tags=title,language:'
+            'stream_disposition=default,forced',
+            filepath,
+        ]
+        if stream_selector:
+            args.insert(-1, '-select_streams')
+            args.insert(-1, stream_selector)
+
+        return args
+
+    @classmethod
+    def get_probe_output(cls, filepath, stream_type=None):
         """
         Returns ffprobe output for specified file in JSON format.
         This is used to extract streams information for user selection.
         """
         try:
-            args = [
-               'ffprobe',
-                '-v', 'quiet',
-                '-show_streams',
-                '-show_entries',
-                'stream=index,codec_name,codec_type,sample_rate,channel_layout,bits_per_raw_sample,width,height:'
-                'stream_tags=title,language:'
-                'stream_disposition=default,forced',
-                '-print_format', 'json=compact=1',
-            ]
-
-            if stream_type:
-                args.extend(['-select_streams', stream_type])
-
-            args.append(filepath)
-
+            if not Path(filepath).is_file():
+                raise FileNotFoundError(f"File not found: {filepath}")
+            
+            args = cls._get_probe_args(filepath, stream_selector=stream_type)
             process = subprocess.Popen(
                 args,
                 stdout=subprocess.PIPE,
