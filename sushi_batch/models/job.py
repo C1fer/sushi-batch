@@ -23,7 +23,6 @@ class Job:
         dst_vid_width=None,
         dst_vid_height=None,
         sync_status=Status.PENDING,
-        sync_has_warnings=None,
         result=None,
         merged=None,
         merged_file=None,
@@ -49,7 +48,6 @@ class Job:
     
         self.task = task
         self.sync_status = sync_status
-        self.sync_has_warnings = sync_has_warnings
         self.result = result
         
         self.merged = merged
@@ -65,3 +63,4 @@ class Job:
             return None
         return str(Path(file_path))
        
+

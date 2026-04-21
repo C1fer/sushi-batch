@@ -9,13 +9,13 @@ from ..utils import console_utils as cu
 
 from .subprocess_logger import SubProcessLogger
 
-
 class Sushi:
     error_flag = "---SUSHI: CRITICAL ERROR---"
     avg_shift_flag = "Total average shift:"
+    max_safe_avg_shift = 5  # Defines a threshold for what is considered a "safe" average shift in seconds
 
-    @staticmethod
-    def _get_args(job):
+    @classmethod
+    def _get_args(cls,job):
         args = [
             "sushi",
             "--src",
@@ -44,14 +44,15 @@ class Sushi:
     def _calc_avg_shift(cls, output):
         """Extract average shift from Sushi output."""
         try:
-            for line in output:
+            for line in output[::-1]:  # Iterate in reverse to find the last occurrence
                 if line.startswith(cls.avg_shift_flag):
                     shift_str = line.split(cls.avg_shift_flag)[1].strip().split()[0]
                     formatted_shift = shift_str if shift_str.startswith("-") else f"+{shift_str}" 
                     return formatted_shift
-
         except Exception as e:
-            return "Unknown (Couldn't parse shift value: {0})".format(str(e))
+            return None, "Unknown (Couldn't parse shift value: {0})".format(str(e))
+
+        return None, "Unknown"
 
     @classmethod
     def _get_error_message(cls, lines):
@@ -64,13 +65,13 @@ class Sushi:
         except ValueError:
             return lines[-1] if lines else "Unknown Sushi error"
 
-    @staticmethod
-    def run(job):
+    @classmethod
+    def run(cls, job):
         file_display = f"{cu.fore.MAGENTA}{job.dst_file}{cu.Style.RESET_ALL}"
         title = f"[Job {job.idx} - Sushi] Syncing subtitles to {file_display}"
         with yaspin(text=title, color="cyan", timer=True) as sp:
             try: 
-                args = Sushi._get_args(job)
+                args = cls._get_args(job)
                 sushi = subprocess.Popen(
                     args=args,
                     stderr=subprocess.PIPE,  # Pipe output to stderr to avoid collision with spinner in stdout
@@ -78,7 +79,7 @@ class Sushi:
                     encoding="utf-8",
                     errors="replace"
                 )
-            
+
                 _, stderr = sushi.communicate()
 
                 if settings.config.save_sushi_logs:
@@ -89,10 +90,10 @@ class Sushi:
 
                 if sushi.returncode == 0:
                     job.sync_status = Status.COMPLETED
-                    job.result = Sushi._calc_avg_shift(lines)
+                    job.result = cls._calc_avg_shift(lines)
                     sp.ok("✅")
                 else:
-                    error_msg = Sushi._get_error_message(lines)
+                    error_msg = cls._get_error_message(lines)
                     raise subprocess.SubprocessError(error_msg)
             except Exception as e:
                 sp.fail("❌")

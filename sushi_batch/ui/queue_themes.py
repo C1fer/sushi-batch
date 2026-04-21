@@ -1,7 +1,21 @@
+import re
+
+from sushi_batch.external.sub_sync import Sushi
+
 from ..models.enums import Task, Status, QueueTheme
 
 from ..utils import console_utils as cu
 
+
+SYNC_EXCEED_WARNING = f"{cu.fore.LIGHTYELLOW_EX}High average shift detected. Check synced subtitle for accuracy."
+
+def _avg_shift_exceeds_threshold(avg_shift):
+    """Determine if the average shift exceeds the defined safe threshold."""
+    try:
+        shift_val = float(re.sub(r"[^0-9.\-]", "", str(avg_shift)))
+        return abs(shift_val) > Sushi.max_safe_avg_shift
+    except ValueError:
+        return False
 
 def _get_track_values(job):
     """Resolve track values using display label first, then raw id."""
@@ -84,14 +98,12 @@ def _show_classic_theme(queued_jobs, current_task):
 
 def _show_card_theme(queued_jobs, current_task):
     """Show job list using card-style blocks (Card Theme)."""
+
     for idx, job in enumerate(queued_jobs, start=1):
         job.idx = idx
-        status_color, status_label, status_icon, detail_color = _get_sync_status_style(job.sync_status)
-
         print(f"\n{cu.fore.LIGHTBLUE_EX}┌─ Job {idx}")
 
         src_audio, src_sub, dst_audio = _get_track_values(job)
-
         sections = [
             {
                 "label": "Source",
@@ -119,20 +131,21 @@ def _show_card_theme(queued_jobs, current_task):
             )
 
         if current_task == Task.JOB_QUEUE:
-            sync_status_section = {
-                "label": "Sync Status",
-                "value": f"{status_color}{status_icon} {status_label}",
-                "children": [
-                    ("Average Shift", f"{detail_color}{job.result}") if job.sync_status == Status.COMPLETED else None,
-                    ("Error", f"{detail_color}{job.result}") if job.sync_status == Status.FAILED else None,
-
-                ],
-            }
-            sections.append(sync_status_section)
+            status_color, status_label, status_icon, detail_color = _get_sync_status_style(job.sync_status)
+            sections.append(
+                {
+                    "label": "Sync Status",
+                    "value": f"{status_color}{status_icon} {status_label}",
+                    "children": [
+                        ("Average Shift", f"{detail_color}{job.result}") if job.sync_status == Status.COMPLETED else None,                    
+                        ("Warning", SYNC_EXCEED_WARNING) if _avg_shift_exceeds_threshold(job.result) else None,
+                        ("Error", f"{detail_color}{job.result}") if job.sync_status == Status.FAILED else None,
+                    ],
+                }
+            )
 
             if job.merged is not None and job.sync_status == Status.COMPLETED:
                 merged_color, merged_label, merged_icon, merged_child_color = _merge_status_style(job.merged)
-
                 sections.append(
                     {
                         "label": "Merge Status",
@@ -196,6 +209,8 @@ def _show_yaml_like_theme(queued_jobs, current_task):
                 print(f"{cu.fore.LIGHTBLACK_EX}  error: {detail_color}{job.result}")
             elif job.sync_status == Status.COMPLETED:
                 print(f"{cu.fore.LIGHTBLACK_EX}  average_shift: {detail_color}{job.result}")
+                if _avg_shift_exceeds_threshold(job.result):
+                    print(f"{cu.fore.LIGHTBLACK_EX}  warning: {SYNC_EXCEED_WARNING}")
                 match job.merged:
                     case True:
                         merge_color, merge_label, _, merge_child_color = _merge_status_style(job.merged)
