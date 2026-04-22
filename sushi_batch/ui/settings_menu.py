@@ -25,7 +25,7 @@ MENU_OPTIONS = [
 
 SECTION_SUB_OPTIONS = [
     (1, Section.GEN.value),
-    (2, Section.WORKFLOW.value),
+    (2, Section.MERGE_WRK.value),
     (3, Section.MERGE_SRC.value),
     (4, Section.MERGE_DST.value),
     (5, Section.MERGE_SUB.value),
@@ -58,18 +58,18 @@ def _get_settings_rows(obj):
         (Section.GEN, "Save Aegisub-CLI resample logs", "save_aegisub_resample_logs", obj.save_aegisub_resample_logs),
         (Section.GEN, "Save MKVMerge logs", "save_mkvmerge_logs", obj.save_mkvmerge_logs, divider_flag),
 
-        # Workflow Section
-        (Section.WORKFLOW, "Merge automatically on sync completion", "merge_files_after_execution", obj.merge_files_after_execution),
-        (Section.WORKFLOW, "Resample synced sub before merge", "resample_subs_on_merge", obj.resample_subs_on_merge),
-        (Section.WORKFLOW, "Delete generated subtitle files after merge", "delete_generated_files_after_merge", obj.delete_generated_files_after_merge, divider_flag),
+        # Merge - Workflow Section
+        (Section.MERGE_WRK, "Merge automatically on sync completion", "merge_files_after_execution", obj.merge_files_after_execution),
+        (Section.MERGE_WRK, "Resample synced sub before merge", "resample_subs_on_merge", obj.resample_subs_on_merge),
+        (Section.MERGE_WRK, "Delete generated subtitle files after merge", "delete_generated_files_after_merge", obj.delete_generated_files_after_merge, divider_flag),
 
-        # Source File Section
+        # Merge - Source File Section
         (Section.MERGE_SRC, "Copy attachments", "src_copy_attachments", obj.src_copy_attachments),
         (Section.MERGE_SRC, "Copy chapters", "src_copy_chapters", obj.src_copy_chapters),
         (Section.MERGE_SRC, "Copy global tags", "src_copy_global_tags", obj.src_copy_global_tags),
         (Section.MERGE_SRC, "Copy track tags", "src_copy_track_tags", obj.src_copy_track_tags, divider_flag),
         
-        # Sync Target File Section
+        # Merge - Sync Target File Section
         (Section.MERGE_DST, "Copy only selected sync audio track", "dst_copy_audio_tracks", obj.dst_copy_audio_tracks),
         (Section.MERGE_DST, "Copy attachments", "dst_copy_attachments", obj.dst_copy_attachments),
         (Section.MERGE_DST, "Copy chapters", "dst_copy_chapters", obj.dst_copy_chapters),
@@ -77,7 +77,7 @@ def _get_settings_rows(obj):
         (Section.MERGE_DST, "Copy global tags", "dst_copy_global_tags", obj.dst_copy_global_tags),
         (Section.MERGE_DST, "Copy track tags", "dst_copy_track_tags", obj.dst_copy_track_tags, divider_flag),
         
-        # Synced Subtitle Section
+        # Merge - Synced Subtitle Section
         (Section.MERGE_SUB, "Set default flag", "sub_default_flag", obj.sub_default_flag),
         (Section.MERGE_SUB, "Set forced flag", "sub_forced_flag", obj.sub_forced_flag),
         (Section.MERGE_SUB, "Use custom track name", "sub_custom_trackname", obj.sub_custom_trackname),

@@ -13,24 +13,24 @@ class Settings():
         self.data_path = path.join(path.expanduser('~/Documents'), 'SushiBatchTool')
         self.file_path = path.join(self.data_path, "settings.json")
 
-        # General settings
+        # General Settings
         self.queue_theme = QueueTheme.CARD
         self.save_sushi_logs = True
         self.save_aegisub_resample_logs = False
         self.save_mkvmerge_logs = False
 
-        # Workflow Settings
+        # Merge Workflow Settings
         self.merge_files_after_execution = True
         self.resample_subs_on_merge = False
         self.delete_generated_files_after_merge = False
         
-        # Source file settings
+        # Merge Source File Settings
         self.src_copy_attachments = True
         self.src_copy_chapters = False
         self.src_copy_global_tags = False
         self.src_copy_track_tags = False
 
-        # Sync target file settings
+        # Merge Sync Target File Settings
         self.dst_copy_audio_tracks = False
         self.dst_copy_attachments = True
         self.dst_copy_chapters = True
@@ -38,7 +38,7 @@ class Settings():
         self.dst_copy_global_tags = True
         self.dst_copy_track_tags = True
 
-        # Subtitle settings
+        # Merge Synced Subtitle Settings
         self.sub_default_flag = True
         self.sub_forced_flag = False
         self.sub_custom_trackname = False
