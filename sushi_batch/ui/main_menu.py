@@ -13,6 +13,7 @@ from . import queue_manager as qm
 from .prompts import choice_prompt
 
 from .settings_menu import show_settings_menu
+from .help_menu import show_help_screen
 
 DEFAULT_TOOLBAR = " Use arrow/number keys or mouse to select an option. Press Enter to confirm."
 
@@ -31,7 +32,8 @@ MENU_OPTIONS = {
         (2, "Create Audio Sync Job"),
         (3, "View Job Queue"),
         (4, "Settings"),
-        (5, "Exit")
+        (5, "Help"),
+        (6, "Exit")
     ],
     "sub_video_sync": {
         "title": "Create Video Sync Job",
@@ -102,7 +104,7 @@ def _show_sync_submenu(is_video_sync=True):
 
 
 def _handle_main_menu_selection(selected_option, settings_obj):
-    if selected_option not in (3, 5):
+    if selected_option not in (3, 6):
         cu.clear_screen()
 
     match selected_option:
@@ -118,6 +120,8 @@ def _handle_main_menu_selection(selected_option, settings_obj):
         case 4:
             show_settings_menu(settings_obj)
         case 5:
+            show_help_screen()
+        case 6:
             return False
 
     return True
