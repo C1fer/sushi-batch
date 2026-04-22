@@ -72,7 +72,7 @@ def _get_settings_rows(obj):
 
         # Subtitle Sync Section
         (Section.SYNC, "Use high quality resampling (better sync accuracy)", "use_high_quality_resample", obj.use_high_quality_resample),
-        (Section.SYNC, "Enable advanced Sushi arguments", "enable_sushi_advanced_args", obj.enable_sushi_advanced_args, divider_flag),
+        (Section.SYNC, "Allow advanced Sushi arguments", "enable_sushi_advanced_args", obj.enable_sushi_advanced_args, divider_flag),
         
         # Merge - Workflow Section
         (Section.MERGE_WRK, "Merge automatically on sync completion", "merge_files_after_execution", obj.merge_files_after_execution),
