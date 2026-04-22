@@ -14,6 +14,7 @@ from .subprocess_logger import SubProcessLogger
 class Sushi:
     error_flag = "---SUSHI: CRITICAL ERROR---"
     avg_shift_flag = "Total average shift:"
+    warning_flag = "Warning:"
     max_safe_avg_shift = 5  # Defines a threshold for what is considered a "safe" average shift in seconds
     advanced_args_mapping = {
         "window": ("--window", 10 ),
@@ -110,6 +111,7 @@ class Sushi:
                 lines = stderr.strip().splitlines()
 
                 if sushi.returncode == 0:
+                    job.sync_has_warnings = any(cls.warning_flag in line for line in lines)
                     job.sync_status = Status.COMPLETED
                     job.result = cls._calc_avg_shift(lines)
                     sp.ok("✅")

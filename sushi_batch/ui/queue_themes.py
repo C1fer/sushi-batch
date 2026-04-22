@@ -6,7 +6,7 @@ from ..models.enums import Task, Status, QueueTheme
 
 from ..utils import console_utils as cu
 
-
+SYNC_COMPLETED_WARNING = f"{cu.Fore.LIGHTYELLOW_EX}Sync completed with warnings. Check Sushi log for details."
 SYNC_EXCEED_WARNING = f"{cu.fore.LIGHTYELLOW_EX}High average shift detected. Check synced subtitle for accuracy."
 MERGE_WARNING_MESSAGE = f"{cu.fore.LIGHTYELLOW_EX}Merge completed with warnings. Check mkvmerge log for details."
 
@@ -139,8 +139,9 @@ def _show_card_theme(queued_jobs, current_task):
                     "label": "Sync Status",
                     "value": f"{status_color}{status_icon} {status_label}",
                     "children": [
-                        ("Average Shift", f"{detail_color}{job.result}") if job.sync_status == Status.COMPLETED else None,                    
-                        ("Warning", SYNC_EXCEED_WARNING) if _avg_shift_exceeds_threshold(job.result) else None,
+                        ("Average Shift", f"{detail_color}{job.result}") if job.sync_status == Status.COMPLETED else None,           
+                        ("Sync Warning", SYNC_COMPLETED_WARNING) if job.sync_has_warnings else None,
+                        ("Shift Warning", SYNC_EXCEED_WARNING) if _avg_shift_exceeds_threshold(job.result) else None,
                         ("Error", f"{detail_color}{job.result}") if job.sync_status == Status.FAILED else None,
                     ],
                 }
@@ -211,8 +212,10 @@ def _show_yaml_like_theme(queued_jobs, current_task):
                 print(f"{cu.fore.LIGHTBLACK_EX}  error: {detail_color}{job.result}")
             elif job.sync_status == Status.COMPLETED:
                 print(f"{cu.fore.LIGHTBLACK_EX}  average_shift: {detail_color}{job.result}")
+                if job.sync_has_warnings:
+                    print(f"{cu.fore.LIGHTBLACK_EX}  sync_warning: {SYNC_COMPLETED_WARNING}")
                 if _avg_shift_exceeds_threshold(job.result):
-                    print(f"{cu.fore.LIGHTBLACK_EX}  warning: {SYNC_EXCEED_WARNING}")
+                    print(f"{cu.fore.LIGHTBLACK_EX}  shift_warning: {SYNC_EXCEED_WARNING}")
                 match job.merged:
                     case True:
                         merge_color, merge_label, _, merge_child_color = _merge_status_style(job.merged)
