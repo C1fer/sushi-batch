@@ -2,9 +2,12 @@ import subprocess
 
 from yaspin import yaspin
 
+from sushi_batch.models import job
+
 from ..models import settings
 from ..models.enums import Status, Task
 
+from ..utils import constants
 from ..utils import console_utils as cu
 
 from .subprocess_logger import SubProcessLogger
@@ -16,7 +19,7 @@ class Sushi:
 
     @classmethod
     def _get_args(cls,job):
-        args = [
+        base_args = [
             "sushi",
             "--src",
             job.src_file,
@@ -24,21 +27,21 @@ class Sushi:
             job.dst_file,
         ]
 
-        if job.task in (Task.AUDIO_SYNC_DIR, Task.AUDIO_SYNC_FIL):
-            args.extend(["--script", job.sub_file])
-        else:
-            # Sushi defaults to first audio and sub track if index is not provided
-            # Use custom track indexes if specified
-            if job.src_aud_id is not None:
-                args.extend(["--src-audio", str(job.src_aud_id)])
+        is_video_task = job.task in constants.VIDEO_TASKS
+        track_args = [
+            "--src-audio", 
+            str(job.src_aud_id), 
+            "--src-script", 
+            str(job.src_sub_id), 
+            "--dst-audio", 
+            str(job.dst_aud_id)
+        ] if is_video_task else ["--script", job.sub_file]
+        base_args.extend(track_args) 
 
-            if job.src_sub_id is not None:
-                args.extend(["--src-script", str(job.src_sub_id)])
+        if settings.config.use_high_quality_resample:
+            base_args.extend(["--sample-rate", "24000"])
 
-            if job.dst_aud_id is not None:
-                args.extend(["--dst-audio", str(job.dst_aud_id)])
-
-        return args
+        return base_args
 
     @classmethod
     def _calc_avg_shift(cls, output):

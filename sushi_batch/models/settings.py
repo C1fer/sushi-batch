@@ -19,6 +19,9 @@ class Settings():
         self.save_aegisub_resample_logs = False
         self.save_mkvmerge_logs = False
 
+        # Sync Workflow Settings
+        self.use_high_quality_resample = True # Enables 24kHz resampling for better event search. Increasses processing time but can improve sync accuracy.
+
         # Merge Workflow Settings
         self.merge_files_after_execution = True
         self.resample_subs_on_merge = False

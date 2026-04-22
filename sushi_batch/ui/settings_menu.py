@@ -25,11 +25,12 @@ MENU_OPTIONS = [
 
 SECTION_SUB_OPTIONS = [
     (1, Section.GEN.value),
-    (2, Section.MERGE_WRK.value),
-    (3, Section.MERGE_SRC.value),
-    (4, Section.MERGE_DST.value),
-    (5, Section.MERGE_SUB.value),
-    (6, GO_BACK_OPTION_LABEL)
+    (2, Section.SYNC.value),
+    (3, Section.MERGE_WRK.value),
+    (4, Section.MERGE_SRC.value),
+    (5, Section.MERGE_DST.value),
+    (6, Section.MERGE_SUB.value),
+    (7, GO_BACK_OPTION_LABEL)
 ]
 
 def _get_formatted_value(value):
@@ -58,6 +59,9 @@ def _get_settings_rows(obj):
         (Section.GEN, "Save Aegisub-CLI resample logs", "save_aegisub_resample_logs", obj.save_aegisub_resample_logs),
         (Section.GEN, "Save MKVMerge logs", "save_mkvmerge_logs", obj.save_mkvmerge_logs, divider_flag),
 
+        # Subtitle Sync Section
+        (Section.SYNC, "Use high quality resampling (better sync accuracy)", "use_high_quality_resample", obj.use_high_quality_resample, divider_flag),
+        
         # Merge - Workflow Section
         (Section.MERGE_WRK, "Merge automatically on sync completion", "merge_files_after_execution", obj.merge_files_after_execution),
         (Section.MERGE_WRK, "Resample synced sub before merge", "resample_subs_on_merge", obj.resample_subs_on_merge),
