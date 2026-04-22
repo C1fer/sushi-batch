@@ -6,7 +6,7 @@ from ..external.mkv_merge import MKVMerge
 
 from ..utils import constants
 from ..utils import console_utils as cu
-from .prompts import confirm_prompt, choice_prompt
+from .prompts import confirm_prompt, choice_prompt, input_prompt
 from .queue_themes import QUEUE_RENDERERS
 
 MAIN_QUEUE_OPTIONS= {
@@ -61,7 +61,7 @@ def _show_continue_confirmation(jobs, is_removing=False):
     count = len(jobs)
     job_count = "1 job" if count == 1 else f"{count} jobs"
     action = "removed from" if is_removing else "added to"
-    input(f"\n{cu.fore.LIGHTGREEN_EX}{job_count} {action} queue. Press Enter to continue...")
+    input_prompt.get(f"{job_count} {action} main queue. Press Enter to continue... ", success=True, nl_before=True, allow_empty=True)
 
 def _show_queue_items(queue, current_task):
     """Display the current job queue in the selected theme. Theme is chosen from settings."""

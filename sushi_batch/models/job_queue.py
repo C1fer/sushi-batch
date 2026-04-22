@@ -2,7 +2,7 @@ import json
 from os import path
 
 from sushi_batch.external.ffmpeg import FFmpeg
-from ..ui.prompts import checklist_dialog, choice_prompt
+from ..ui.prompts import checklist_dialog, choice_prompt, input_prompt
 
 from ..utils import utils
 from ..utils import console_utils as cu
@@ -104,6 +104,8 @@ class JobQueue:
                     self.merge_completed_video_jobs(JobSelection.SELECTED, completed_video_jobs)
                 else:
                     cu.print_error("\nMKVMerge could not be found. Video files cannot be merged.")
+                    
+            input_prompt.get("All jobs have been processed. Press Enter to continue... ", success=True, nl_before=True, allow_empty=True)
         except Exception as e:
             cu.print_error(f"Error running jobs: {e}")
 
@@ -167,7 +169,7 @@ class JobQueue:
             successfully_merged_jobs = [job for job in completed_jobs if job.merged]
             self._clean_generated_files(successfully_merged_jobs, confirm_deletion=False)
 
-        input("\nPress Enter to go back... ")
+        input_prompt.get("Merging process completed. Press Enter to continue... ", success=True, allow_empty=True, nl_before=True)
 
     def _clear_queue(self, trigger_file_cleanup):
         """ Clear queue contents """
