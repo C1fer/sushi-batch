@@ -1,17 +1,40 @@
 # App Settings
 
 ## General
-#### Merge synced sub automatically 
-Merge output subtitle from Sushi with sync target video after sync.
+### Queue theme
+Choose how the job queue is displayed.
 
-#### Save Sushi Logs
-Save sync logs to data folder **(Located in Documents library)**.
+### Save Sushi sync logs
+Save Sushi sync logs to the app data folder in your Documents library.
 
-#### Save MKVMerge Logs
-Save merge logs to data folder **(Located in Documents library)**.
+### Save Aegisub-CLI resample logs
+Save subtitle resample logs to the app data folder in your Documents library.
+
+### Save MKVMerge logs
+Save merge logs to the app data folder in your Documents library.
 
 
-## Source File
+## Subtitle Sync
+### Use high quality resampling (better sync accuracy)
+Use 24kHz resampling during sync for potentially better timing accuracy.
+This can increase processing time.
+
+### Allow advanced Sushi arguments
+Enable access to Advanced Sushi Arguments settings from the App Settings menu.
+
+
+## Merge - Workflow
+### Merge automatically on sync completion
+Automatically merge completed video sync jobs after sync (requires MKVMerge).
+
+### Resample synced sub before merge
+Run subtitle resampling before merge (requires Aegisub-CLI).
+
+### Delete generated subtitle files after merge
+Delete generated subtitle outputs after successful merge.
+
+
+## Merge - Source
 ### Copy attachments
 Copy attachments (fonts, cover art) to output video.
 
@@ -26,9 +49,9 @@ Copy global metadata to output video.
 Copy tags from all tracks to output video.
 
 
-## Sync Target File
-### Only copy audio track used for sync.  
-Don't copy any audio tracks aside from the one used in the sync process. 
+## Merge - Sync Target
+### Copy only selected sync audio track
+Copy only the audio track selected for sync from the target file.
 
 ### Copy attachments
 Copy attachments (fonts, cover art) to output video.
@@ -46,7 +69,7 @@ Copy global metadata to output video.
 Copy tags from all tracks to output video.
 
 
-## Synced Subtitle
+## Merge - Synced Subtitle
 ### Set default flag
 Set subtitle as default track in output video.
 

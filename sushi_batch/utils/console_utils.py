@@ -40,9 +40,14 @@ def print_success(message, wait=True, nl_before=True):
     if wait:
         sleep(1)
 
+def get_formatted_install_status(tool_name, is_installed, installed_label="Installed", not_found_label="Not Found"):
+    status = installed_label if is_installed else not_found_label
+    color = fore.LIGHTGREEN_EX if is_installed else fore.LIGHTRED_EX
+    return f"{fore.LIGHTBLACK_EX}{tool_name}: {color}{status}{style_reset}"
 
 def clear_screen():
     os.system("cls" if os.name == "nt" else "clear")
+
 
 
 def show_menu_options(options):

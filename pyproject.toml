@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sushi-batch"
-version = "0.4.1"
+version = "1.0.0"
 description = "Batch Subtitle Synchronization Tool"
 readme = "README.md"
 requires-python = ">=3.13,<4.0"
@@ -21,9 +21,10 @@ dependencies = [
     "art>=6.1,<7",
     "colorama>=0.4.6,<0.5",
     "prettytable>=3.9.0,<4",
-    "sushi-sub-next>=0.6.5,<0.7",
+    "sushi-sub-next>=0.6.7,<0.7",
     "yaspin>=3.0.1,<4",
     "pyqt6>=6.5.2,<7",
+    "prompt-toolkit>=3.0.52",
 ]
 
 [project.urls]

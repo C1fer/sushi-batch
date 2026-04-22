@@ -79,10 +79,3 @@ class Stream:
         for stream in streams:
             if stream.id == stream_id:
                 return constants.subtitle_codec_extension_map.get(stream.codec, None)
-
-    @staticmethod
-    def show_streams(streams):
-        """Display available streams for user selection"""
-        for stream in streams:
-            print(f"{cu.style_reset}{stream.display_name}")
-            

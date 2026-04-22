@@ -1,13 +1,23 @@
-from ..models.job_queue import JobQueue
-from ..models.enums import JobSelection, QueueTheme, Task, Status
-from ..models import settings as s
+import re
 
-from ..external.mkv_merge import MKVMerge
+from sushi_batch.external.sub_sync import Sushi
 
-from . import console_utils as cu
+from ..models.enums import Task, Status, QueueTheme
+
+from ..utils import console_utils as cu
+
+SYNC_COMPLETED_WARNING = f"{cu.Fore.LIGHTYELLOW_EX}Sync completed with warnings. Check Sushi log for details."
+SYNC_EXCEED_WARNING = f"{cu.fore.LIGHTYELLOW_EX}High average shift detected. Check synced subtitle for accuracy."
+MERGE_WARNING_MESSAGE = f"{cu.fore.LIGHTYELLOW_EX}Merge completed with warnings. Check mkvmerge log for details."
 
 
-main_queue = JobQueue()
+def _avg_shift_exceeds_threshold(avg_shift):
+    """Determine if the average shift exceeds the defined safe threshold."""
+    try:
+        shift_val = float(re.sub(r"[^0-9.\-]", "", str(avg_shift)))
+        return abs(shift_val) > Sushi.max_safe_avg_shift
+    except ValueError:
+        return False
 
 def _get_track_values(job):
     """Resolve track values using display label first, then raw id."""
@@ -15,7 +25,6 @@ def _get_track_values(job):
     src_sub = job.src_sub_display if job.src_sub_display is not None else job.src_sub_id
     dst_audio = job.dst_aud_display if job.dst_aud_display is not None else job.dst_aud_id
     return src_audio, src_sub, dst_audio
-
 
 def _has_any_track_data(job):
     """Return True when any source/sync target track metadata is available."""
@@ -48,7 +57,7 @@ def _merge_status_style(merge_status):
         case _:
             return (cu.fore.LIGHTBLACK_EX, "Unknown", "?", cu.fore.LIGHTBLACK_EX)
 
-def show_classic_queue(queued_jobs, current_task):
+def _show_classic_theme(queued_jobs, current_task):
     """ Show Job List contents (Classic Theme) """
     for idx, job in enumerate(queued_jobs, start=1):
         job.idx = idx
@@ -89,16 +98,14 @@ def show_classic_queue(queued_jobs, current_task):
                 case _:
                     pass
 
-def show_card_queue(queued_jobs, current_task):
+def _show_card_theme(queued_jobs, current_task):
     """Show job list using card-style blocks (Card Theme)."""
+
     for idx, job in enumerate(queued_jobs, start=1):
         job.idx = idx
-        status_color, status_label, status_icon, detail_color = _get_sync_status_style(job.sync_status)
-
         print(f"\n{cu.fore.LIGHTBLUE_EX}┌─ Job {idx}")
 
         src_audio, src_sub, dst_audio = _get_track_values(job)
-
         sections = [
             {
                 "label": "Source",
@@ -126,20 +133,22 @@ def show_card_queue(queued_jobs, current_task):
             )
 
         if current_task == Task.JOB_QUEUE:
-            status_section = {
-                "label": "Sync Status",
-                "value": f"{status_color}{status_icon} {status_label}",
-                "children": [],
-            }
-            if job.sync_status == Status.COMPLETED:
-                status_section["children"].append(("Avg Shift", f"{detail_color}{job.result}"))
-            elif job.sync_status == Status.FAILED:
-                status_section["children"].append(("Error", f"{detail_color}{job.result}"))
-            sections.append(status_section)
+            status_color, status_label, status_icon, detail_color = _get_sync_status_style(job.sync_status)
+            sections.append(
+                {
+                    "label": "Sync Status",
+                    "value": f"{status_color}{status_icon} {status_label}",
+                    "children": [
+                        ("Average Shift", f"{detail_color}{job.result}") if job.sync_status == Status.COMPLETED else None,           
+                        ("Sync Warning", SYNC_COMPLETED_WARNING) if job.sync_has_warnings else None,
+                        ("Shift Warning", SYNC_EXCEED_WARNING) if _avg_shift_exceeds_threshold(job.result) else None,
+                        ("Error", f"{detail_color}{job.result}") if job.sync_status == Status.FAILED else None,
+                    ],
+                }
+            )
 
             if job.merged is not None and job.sync_status == Status.COMPLETED:
                 merged_color, merged_label, merged_icon, merged_child_color = _merge_status_style(job.merged)
-
                 sections.append(
                     {
                         "label": "Merge Status",
@@ -147,6 +156,7 @@ def show_card_queue(queued_jobs, current_task):
                         "children": [
                             ("Generated File", f"{merged_child_color}{job.merged_file}") if job.merged_file is not None else None,
                             ("Resampled", f"{merged_child_color}Yes") if job.resample_done else None,
+                            ("Warning", MERGE_WARNING_MESSAGE) if job.merge_has_warnings else None,
                         ],
                     }
                 )
@@ -173,7 +183,7 @@ def show_card_queue(queued_jobs, current_task):
                 child_divider = "└─" if is_last_child else "├─"
                 print(f"{cu.fore.LIGHTBLACK_EX}{child_prefix}{child_divider} {child_label}: {child_value}")
 
-def show_yaml_queue(queued_jobs, current_task):
+def _show_yaml_like_theme(queued_jobs, current_task):
     """Show job list in a YAML/config style format (YAML-like Theme)."""
     for idx, job in enumerate(queued_jobs, start=1):
         job.idx = idx
@@ -202,10 +212,16 @@ def show_yaml_queue(queued_jobs, current_task):
                 print(f"{cu.fore.LIGHTBLACK_EX}  error: {detail_color}{job.result}")
             elif job.sync_status == Status.COMPLETED:
                 print(f"{cu.fore.LIGHTBLACK_EX}  average_shift: {detail_color}{job.result}")
+                if job.sync_has_warnings:
+                    print(f"{cu.fore.LIGHTBLACK_EX}  sync_warning: {SYNC_COMPLETED_WARNING}")
+                if _avg_shift_exceeds_threshold(job.result):
+                    print(f"{cu.fore.LIGHTBLACK_EX}  shift_warning: {SYNC_EXCEED_WARNING}")
                 match job.merged:
                     case True:
                         merge_color, merge_label, _, merge_child_color = _merge_status_style(job.merged)
                         print(f"{cu.fore.LIGHTBLACK_EX}  merge_status: {merge_color}{merge_label.lower()}")
+                        if job.merge_has_warnings:
+                            print(f"{cu.fore.LIGHTBLACK_EX}  merge_warning: {MERGE_WARNING_MESSAGE}")
                         if job.merged_file:
                             print(f"{cu.fore.LIGHTBLACK_EX}  merged_file: {merge_child_color}{job.merged_file}")
                         if job.resample_done:
@@ -215,109 +231,9 @@ def show_yaml_queue(queued_jobs, current_task):
                     case _:
                         pass
             
-           
-    
-def show_queue(queue, current_task):
-    """Display the current job queue with status and options.
-        Theme is chosen from settings.
-    """
-    cu.clear_screen()
-    title = "Job Queue" if current_task == Task.JOB_QUEUE else "Jobs"
-    cu.print_header(f"{title}")
-    
-    current_theme = s.config.queue_theme
-    match current_theme:
-        case QueueTheme.CLASSIC:
-            show_classic_queue(queue, current_task)
-        case QueueTheme.CARD:
-            show_card_queue(queue, current_task)
-        case QueueTheme.YAML:
-            show_yaml_queue(queue, current_task)
-        case _:
-            cu.print_error(f"Unknown queue theme: {current_theme}")
-            show_card_queue(queue, current_task)
 
-def main_queue_options(task):
-    while True:
-        options = {
-            "1": "Start queue",
-            "2": "Run selected jobs",
-            "3": "Remove selected jobs",
-            "4": "Merge video with synced sub on completed jobs",
-            "5": "Clear queue",
-            "6": "Clear completed and failed jobs",
-            "7": "Return to main menu",
-        }
-        show_queue(main_queue.contents, task)
-        cu.show_menu_options(options)
-
-        choice = cu.get_choice(1, 7)
-
-        match choice:
-            case 1 if cu.confirm_action():
-                main_queue.run_jobs(JobSelection.ALL)
-            case 2:
-                selected_jobs = main_queue.select_jobs("Select jobs to run (e.g: 1, 5-10): ")
-                if selected_jobs and cu.confirm_action():
-                    main_queue.run_jobs(selected_jobs)
-            case 3:
-                selected_jobs = main_queue.select_jobs("Select jobs to remove from queue (e.g: 1, 5-10): ")
-                if selected_jobs and cu.confirm_action():
-                    main_queue.remove_jobs(selected_jobs)
-                    cu.print_success(f"{len(selected_jobs)} job(s) removed from queue.")
-                    if not main_queue.contents:
-                        break
-            case 4 if cu.confirm_action():
-                if MKVMerge.is_installed:
-                    main_queue.merge_completed_video_tasks(main_queue.contents)
-                else:
-                    cu.print_error("\nMKVMerge could not be found!")
-            case 5 if cu.confirm_action():
-                main_queue.clear()
-                cu.print_success("Queue cleared.")
-                break
-            case 6 if cu.confirm_action():
-                main_queue.clear_completed_jobs()
-                if not main_queue.contents:
-                    break
-            case 7:
-                break
-
-def temp_queue_options(temp_queue, task):
-    """Handle options for the temporary job queue returned after file selection."""
-    while True:
-        options = {
-            "1": "Run all jobs",
-            "2": "Run selected jobs",
-            "3": "Add all jobs to queue",
-            "4": "Add selected jobs to queue",
-            "5": "Return to main menu",
-        }
-        show_queue(temp_queue.contents, task)
-        cu.show_menu_options(options)
-
-        choice = cu.get_choice(1, 5)
-
-        match choice:
-            case 1 if cu.confirm_action():
-                main_queue.add_jobs(JobSelection.ALL, temp_queue.contents, task)
-                temp_queue.run_jobs(JobSelection.ALL)
-                break
-            case 2:
-                selected_jobs = temp_queue.select_jobs("Select jobs to run (e.g: 1, 5-10): ")
-                if selected_jobs and cu.confirm_action():
-                    main_queue.add_jobs(selected_jobs, temp_queue.contents, task)
-                    temp_queue.run_jobs(selected_jobs)
-                    break
-            case 3 if cu.confirm_action():
-                main_queue.add_jobs(JobSelection.ALL, temp_queue.contents, task)
-                cu.print_success(f"{len(temp_queue.contents)} job(s) added to queue.")
-                break
-            case 4:
-                selected_jobs = temp_queue.select_jobs("Select jobs to add to the queue (e.g: 1, 5-10): ")
-                if selected_jobs and cu.confirm_action():
-                    main_queue.add_jobs(selected_jobs, temp_queue.contents, task)
-                    cu.print_success(f"{len(selected_jobs)} job(s) added to queue.")
-                    break
-            case 5 if cu.confirm_action():
-                break
+QUEUE_RENDERERS = {
+    QueueTheme.CLASSIC: _show_classic_theme,
+    QueueTheme.CARD: _show_card_theme,
+    QueueTheme.YAML: _show_yaml_like_theme,
+}

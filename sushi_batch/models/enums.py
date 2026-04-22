@@ -53,10 +53,11 @@ class Status(Enum):
 
 class Section(Enum):
     GEN = "General"
-    WORKFLOW = "Workflow"
-    MERGE_SRC = "Merge: Source"
-    MERGE_DST = "Merge: Sync Target"
-    MERGE_SUB = "Merge: Synced Subtitle"
+    SYNC = "Subtitle Sync"
+    MERGE_WRK = "Merge - Workflow"
+    MERGE_SRC = "Merge - Source"
+    MERGE_DST = "Merge - Sync Target"
+    MERGE_SUB = "Merge - Synced Subtitle"
 
 
 class JobSelection(Enum):

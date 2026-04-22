@@ -1,18 +1,10 @@
 import json
 from os import makedirs, path
 
-from prettytable import PrettyTable
-
 from ..utils import console_utils as cu
 from ..utils.json_utils import SettingsDecoder, SettingsEncoder
 
-from .enums import Section, QueueTheme
-
-queue_themes_display = {
-    QueueTheme.CLASSIC: "Classic",
-    QueueTheme.CARD: "Card",
-    QueueTheme.YAML: "YAML-inspired"
-}
+from .enums import QueueTheme
 
 class Settings():
 
@@ -21,24 +13,36 @@ class Settings():
         self.data_path = path.join(path.expanduser('~/Documents'), 'SushiBatchTool')
         self.file_path = path.join(self.data_path, "settings.json")
 
-        # General settings
+        # General Settings
         self.queue_theme = QueueTheme.CARD
         self.save_sushi_logs = True
         self.save_aegisub_resample_logs = False
         self.save_mkvmerge_logs = False
 
-        # Workflow Settings
+        # Sync Workflow Settings
+        self.use_high_quality_resample = True # Enables 24kHz resampling for better event search. Increasses processing time but can improve sync accuracy.
+
+        # Advanced Sushi Sync Settings 
+        self.enable_sushi_advanced_args = False
+        self.sushi_window = None
+        self.sushi_max_window = None
+        self.sushi_rewind_thresh = None
+        self.sushi_smooth_radius = None
+        self.sushi_max_ts_duration = None
+        self.sushi_max_ts_distance = None
+
+        # Merge Workflow Settings
         self.merge_files_after_execution = True
         self.resample_subs_on_merge = False
         self.delete_generated_files_after_merge = False
         
-        # Source file settings
+        # Merge Source File Settings
         self.src_copy_attachments = True
         self.src_copy_chapters = False
         self.src_copy_global_tags = False
         self.src_copy_track_tags = False
 
-        # Sync target file settings
+        # Merge Sync Target File Settings
         self.dst_copy_audio_tracks = False
         self.dst_copy_attachments = True
         self.dst_copy_chapters = True
@@ -46,7 +50,7 @@ class Settings():
         self.dst_copy_global_tags = True
         self.dst_copy_track_tags = True
 
-        # Subtitle settings
+        # Merge Synced Subtitle Settings
         self.sub_default_flag = True
         self.sub_forced_flag = False
         self.sub_custom_trackname = False
@@ -76,138 +80,7 @@ class Settings():
         else:
             makedirs(self.data_path, exist_ok=True)
             self._save()
-
-    def _get_formatted_value(self, value):
-        """Return formatted value for table display"""
-        match value:
-            case True:
-                return f"{cu.Fore.GREEN}Enabled{cu.style_reset}"
-            case False:
-                return f"{cu.Fore.RED}Disabled{cu.style_reset}"
-            case QueueTheme():
-                theme_name = queue_themes_display.get(value, "Unknown")
-                return f"{cu.Fore.CYAN}{theme_name}{cu.style_reset}"
-            case _:
-                return f"{cu.Fore.YELLOW}{value}{cu.style_reset}"
-            
-    def _generate_settings_table(self):
-        """Create and return settings table"""
-        tb = PrettyTable(["Section", "Name", "Value"])
-        DIVIDER_FLAG = True
         
-        rows = [
-            # General Section
-            (Section.GEN, "Queue Theme", self.queue_theme),
-            (Section.GEN, "Save Sushi sync logs", self.save_sushi_logs),
-            (Section.GEN, "Save Aegisub-CLI resample logs", self.save_aegisub_resample_logs),
-            (Section.GEN, "Save MKVMerge logs", self.save_mkvmerge_logs, DIVIDER_FLAG),
-
-            # Workflow Section
-            (Section.WORKFLOW, "Merge automatically on sync completion", self.merge_files_after_execution),
-            (Section.WORKFLOW, "Resample synced sub before merge", self.resample_subs_on_merge),
-            (Section.WORKFLOW, "Delete generated subtitle files after merge", self.delete_generated_files_after_merge, DIVIDER_FLAG),
-
-            # Source File Section
-            (Section.MERGE_SRC, "Copy attachments", self.src_copy_attachments),
-            (Section.MERGE_SRC, "Copy chapters", self.src_copy_chapters),
-            (Section.MERGE_SRC, "Copy global tags", self.src_copy_global_tags),
-            (Section.MERGE_SRC, "Copy track tags", self.src_copy_track_tags, DIVIDER_FLAG),
-            
-            # Sync Target File Section
-            (Section.MERGE_DST, "Copy only selected sync audio track", self.dst_copy_audio_tracks),
-            (Section.MERGE_DST, "Copy attachments", self.dst_copy_attachments),
-            (Section.MERGE_DST, "Copy chapters", self.dst_copy_chapters),
-            (Section.MERGE_DST, "Copy subtitles", self.dst_copy_subtitle_tracks),
-            (Section.MERGE_DST, "Copy global tags", self.dst_copy_global_tags),
-            (Section.MERGE_DST, "Copy track tags", self.dst_copy_track_tags, DIVIDER_FLAG),
-            
-            # Synced Subtitle Section
-            (Section.MERGE_SUB, "Set default flag", self.sub_default_flag),
-            (Section.MERGE_SUB, "Set forced flag", self.sub_forced_flag),
-            (Section.MERGE_SUB, "Use custom track name", self.sub_custom_trackname),
-        ]
-        
-        if self.sub_custom_trackname:
-            rows.append((Section.MERGE_SUB, "Default track name", self.sub_trackname))
-        
-        for row in rows:
-            section, option, value = row[:3]
-            has_divider = len(row) > 3 and row[3]
-            tb.add_row([section.value, option, self._get_formatted_value(value)], divider=has_divider)
-        
-        tb.add_autoindex("Option")
-        
-        return tb
-
-    def handle_options(self):
-        """Display and handle options in new menu"""
-        options = {
-            "1" : "Change option value",
-            "2" : "Restore default settings",
-            "3" : "Return to main menu"
-        }
-
-        while True:
-            cu.clear_screen()
-            cu.print_header("App Settings\n")
-            tbl = self._generate_settings_table()
-            print(tbl)
-            cu.show_menu_options(options)
-
-            choice = cu.get_choice(1,3)
-            match choice:
-                case 1:
-                    opt, opt_label = self.select_option(tbl.rows)
-                    self.update_value(opt, opt_label)
-                case 2 if cu.confirm_action():
-                    self.restore()
-                case 3:
-                    break
-
-    def select_queue_theme(self):
-        """Display queue theme options and update setting based on user selection"""
-        for idx, display in enumerate(queue_themes_display.values(), 1):
-            print(f"{idx}) {display}")
-
-        choice = cu.get_choice(1, len(queue_themes_display))
-        selected_mode = list(queue_themes_display.keys())[choice - 1]
-        return selected_mode
-    
-    def update_value(self, option, option_label):
-        """Update value for selected option"""
-        curr_val = getattr(self, option)
-        new_val = None
-        
-        print(f"Option: {cu.fore.YELLOW}{option_label}")
-        print(f"\nCurrent value: {self._get_formatted_value(curr_val)}\n")
-        
-        match curr_val:
-            case QueueTheme():
-                new_val = self.select_queue_theme()
-            case bool():
-                prompt = "Disable" if curr_val else "Enable"
-                if cu.confirm_action(f"{prompt} option? (Y/N): "):
-                    new_val = not curr_val  
-            case str():
-                user_input = input("New value: ")
-                if cu.confirm_action():
-                    new_val = user_input
-                    
-        if new_val is not None:       
-            setattr(self, option, new_val)
-            self._save()
-    
-    def select_option(self, rows):
-        """Display options and get user selection"""
-        idx = cu.get_choice(1, len(rows), "Select option to modify: ")
-    
-        sel_option_label = rows[idx - 1][2]
-    
-        attr_names = list(self.__dict__)[2:]  # Exclude data_path and file_path
-        sel_option = attr_names[idx - 1]
-        
-        return sel_option, sel_option_label
-    
     def restore(self):
         """Restore default settings"""
         self.__init__()
