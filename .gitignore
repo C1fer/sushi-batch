@@ -12,10 +12,19 @@ dist/
 .venv/
 
 # Media files
-.mkv
-.mp4
-.avi
-.wav
-.ass
-.ssa
-.srt
+.aac
+.ac3
+.eac3
+*.mkv
+*.mp4
+*.avi
+.webm
+*.wav
+*.flac
+*.mp3
+*.opus
+.m4a
+.pcm
+*.ass
+*.ssa
+*.srt
