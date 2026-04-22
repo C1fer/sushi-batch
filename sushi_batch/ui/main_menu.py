@@ -102,7 +102,7 @@ def _show_sync_submenu(is_video_sync=True):
 
 
 def _handle_main_menu_selection(selected_option, settings_obj):
-    if selected_option != 5:
+    if selected_option not in (3, 5):
         cu.clear_screen()
 
     match selected_option:
