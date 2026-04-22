@@ -1,22 +1,16 @@
 # Sushi Batch
-Batch subtitle synchronization tool based on [FichteFoll](https://github.com/FichteFoll/Sushi)'s fork of [Sushi](https://github.com/tp7/Sushi).
+Batch subtitle synchronization tool based on [Sushi](https://github.com/C1fer/sushi-next).
 
-### WARNING
-**Sushi is not perfect, an can output subtitles with broken timings.** **You should check if the subtitle was synced correctly on completed tasks with high shift average (10s or greater).**
+<img src="assets/job-queue.png" alt="Job Queue preview" width="1000">
 
-## Installation
 
-`pip install sushi-batch`
 
-### Required apps
-* [FFmpeg](https://ffmpeg.org/download.html)
-* [mkvmerge from MKVToolNix](https://mkvtoolnix.download/downloads.html) (Optional)
-  
-### Windows
-Add the required binaries to PATH or install them via a package manager like [Chocolatey](https://chocolatey.org/). You can also copy the executables to the directory from which you run this app (not recommended).
-
-### Linux
-Most distros link installed packages to PATH automatically, so just make sure to install the required apps via your distribution's package manager.
+## Overview
+This tool allows you to sync subtitle timing between different releases of the same media (e.g., WEB-DL to Blu-Ray) without manual adjustments. It is ideal for anime fansub releases and translations from different sources, but can be used for any media with existing subtitles.
+### Main Features
+* Batch processing of synchronization tasks using Sushi.
+* Resample subtitle resolution to match the target video (requires Aegisub-CLI).
+* Merge the synced subtitle back into the target video after syncing (requires MKVMerge).
 
 ## How does Sushi work?
 Sushi works by finding the closest similar pattern between a provided source and sync target audio track. The obtained shift value is applied to the output subtitle, which will be synced to the sync target track.
@@ -29,21 +23,34 @@ You must provide:
 
 ### Video-based Sync
 You only need to provide:
-* A source video file which contains a subtitle.
+* A source video file that contains subtitle and audio tracks.
 * A sync target video file. 
 
-You can select a specific subtitle or audio track from the video files. This allows you to add multi-language subtitles for a specific audio track.
+You must select the reference subtitle and audio track from the source file, and the target audio track for the sync. FFmpeg will take care of extracting these tracks for later processing. 
 
-FFmpeg will take care of extracting the audio and subtitle tracks for processing. 
+The newly synced subtitle file can be found in the same directory as the target file, with the `.sushi` suffix.
 
-## Usage
-This program allows for:
-* Batch synchronization of files within selected directories / selected files.
-* Queueing of synchronization tasks
-* Merging synced subtitles with sync target video (more below)
+## Installation
+`pip install sushi-batch`
 
-### Folder Structures for Directory Select modes
-#### Audio-Sync
+### Required apps
+* [FFmpeg](https://ffmpeg.org/download.html)
+* [mkvmerge from MKVToolNix](https://mkvtoolnix.download/downloads.html) (Optional)
+* [Aegisub-CLI](https://github.com/Myaamori/aegisub-cli) (Optional)
+  
+### Windows
+Add the required binaries to PATH or install them via a package manager like [Chocolatey](https://chocolatey.org/). You can also copy the executables to the directory from which you run this app (not recommended).
+
+### Linux
+Most distros link installed packages to PATH automatically, so just make sure to install the required apps via your distribution's package manager.
+
+### macOS
+```
+brew install ffmpeg mkvtoolnix
+```
+
+## Folder Structure for Directory Select Modes
+### Audio-Sync
 <pre>
   <code>
     📂Source Folder
@@ -60,7 +67,7 @@ This program allows for:
   </code>
 </pre>
 
-#### Video-Sync
+### Video-Sync
 <pre>
   <code>
     📂Source Folder
@@ -74,7 +81,24 @@ This program allows for:
   </code>
 </pre>
 
-## Merge synced subs with video
-If mkvmerge is installed, the app will automatically merge the synced subtitle to the specified sync target video file. The merge can also be started manually inside the *Job Queue* section.
+## Important
+Data and logs for all enabled operations are stored in the **SushiBatchTool** directory inside your Documents folder:
+- Windows: `C:\Users\<your-user>\Documents\SushiBatchTool`
+- Linux: `/home/<your-user>/Documents/SushiBatchTool`
+- macOS: `/Users/<your-user>/Documents/SushiBatchTool`
 
-You can customize the arguments used for merging via the app's settings.
+
+## Merge synced subs with video
+If mkvmerge is installed, synced subtitles can be merged into the selected sync target video file.
+
+Video merging supports two workflows:
+* Automatic merge after sync completion.
+* Manual merge from the *Job Queue* menu.
+
+The following behavior can be adjusted in the *App Settings* menu:
+* Merge automatically on sync completion.
+* Resample synced subtitles before merge (Aegisub-CLI required).
+* Delete generated subtitle files after successful merge.
+* Choose which tracks/metadata are copied from source and sync target files.
+* Set default/forced flags and a custom track name for the merged subtitle.
+* Save MKVMerge logs to the app data folder.
