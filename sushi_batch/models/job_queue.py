@@ -80,10 +80,10 @@ class JobQueue:
     def remove_jobs(self, jobs_to_remove):
         return utils.interrupt_signal_handler(self._remove_sync_jobs)(jobs_to_remove)
     
-    def run_jobs(self, jobs_to_run=[]):
-        """ Run jobs selected by user"""
+    def run_jobs(self, jobs_to_run=[], use_advanced_sushi_args=False):
+        """ Run jobs selected by user. Supports advanced Sushi arguments if enabled in settings. """
         def _run_sub_sync(job, completed_video_jobs):
-            Sushi.run(job)
+            Sushi.run(job, use_advanced_args=use_advanced_sushi_args)
             self.save()    
             if job.sync_status == Status.COMPLETED and job.task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL):
                 completed_video_jobs.append(job)

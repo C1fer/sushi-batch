@@ -2,23 +2,30 @@ import subprocess
 
 from yaspin import yaspin
 
-from sushi_batch.models import job
-
 from ..models import settings
-from ..models.enums import Status, Task
+from ..models.enums import Status
 
 from ..utils import constants
 from ..utils import console_utils as cu
 
 from .subprocess_logger import SubProcessLogger
 
+
 class Sushi:
     error_flag = "---SUSHI: CRITICAL ERROR---"
     avg_shift_flag = "Total average shift:"
     max_safe_avg_shift = 5  # Defines a threshold for what is considered a "safe" average shift in seconds
+    advanced_args_mapping = {
+        "window": ("--window", 10 ),
+        "max_window": ("--max-window", 30),
+        "rewind_thresh": ("--rewind-thresh", 5),
+        "smooth_radius": ("--smooth-radius", 3),
+        "max_ts_duration": ("--max-ts-duration", 0.417),
+        "max_ts_distance": ("--max-ts-distance", 0.417)
+    }
 
     @classmethod
-    def _get_args(cls,job):
+    def _get_args(cls, job, use_advanced_args=False):
         base_args = [
             "sushi",
             "--src",
@@ -41,7 +48,18 @@ class Sushi:
         if settings.config.use_high_quality_resample:
             base_args.extend(["--sample-rate", "24000"])
 
+        if use_advanced_args:
+            cls._add_advanced_args(base_args)
+
         return base_args
+    
+    @classmethod
+    def _add_advanced_args(cls, args):
+        """Add advanced arguments to the base args list if enabled in settings.""" 
+        for setting_attr, (arg_name, default_value) in cls.advanced_args_mapping.items():
+            current_value = getattr(settings.config, f"sushi_{setting_attr}")
+            if current_value is not None and current_value != default_value:
+                    args.extend([arg_name, str(current_value)])
 
     @classmethod
     def _calc_avg_shift(cls, output):
@@ -69,12 +87,12 @@ class Sushi:
             return lines[-1] if lines else "Unknown Sushi error"
 
     @classmethod
-    def run(cls, job):
+    def run(cls, job, use_advanced_args=False):
         file_display = f"{cu.fore.MAGENTA}{job.dst_file}{cu.Style.RESET_ALL}"
         title = f"[Job {job.idx} - Sushi] Syncing subtitles to {file_display}"
         with yaspin(text=title, color="cyan", timer=True) as sp:
             try: 
-                args = cls._get_args(job)
+                args = cls._get_args(job, use_advanced_args)
                 sushi = subprocess.Popen(
                     args=args,
                     stderr=subprocess.PIPE,  # Pipe output to stderr to avoid collision with spinner in stdout

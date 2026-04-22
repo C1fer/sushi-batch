@@ -22,6 +22,15 @@ class Settings():
         # Sync Workflow Settings
         self.use_high_quality_resample = True # Enables 24kHz resampling for better event search. Increasses processing time but can improve sync accuracy.
 
+        # Advanced Sushi Sync Settings 
+        self.enable_sushi_advanced_args = False
+        self.sushi_window = None
+        self.sushi_max_window = None
+        self.sushi_rewind_thresh = None
+        self.sushi_smooth_radius = None
+        self.sushi_max_ts_duration = None
+        self.sushi_max_ts_distance = None
+
         # Merge Workflow Settings
         self.merge_files_after_execution = True
         self.resample_subs_on_merge = False

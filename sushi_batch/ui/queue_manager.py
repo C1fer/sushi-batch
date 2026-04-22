@@ -12,9 +12,10 @@ from .queue_themes import QUEUE_RENDERERS
 MAIN_QUEUE_OPTIONS= {
     "top": [
         (1, "Run Jobs"),
-        (2, "Remove Jobs"),
-        (3, "Merge Completed Video Jobs", lambda args: MKVMerge.is_installed and args["to_merge"]),
-        (4, "Go Back"),
+        (2, "Run Jobs (Advanced Sushi Args)", lambda q: s.config.enable_sushi_advanced_args),
+        (3, "Remove Jobs"),
+        (4, "Merge Completed Video Jobs", lambda args: MKVMerge.is_installed and args["to_merge"]),
+        (5, "Go Back"),
     ],
     "sub_run": [
         (1, "All Pending"),
@@ -36,9 +37,10 @@ MAIN_QUEUE_OPTIONS= {
 
 TEMP_QUEUE_OPTIONS= {
     "top": [
-        (1, "Run and Add to Main Queue"),    
-        (2, "Queue Without Running"),
-        (3, "Return to Main Menu"),
+        (1, "Run and Add to Main Queue"),
+        (2, "Run and Add to Main Queue (Advanced Sushi Args)", lambda: s.config.enable_sushi_advanced_args),
+        (3, "Queue Without Running"),
+        (4, "Return to Main Menu"),
     ],
     "sub_run_add": [
         (1, "All"),
@@ -114,7 +116,7 @@ def get_stats_bar(queue=None):
 
 def show_main_queue(task):
     """Display the main job queue and handle user interactions."""
-    def _handle_run_options(toolbar_stats=None, pending_count=None):
+    def _handle_run_options(toolbar_stats=None, pending_count=None, use_advanced_sushi_args=False):
         if pending_count == 0:
             cu.print_warning("No pending jobs to run.")
             return
@@ -123,14 +125,14 @@ def show_main_queue(task):
         match run_choice:
             case 1 if confirm_prompt.get(bottom_toolbar=toolbar_stats):
                 _jobs = [job for job in main_queue.contents if job.sync_status == Status.PENDING]
-                main_queue.run_jobs(_jobs)
+                main_queue.run_jobs(_jobs, use_advanced_sushi_args=use_advanced_sushi_args)
             case 2:
                 selected_jobs = main_queue.select_jobs(
                     prompt_message=TO_RUN_SELECTED_PROMPT,
                     filter_fn=lambda j: j.sync_status == Status.PENDING,
                 )
                 if selected_jobs and confirm_prompt.get("Run selected jobs?", bottom_toolbar=toolbar_stats):
-                    main_queue.run_jobs(selected_jobs)
+                    main_queue.run_jobs(selected_jobs, use_advanced_sushi_args=use_advanced_sushi_args)
 
     def _handle_remove_options(toolbar_stats=None):
         remove_choice = choice_prompt.get(message=TO_REMOVE_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_remove"], nl_before=False, bottom_toolbar=toolbar_stats)
@@ -183,22 +185,22 @@ def show_main_queue(task):
         
         top_lvl_choice = choice_prompt.get(options=available_options, bottom_toolbar=bottom_toolbar)
         match top_lvl_choice:
-            case 1:
-                _handle_run_options(toolbar_stats=bottom_toolbar, pending_count=pending_count)
-            case 2:
+            case 1 | 2:
+                _handle_run_options(toolbar_stats=bottom_toolbar, pending_count=pending_count, use_advanced_sushi_args=top_lvl_choice == 2)
+            case 3:
                 _handle_remove_options(toolbar_stats=bottom_toolbar)
                 if not main_queue.contents:
                     break
-            case 3:
+            case 4:
                 _handle_merge_options(toolbar_stats=bottom_toolbar)
             case _:
                 break
 
 def show_temp_queue(temp_queue, task):
     """Handle options for the temporary job queue created after file selection."""
-    def _run_and_queue_all():
+    def _run_and_queue_all(use_advanced_sushi_args=False):
         main_queue.add_jobs(temp_queue.contents, task)
-        temp_queue.run_jobs(temp_queue.contents)
+        temp_queue.run_jobs(temp_queue.contents, use_advanced_sushi_args=use_advanced_sushi_args)
         return True
 
     def _queue_without_running_all():
@@ -206,16 +208,16 @@ def show_temp_queue(temp_queue, task):
         _show_continue_confirmation(temp_queue.contents)
         return True
 
-    def _handle_run_and_queue_multiple():
+    def _handle_run_and_queue_multiple(use_advanced_sushi_args=False):
         run_choice = choice_prompt.get(message=TO_RUN_SELECTED_PROMPT, options=TEMP_QUEUE_OPTIONS["sub_run_add"], nl_before=False)
         match run_choice:
             case 1 if confirm_prompt.get():
-                return _run_and_queue_all()
+                return _run_and_queue_all(use_advanced_sushi_args=use_advanced_sushi_args)
             case 2:
                 selected_jobs = temp_queue.select_jobs(prompt_message=TO_RUN_SELECTED_PROMPT)
                 if selected_jobs and confirm_prompt.get("Run selected jobs and add to main queue?", nl_after=True):
                     main_queue.add_jobs(selected_jobs, task)
-                    temp_queue.run_jobs(selected_jobs)
+                    temp_queue.run_jobs(selected_jobs, use_advanced_sushi_args=use_advanced_sushi_args)
                     return True
 
     def _handle_queue_without_running_multiple():
@@ -229,20 +231,29 @@ def show_temp_queue(temp_queue, task):
                     main_queue.add_jobs(selected_jobs, task)
                     _show_continue_confirmation(selected_jobs)
                     return True
+                
+    # No need to filter for each render for now
+    available_options = [
+        opt[:2]
+        for opt in TEMP_QUEUE_OPTIONS["top"]
+        if (opt[2]() if len(opt) > 2 else True)
+    ]
 
     while True:
         _show_queue_items(temp_queue.contents, task)
         is_single_job = len(temp_queue.contents) == 1
         
-        top_lvl_choice = choice_prompt.get(options=TEMP_QUEUE_OPTIONS["top"])
+        top_lvl_choice = choice_prompt.get(options=available_options)
         match top_lvl_choice:
-            case 1:
-                exit_loop = _run_and_queue_all() if is_single_job else _handle_run_and_queue_multiple()
-                if exit_loop:
-                    return True
-            case 2:
-                exit_loop =_queue_without_running_all() if is_single_job else _handle_queue_without_running_multiple()
+            case 1 | 2:
+                use_advanced_sushi_args = top_lvl_choice == 2
+                fn = _run_and_queue_all if is_single_job else _handle_run_and_queue_multiple
+                exit_loop = fn(use_advanced_sushi_args)
                 if exit_loop:
                     return True
             case 3:
+                exit_loop =_queue_without_running_all() if is_single_job else _handle_queue_without_running_multiple()
+                if exit_loop:
+                    return True
+            case _:
                 return False

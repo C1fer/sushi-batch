@@ -1,6 +1,7 @@
 from prettytable import PrettyTable
 
 from .prompts import choice_prompt, confirm_prompt, input_prompt
+from .sushi_advanced_args_menu import configure_advanced_sushi_args
 
 from ..models.settings import Settings
 
@@ -18,10 +19,20 @@ QUEUE_THEMES = {
 
 MENU_OPTIONS = [
     (1, "Change a Setting"),
-    (2, "Restore Default Settings"),
-    (3, "Clear Logs"),
-    (4, "Return to Main Menu")
+    (2, "Configure Advanced Sushi Arguments"),
+    (3, "Restore Default Settings"),
+    (4, "Clear Logs"),
+    (5, "Return to Main Menu")
 ]
+
+
+def _get_menu_options(settings_obj):
+    """Return top-level settings menu options with visibility rules applied."""
+    return [
+        option
+        for option in MENU_OPTIONS
+        if not (option[0] == 2 and not settings_obj.enable_sushi_advanced_args)
+    ]
 
 SECTION_SUB_OPTIONS = [
     (1, Section.GEN.value),
@@ -60,7 +71,8 @@ def _get_settings_rows(obj):
         (Section.GEN, "Save MKVMerge logs", "save_mkvmerge_logs", obj.save_mkvmerge_logs, divider_flag),
 
         # Subtitle Sync Section
-        (Section.SYNC, "Use high quality resampling (better sync accuracy)", "use_high_quality_resample", obj.use_high_quality_resample, divider_flag),
+        (Section.SYNC, "Use high quality resampling (better sync accuracy)", "use_high_quality_resample", obj.use_high_quality_resample),
+        (Section.SYNC, "Enable advanced Sushi arguments", "enable_sushi_advanced_args", obj.enable_sushi_advanced_args, divider_flag),
         
         # Merge - Workflow Section
         (Section.MERGE_WRK, "Merge automatically on sync completion", "merge_files_after_execution", obj.merge_files_after_execution),
@@ -184,16 +196,19 @@ def show_settings_menu(settings_obj):
         tbl = _generate_settings_table(table_rows)
         print(tbl)
 
-        choice = choice_prompt.get(options=MENU_OPTIONS, nl_after=False)
+        menu_options = _get_menu_options(settings_obj)
+        choice = choice_prompt.get(options=menu_options, nl_after=False)
         match choice:
             case 1:
                 selected = _select_setting_to_update(table_rows)
                 if selected:
                     _update_value(settings_obj, selected)
-            case 2 if confirm_prompt.get():
+            case 2:
+                configure_advanced_sushi_args(settings_obj)
+            case 3 if confirm_prompt.get():
                 settings_obj.restore()
                 cu.print_success("Settings restored to default values.")
-            case 3:
+            case 4:
                 if confirm_prompt.get("Are you sure you want to clear the logs? This action cannot be undone.", nl_before=True, destructive=True):
                     fu.clear_logs(settings_obj.data_path)
                     cu.print_success("Logs cleared.")

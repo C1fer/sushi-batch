@@ -11,14 +11,16 @@ DEFAULT_STYLE = Style.from_dict({
 })
 
 
-def get(message="New value: ", allow_empty=False, **kwargs):
+def get(message="New value: ", allow_empty=False, nl_before=False, **kwargs):
     """Prompt user for input."""
     caller_style = kwargs.pop("style", None)
     kwargs["style"] = merge_styles([DEFAULT_STYLE, caller_style]) if caller_style else DEFAULT_STYLE
 
     _message = [("class:message", f"> {message}")]
 
-    
+    if nl_before and not message.strip().startswith("\n"):
+        print()  
+        
     while True:
         user_input = prompt(_message, **kwargs)
         
