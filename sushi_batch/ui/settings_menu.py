@@ -205,9 +205,10 @@ def show_settings_menu(settings_obj):
                     _update_value(settings_obj, selected)
             case 2:
                 configure_advanced_sushi_args(settings_obj)
-            case 3 if confirm_prompt.get():
-                settings_obj.restore()
-                cu.print_success("Settings restored to default values.")
+            case 3:
+                if confirm_prompt.get():
+                    settings_obj.restore()
+                    cu.print_success("Settings restored to default values.")
             case 4:
                 if confirm_prompt.get("Are you sure you want to clear the logs? This action cannot be undone.", nl_before=True, destructive=True):
                     fu.clear_logs(settings_obj.data_path)
