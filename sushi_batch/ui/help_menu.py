@@ -22,7 +22,7 @@ def show_help_screen():
         f"{cu.fore.LIGHTBLACK_EX}2. For video sync jobs, choose the audio and subtitle tracks to use for syncing.",
         f"{cu.fore.LIGHTBLACK_EX}3. Press 'Run Job' to execute the sync.",
         f"{cu.fore.LIGHTBLACK_EX}4. After sync completion, the synced subtitle will be available in the same directory as the target file.",
-        f"{cu.fore.LIGHTBLACK_EX}5. If enabled in settings and MKVMerge is available, a new video file will be created with the synced subtitle.",
+        f"{cu.fore.LIGHTBLACK_EX}5. If enabled in settings and MKVMerge is available, a new video file will be created with the synced subtitle. This file will be located in the 'Merged Files' folder within the target's directory.",
 
         f"\n{cu.fore.YELLOW}Terminology",
         f"{cu.fore.LIGHTBLACK_EX}- Source File: The original video or audio file that contains the subtitle you want to sync.",
