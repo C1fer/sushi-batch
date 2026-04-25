@@ -69,3 +69,9 @@ class QueueTheme(Enum):
     CLASSIC = "classic"
     CARD = "card"
     YAML = "yaml-like" 
+
+class AudioEncodeCodec(Enum):
+    OPUS = "opus"
+    MP3 = "mp3"
+    AAC = "aac"
+    EAC3 = "eac3"

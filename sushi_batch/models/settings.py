@@ -4,7 +4,7 @@ from os import makedirs, path
 from ..utils import console_utils as cu
 from ..utils.json_utils import SettingsDecoder, SettingsEncoder
 
-from .enums import QueueTheme
+from .enums import QueueTheme, AudioEncodeCodec
 
 class Settings():
 
@@ -33,6 +33,8 @@ class Settings():
 
         # Merge Workflow Settings
         self.merge_files_after_execution = True
+        self.encode_lossless_audio_before_merging = False
+        self.encode_ffmpeg_codec = AudioEncodeCodec.OPUS
         self.resample_subs_on_merge = False
         self.delete_generated_files_after_merge = False
         

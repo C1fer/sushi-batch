@@ -7,7 +7,7 @@ from ..models.settings import Settings
 
 from ..utils import console_utils as cu
 from ..utils import file_utils as fu
-from ..models.enums import Section, QueueTheme
+from ..models.enums import AudioEncodeCodec, Section, QueueTheme
 
 GO_BACK_OPTION_LABEL = "Go Back"
 
@@ -54,6 +54,8 @@ def _get_formatted_value(value):
         case QueueTheme():
             theme_name = QUEUE_THEMES.get(value, "Unknown")
             return f"{cu.Fore.MAGENTA}{theme_name}{cu.style_reset}"
+        case AudioEncodeCodec():
+            return f"{cu.Fore.MAGENTA}{value.name}{cu.style_reset}"
         case _:
             _color = cu.Fore.YELLOW if value else cu.Fore.LIGHTBLACK_EX
             _value = value if value else "Not set"
@@ -63,7 +65,7 @@ def _get_settings_rows(obj):
     """Return the settings rows used by the table and selection flow."""
     divider_flag = True
 
-    rows = [
+    rows = filter(None, [
         # General Section
         (Section.GEN, "Queue Theme", "queue_theme", obj.queue_theme),
         (Section.GEN, "Save Sushi sync logs", "save_sushi_logs", obj.save_sushi_logs),
@@ -76,6 +78,8 @@ def _get_settings_rows(obj):
         
         # Merge - Workflow Section
         (Section.MERGE_WRK, "Merge automatically on sync completion", "merge_files_after_execution", obj.merge_files_after_execution),
+        (Section.MERGE_WRK, "Encode lossless audio before merging", "encode_lossless_audio_before_merging", obj.encode_lossless_audio_before_merging),
+        (Section.MERGE_WRK, "Audio codec for lossless encoding", "encode_ffmpeg_codec", obj.encode_ffmpeg_codec) if obj.encode_lossless_audio_before_merging else None,
         (Section.MERGE_WRK, "Resample synced sub before merge", "resample_subs_on_merge", obj.resample_subs_on_merge),
         (Section.MERGE_WRK, "Delete generated subtitle files after merge", "delete_generated_files_after_merge", obj.delete_generated_files_after_merge, divider_flag),
 
@@ -97,12 +101,10 @@ def _get_settings_rows(obj):
         (Section.MERGE_SUB, "Set default flag", "sub_default_flag", obj.sub_default_flag),
         (Section.MERGE_SUB, "Set forced flag", "sub_forced_flag", obj.sub_forced_flag),
         (Section.MERGE_SUB, "Use custom track name", "sub_custom_trackname", obj.sub_custom_trackname),
-    ]
+        (Section.MERGE_SUB, "Default track name", "sub_trackname", obj.sub_trackname) if obj.sub_custom_trackname else None
+    ])
 
-    if obj.sub_custom_trackname:
-        rows.append((Section.MERGE_SUB, "Default track name", "sub_trackname", obj.sub_trackname))
-
-    return rows
+    return list(rows)
 
 def _generate_settings_table(rows):
     """Create and return settings table"""
@@ -129,6 +131,19 @@ def _select_queue_theme():
 
     return next(theme for theme, label in QUEUE_THEMES.items() if label == options[choice_idx - 1][1])
 
+
+def _select_audio_codec():
+    """Display audio codec options and update setting based on user selection"""
+    go_back_id = len(AudioEncodeCodec) + 1
+    options = [(idx, codec.value) for idx, codec in enumerate(AudioEncodeCodec, 1)]
+    options.append((go_back_id, GO_BACK_OPTION_LABEL))
+
+    choice_idx = choice_prompt.get(options=options, nl_before=False, nl_after=False)
+    if choice_idx == go_back_id:
+        return None
+
+    return next(codec for codec in AudioEncodeCodec if codec.value == options[choice_idx - 1][1])
+
 def _update_value(obj, option):
     """Update value for selected option"""
     curr_val = getattr(obj, option)
@@ -139,6 +154,8 @@ def _update_value(obj, option):
     match curr_val:
         case QueueTheme():
             new_val = _select_queue_theme()
+        case AudioEncodeCodec():
+            new_val = _select_audio_codec()
         case bool():
             prompt = "Disable" if curr_val else "Enable"
             if confirm_prompt.get(f"{prompt} option?"):

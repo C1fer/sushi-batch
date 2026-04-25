@@ -1,6 +1,6 @@
 from json import JSONDecoder, JSONEncoder
 
-from ..models.enums import QueueTheme, Status, Task
+from ..models.enums import QueueTheme, Status, Task, AudioEncodeCodec
 from ..models.job import Job
 
 
@@ -32,6 +32,7 @@ class SettingsEncoder(JSONEncoder):
         if isinstance(obj, Settings):
             dct = obj.__dict__.copy()
             dct["queue_theme"] = obj.queue_theme.name
+            dct["encode_ffmpeg_codec"] = obj.encode_ffmpeg_codec.name
             return dct
         return super().default(obj)    
 
@@ -44,4 +45,6 @@ class SettingsDecoder(JSONDecoder):
         if "queue_theme" in dct:
             dct["queue_theme"] = QueueTheme[dct["queue_theme"]]
         
+        if "encode_ffmpeg_codec" in dct:
+            dct["encode_ffmpeg_codec"] = AudioEncodeCodec[dct["encode_ffmpeg_codec"]]
         return dct
