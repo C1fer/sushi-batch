@@ -38,7 +38,7 @@ class SubResampler:
 
             stdout, _ = aegisub_resample.communicate()
 
-            if settings.config.save_aegisub_resample_logs:
+            if settings.config.general.get("save_aegisub_resample_logs"):
                 log_filepath = SubProcessLogger.set_log_path(job.dst_file, "Aegisub Resample Logs")
                 SubProcessLogger.save_log_output(log_filepath, stdout)
 

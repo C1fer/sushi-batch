@@ -99,7 +99,7 @@ class JobQueue:
             for job in jobs_to_run:
                 utils.interrupt_signal_handler(_run_sub_sync)(job, completed_video_jobs)
             
-            if settings.config.merge_files_after_execution and completed_video_jobs:
+            if settings.config.merge_workflow.get("merge_files_after_execution") and completed_video_jobs:
                 if MKVMerge.is_installed:
                     self.merge_completed_video_jobs(JobSelection.SELECTED, completed_video_jobs)
                 else:
@@ -170,16 +170,16 @@ class JobQueue:
 
         cu.print_subheader("Merging files")
         
-        do_audio_encode = settings.config.encode_lossless_audio_before_merging
+        do_audio_encode = settings.config.merge_workflow.get("encode_lossless_audio_before_merging")
         do_resample = True
-        if settings.config.resample_subs_on_merge and not SubResampler.is_installed:
+        if settings.config.merge_workflow.get("resample_subs_on_merge") and not SubResampler.is_installed:
             do_resample = False
             cu.print_error("Aegisub-CLI could not be found. Subtitle resampling will be skipped.")
 
         for job in completed_jobs:
             utils.interrupt_signal_handler(_run_merge)(job, do_resample, do_audio_encode)
 
-        if settings.config.delete_generated_files_after_merge:
+        if settings.config.merge_workflow.get("delete_generated_files_after_merge"):
             successfully_merged_jobs = [job for job in completed_jobs if job.merged]
             self._clean_generated_files(successfully_merged_jobs, confirm_deletion=False)
 

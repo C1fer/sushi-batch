@@ -63,3 +63,8 @@ def interrupt_signal_handler(func):
                 cu.print_warning("Resuming operation...", nl_before=True)
                 return wrapper(*args, **kwargs)  # Restart the function
     return wrapper
+
+
+def pop_many(dct, *keys):
+    for key in keys:
+        dct.pop(key, None)

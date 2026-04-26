@@ -8,7 +8,7 @@ from ..external.sub_sync import Sushi
 ADVANCED_SUSHI_ARG_FIELDS = [
     {
         "label": "Window (--window)",
-        "attr": "sushi_window",
+        "attr": "window",
         "type": int,
         "allow_negative": False,
         "default": Sushi.advanced_args_mapping["window"][1],
@@ -16,7 +16,7 @@ ADVANCED_SUSHI_ARG_FIELDS = [
     },
     {
         "label": "Max Window (--max-window)",
-        "attr": "sushi_max_window",
+        "attr": "max_window",
         "type": int,
         "allow_negative": False,
         "default": Sushi.advanced_args_mapping["max_window"][1],
@@ -24,7 +24,7 @@ ADVANCED_SUSHI_ARG_FIELDS = [
     },
     {
         "label": "Rewind Threshold (--rewind-thresh)",
-        "attr": "sushi_rewind_thresh",
+        "attr": "rewind_thresh",
         "type": int,
         "allow_negative": False,
         "default": Sushi.advanced_args_mapping["rewind_thresh"][1],
@@ -32,7 +32,7 @@ ADVANCED_SUSHI_ARG_FIELDS = [
     },
     {
         "label": "Smooth Radius (--smooth-radius)",
-        "attr": "sushi_smooth_radius",
+        "attr": "smooth_radius",
         "type": int,
         "allow_negative": False,
         "default": Sushi.advanced_args_mapping["smooth_radius"][1],
@@ -40,7 +40,7 @@ ADVANCED_SUSHI_ARG_FIELDS = [
     },
     {
         "label": "Max Typesetting Duration (--max-ts-duration)",
-        "attr": "sushi_max_ts_duration",
+        "attr": "max_ts_duration",
         "type": float,
         "allow_negative": False,
         "default": Sushi.advanced_args_mapping["max_ts_duration"][1],
@@ -48,7 +48,7 @@ ADVANCED_SUSHI_ARG_FIELDS = [
     },
     {
         "label": "Max Typesetting Distance (--max-ts-distance)",
-        "attr": "sushi_max_ts_distance",
+        "attr": "max_ts_distance",
         "type": float,
         "allow_negative": False,
         "default": Sushi.advanced_args_mapping["max_ts_distance"][1],
@@ -74,7 +74,7 @@ def _format_value(value):
 def _render_advanced_sushi_table(settings_obj):
     table = PrettyTable(["Option", "Argument", "Current Value", "Default Value"])
     for idx, field in enumerate(ADVANCED_SUSHI_ARG_FIELDS, 1):
-        current_value = getattr(settings_obj, field["attr"])
+        current_value = settings_obj.sync_workflow.get("sushi_advanced_args", {}).get(field["attr"], None)
         table.add_row([
             idx,
             field["label"],
@@ -102,7 +102,7 @@ def _parse_advanced_input(raw_value, field):
 
 def _edit_advanced_sushi_arg(settings_obj, field):
     attr = field["attr"]
-    current_value = getattr(settings_obj, attr)
+    current_value = settings_obj.sync_workflow.get("sushi_advanced_args", {}).get(attr, None)
     default_value = field["default"]
 
    
@@ -119,7 +119,7 @@ def _edit_advanced_sushi_arg(settings_obj, field):
             if current_value is None:
                 cu.print_warning("Already using default value. No changes made.", wait=True)
                 return
-            setattr(settings_obj, attr, None)
+            settings_obj.sync_workflow["sushi_advanced_args"][attr] = None
             settings_obj._save()
             return
 
@@ -133,7 +133,7 @@ def _edit_advanced_sushi_arg(settings_obj, field):
             cu.print_warning("Entered value is the same as the current value. No changes made.", wait=True)
             return
 
-        setattr(settings_obj, attr, parsed)
+        settings_obj.sync_workflow["sushi_advanced_args"][attr] = parsed
         settings_obj._save()
         return
     
@@ -157,8 +157,8 @@ def _view_advanced_arg_descriptions():
 
 def _reset_all_values(settings_obj):
     if confirm_prompt.get("Reset all custom arguments to default values?"):
-        for field in ADVANCED_SUSHI_ARG_FIELDS:
-            setattr(settings_obj, field["attr"], None)
+        for field in settings_obj.sync_workflow.get("sushi_advanced_args", {}).keys():
+            settings_obj.sync_workflow["sushi_advanced_args"][field] = None
         settings_obj._save()
         cu.print_success("All advanced arguments have been reset to default values.", wait=True)
 

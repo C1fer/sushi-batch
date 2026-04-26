@@ -80,10 +80,10 @@ def _format_value(value, is_default):
 
 def _render_bitrates_table(settings_obj):
     table = PrettyTable(["Layout", "Current Value", "Default Value"])
-    codec = settings_obj.encode_ffmpeg_codec
+    codec = settings_obj.merge_workflow.get("encode_ffmpeg_codec")
     layout_options = CODEC_OPTIONS.get(codec, {})
     for layout, _ in layout_options.items():
-        current_value = settings_obj.encode_audio_bitrates.get(codec.name, {}).get(layout.name)
+        current_value = settings_obj.merge_workflow.get("encode_audio_bitrates", {}).get(codec.name, {}).get(layout.name)
         default_value = DEFAULT_ENCODE_AUDIO_BITRATES.get(codec.name, {}).get(layout.name, "Default")
         table.add_row([
             layout.value,
@@ -93,8 +93,8 @@ def _render_bitrates_table(settings_obj):
     return table
 
 def _update_layout_bitrate(settings_obj, layout):
-    codec = settings_obj.encode_ffmpeg_codec
-    current_bitrate = settings_obj.encode_audio_bitrates.get(codec.name, {}).get(layout.name)
+    codec = settings_obj.merge_workflow.get("encode_ffmpeg_codec")
+    current_bitrate = settings_obj.merge_workflow.get("encode_audio_bitrates", {}).get(codec.name, {}).get(layout.name)
 
     options = CODEC_OPTIONS.get(codec, {}).get(layout, [])
     _choice_options = [(idx, desc) for idx, (desc, _) in enumerate(options, 1)]
@@ -107,7 +107,7 @@ def _update_layout_bitrate(settings_obj, layout):
     new_bitrate = options[selected - 1][1]
 
     if new_bitrate != current_bitrate:
-        settings_obj.encode_audio_bitrates[codec.name][layout.name] = new_bitrate
+        settings_obj.merge_workflow["encode_audio_bitrates"][codec.name][layout.name] = new_bitrate
         settings_obj._save()
     
 def _select_layout_to_edit():
@@ -123,7 +123,7 @@ def _select_layout_to_edit():
 
 def _reset_all_values(settings_obj):
     if confirm_prompt.get("Reset all custom arguments to default values?"):
-        setattr(settings_obj, "encode_audio_bitrates", DEFAULT_ENCODE_AUDIO_BITRATES.copy())
+        settings_obj.merge_workflow["encode_audio_bitrates"] = DEFAULT_ENCODE_AUDIO_BITRATES.copy()
         settings_obj._save()
         cu.print_success("All bitrate values have been reset to default.", wait=True)
 
@@ -131,7 +131,7 @@ def _reset_all_values(settings_obj):
 def configure_audio_encode_bitrates(settings_obj):
     while True:
         cu.clear_screen()
-        cu.print_header(f"{settings_obj.encode_ffmpeg_codec.value} Encode Bitrates \n")
+        cu.print_header(f"{settings_obj.merge_workflow.get('encode_ffmpeg_codec').value} Encode Bitrates \n")
         print(_render_bitrates_table(settings_obj))
 
         selected = choice_prompt.get(options=MENU_OPTIONS)

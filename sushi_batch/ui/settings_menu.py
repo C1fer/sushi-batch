@@ -20,8 +20,8 @@ QUEUE_THEMES = {
 
 MENU_OPTIONS = [
     (1, "Change a Setting"),
-    (2, "Configure Advanced Sushi Arguments", lambda o: o.enable_sushi_advanced_args),
-    (3, "Configure Audio Encoding Bitrates", lambda o: o.encode_lossless_audio_before_merging),
+    (2, "Configure Advanced Sushi Arguments", lambda o: o.sync_workflow.get("enable_sushi_advanced_args")),
+    (3, "Configure Audio Encoding Bitrates", lambda o: o.merge_workflow.get("encode_lossless_audio_before_merging")),
     (4, "Restore Default Settings"),
     (5, "Clear Logs"),
     (6, "Return to Main Menu")
@@ -69,41 +69,41 @@ def _get_settings_rows(obj):
 
     rows = filter(None, [
         # General Section
-        (Section.GEN, "Queue Theme", "queue_theme", obj.queue_theme),
-        (Section.GEN, "Save Sushi sync logs", "save_sushi_logs", obj.save_sushi_logs),
-        (Section.GEN, "Save Aegisub-CLI resample logs", "save_aegisub_resample_logs", obj.save_aegisub_resample_logs),
-        (Section.GEN, "Save MKVMerge logs", "save_mkvmerge_logs", obj.save_mkvmerge_logs, divider_flag),
+        (Section.GEN, "Queue Theme", "general.queue_theme", obj.general.get("queue_theme")),
+        (Section.GEN, "Save Sushi sync logs", "general.save_sushi_logs", obj.general.get("save_sushi_logs")),
+        (Section.GEN, "Save Aegisub-CLI resample logs", "general.save_aegisub_resample_logs", obj.general.get("save_aegisub_resample_logs")),
+        (Section.GEN, "Save MKVMerge logs", "general.save_mkvmerge_logs", obj.general.get("save_mkvmerge_logs"), divider_flag),
 
         # Subtitle Sync Section
-        (Section.SYNC, "Use high quality resampling (better sync accuracy)", "use_high_quality_resample", obj.use_high_quality_resample),
-        (Section.SYNC, "Allow advanced Sushi arguments", "enable_sushi_advanced_args", obj.enable_sushi_advanced_args, divider_flag),
+        (Section.SYNC, "Use high quality resampling (better sync accuracy)", "sync_workflow.use_high_quality_resample", obj.sync_workflow.get("use_high_quality_resample")),
+        (Section.SYNC, "Allow advanced Sushi arguments", "sync_workflow.enable_sushi_advanced_args", obj.sync_workflow.get("enable_sushi_advanced_args"), divider_flag),
         
         # Merge - Workflow Section
-        (Section.MERGE_WRK, "Merge automatically on sync completion", "merge_files_after_execution", obj.merge_files_after_execution),
-        (Section.MERGE_WRK, "Encode lossless audio before merging", "encode_lossless_audio_before_merging", obj.encode_lossless_audio_before_merging),
-        (Section.MERGE_WRK, "Encoding audio codec", "encode_ffmpeg_codec", obj.encode_ffmpeg_codec) if obj.encode_lossless_audio_before_merging else None,
-        (Section.MERGE_WRK, "Resample synced sub before merge", "resample_subs_on_merge", obj.resample_subs_on_merge),
-        (Section.MERGE_WRK, "Delete generated subtitle files after merge", "delete_generated_files_after_merge", obj.delete_generated_files_after_merge, divider_flag),
+        (Section.MERGE_WRK, "Merge automatically on sync completion", "merge_workflow.merge_files_after_execution", obj.merge_workflow.get("merge_files_after_execution")),
+        (Section.MERGE_WRK, "Encode lossless audio before merging", "merge_workflow.encode_lossless_audio_before_merging", obj.merge_workflow.get("encode_lossless_audio_before_merging")),
+        (Section.MERGE_WRK, "Encoding audio codec", "merge_workflow.encode_ffmpeg_codec", obj.merge_workflow.get("encode_ffmpeg_codec")) if obj.merge_workflow.get("encode_lossless_audio_before_merging") else None,
+        (Section.MERGE_WRK, "Resample synced sub before merge", "merge_workflow.resample_subs_on_merge", obj.merge_workflow.get("resample_subs_on_merge")),
+        (Section.MERGE_WRK, "Delete generated subtitle files after merge", "merge_workflow.delete_generated_files_after_merge", obj.merge_workflow.get("delete_generated_files_after_merge"), divider_flag),
 
         # Merge - Source File Section
-        (Section.MERGE_SRC, "Copy attachments", "src_copy_attachments", obj.src_copy_attachments),
-        (Section.MERGE_SRC, "Copy chapters", "src_copy_chapters", obj.src_copy_chapters),
-        (Section.MERGE_SRC, "Copy global tags", "src_copy_global_tags", obj.src_copy_global_tags),
-        (Section.MERGE_SRC, "Copy track tags", "src_copy_track_tags", obj.src_copy_track_tags, divider_flag),
+        (Section.MERGE_SRC, "Copy attachments", "merge_src_file.copy_attachments", obj.merge_src_file.get("copy_attachments")),
+        (Section.MERGE_SRC, "Copy chapters", "merge_src_file.copy_chapters", obj.merge_src_file.get("copy_chapters")),
+        (Section.MERGE_SRC, "Copy global tags", "merge_src_file.copy_global_tags", obj.merge_src_file.get("copy_global_tags")),
+        (Section.MERGE_SRC, "Copy track tags", "merge_src_file.copy_track_tags", obj.merge_src_file.get("copy_track_tags"), divider_flag),
         
         # Merge - Sync Target File Section
-        (Section.MERGE_DST, "Copy only selected sync audio track", "dst_copy_audio_tracks", obj.dst_copy_audio_tracks),
-        (Section.MERGE_DST, "Copy attachments", "dst_copy_attachments", obj.dst_copy_attachments),
-        (Section.MERGE_DST, "Copy chapters", "dst_copy_chapters", obj.dst_copy_chapters),
-        (Section.MERGE_DST, "Copy subtitles", "dst_copy_subtitle_tracks", obj.dst_copy_subtitle_tracks),
-        (Section.MERGE_DST, "Copy global tags", "dst_copy_global_tags", obj.dst_copy_global_tags),
-        (Section.MERGE_DST, "Copy track tags", "dst_copy_track_tags", obj.dst_copy_track_tags, divider_flag),
+        (Section.MERGE_DST, "Copy only selected sync audio track", "merge_dst_file.copy_audio_tracks", obj.merge_dst_file.get("copy_audio_tracks")),
+        (Section.MERGE_DST, "Copy attachments", "merge_dst_file.copy_attachments", obj.merge_dst_file.get("copy_attachments")),
+        (Section.MERGE_DST, "Copy chapters", "merge_dst_file.copy_chapters", obj.merge_dst_file.get("copy_chapters")),
+        (Section.MERGE_DST, "Copy subtitles", "merge_dst_file.copy_subtitle_tracks", obj.merge_dst_file.get("copy_subtitle_tracks")),
+        (Section.MERGE_DST, "Copy global tags", "merge_dst_file.copy_global_tags", obj.merge_dst_file.get("copy_global_tags")),
+        (Section.MERGE_DST, "Copy track tags", "merge_dst_file.copy_track_tags", obj.merge_dst_file.get("copy_track_tags"), divider_flag),
         
         # Merge - Synced Subtitle Section
-        (Section.MERGE_SUB, "Set default flag", "sub_default_flag", obj.sub_default_flag),
-        (Section.MERGE_SUB, "Set forced flag", "sub_forced_flag", obj.sub_forced_flag),
-        (Section.MERGE_SUB, "Use custom track name", "sub_custom_trackname", obj.sub_custom_trackname),
-        (Section.MERGE_SUB, "Default track name", "sub_trackname", obj.sub_trackname) if obj.sub_custom_trackname else None
+        (Section.MERGE_SUB, "Set default flag", "merge_synced_sub_file.default_flag", obj.merge_synced_sub_file.get("default_flag")),
+        (Section.MERGE_SUB, "Set forced flag", "merge_synced_sub_file.forced_flag", obj.merge_synced_sub_file.get("forced_flag")),
+        (Section.MERGE_SUB, "Use custom track name", "merge_synced_sub_file.custom_trackname", obj.merge_synced_sub_file.get("custom_trackname")),
+        (Section.MERGE_SUB, "Default track name", "merge_synced_sub_file.trackname", obj.merge_synced_sub_file.get("trackname")) if obj.merge_synced_sub_file.get("custom_trackname") else None
     ])
 
     return list(rows)
@@ -146,10 +146,16 @@ def _select_audio_codec():
     return next(codec for codec in AudioEncodeCodec if codec.value == options[choice_idx - 1][1])
 
 def _update_value(obj, option):
-    """Update value for selected option"""
-    curr_val = getattr(obj, option)
-    new_val = None
+    """Update value for selected option (handles both direct attributes and nested dict options)"""
+    path = option.split(".")
+    if len(path) == 1:
+        curr_val = getattr(obj, option)
+    else:
+        parent_attr, dict_key = path[0], path[1]
+        parent = getattr(obj, parent_attr)
+        curr_val = parent.get(dict_key)
     
+    new_val = None
     print(f"Current value: {_get_formatted_value(curr_val)}\n")
     
     match curr_val:
@@ -166,8 +172,13 @@ def _update_value(obj, option):
             if confirm_prompt.get():
                 new_val = user_input
                 
-    if new_val is not None:       
-        setattr(obj, option, new_val)
+    if new_val is not None:
+        if len(path) == 1:
+            setattr(obj, option, new_val)
+        else:
+            parent_attr, dict_key = path[0], path[1]
+            parent = getattr(obj, parent_attr)
+            parent[dict_key] = new_val
         obj._save()
 
 def _handle_option_choice(section_options):

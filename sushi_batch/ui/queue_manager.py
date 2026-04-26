@@ -12,7 +12,7 @@ from .queue_themes import QUEUE_RENDERERS
 MAIN_QUEUE_OPTIONS= {
     "top": [
         (1, "Run Jobs"),
-        (2, "Run Jobs (Include Advanced Sushi Args)", lambda q: s.config.enable_sushi_advanced_args),
+        (2, "Run Jobs (Include Advanced Sushi Args)", lambda q: s.config.sync_workflow.get("enable_sushi_advanced_args")),
         (3, "Remove Jobs"),
         (4, "Merge Completed Video Jobs", lambda args: MKVMerge.is_installed and args["to_merge"]),
         (5, "Go Back"),
@@ -38,7 +38,7 @@ MAIN_QUEUE_OPTIONS= {
 TEMP_QUEUE_OPTIONS= {
     "top": [
         (1, "Run and Add to Main Queue"),
-        (2, "Run and Add to Main Queue (Include Advanced Sushi Args)", lambda: s.config.enable_sushi_advanced_args),
+        (2, "Run and Add to Main Queue (Include Advanced Sushi Args)", lambda: s.config.sync_workflow.get("enable_sushi_advanced_args")),
         (3, "Queue Without Running"),
         (4, "Return to Main Menu"),
     ],
@@ -69,7 +69,8 @@ def _show_queue_items(queue, current_task):
     title = "Job Queue" if current_task == Task.JOB_QUEUE else "Jobs"
     cu.print_header(f"{title}")
     
-    renderer = QUEUE_RENDERERS.get(s.config.queue_theme, lambda q, t: cu.print_error("Invalid queue theme selected."))
+    current_theme = s.config.general.get("queue_theme")
+    renderer = QUEUE_RENDERERS.get(current_theme, lambda q, t: cu.print_error("Invalid queue theme selected."))
     renderer(queue, current_task)
 
 def get_queue_stats(queue = None, requested_key=None):    

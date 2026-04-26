@@ -118,9 +118,13 @@ class FFmpeg:
         ffmpeg_codec_params = LOSSY_AUDIO_CODEC_OPTIONS.get(settings_codec, None)
         if not ffmpeg_codec_params:
             raise ValueError(f"Unsupported audio codec selected for encoding: {settings_codec.name}")
-        
-        ffmpeg_codec_params[BITRATE_KEY] = s.config.encode_audio_bitrates.get(settings_codec.name, None).get("STEREO", None) #TODO: Map based on channel layout instead of defaulting to stereo bitrate
-        
+
+        ffmpeg_codec_params[BITRATE_KEY] = (
+            s.config.merge_workflow.get("encode_audio_bitrates", {})
+            .get(settings_codec.name, {})
+            .get("STEREO", None)
+        )  # TODO: Map based on channel layout instead of defaulting to stereo bitrate
+
         args = []
         for key, value in ffmpeg_codec_params.items():
             args.extend([key, value])
@@ -148,7 +152,7 @@ class FFmpeg:
         try:
             log_prefix  = f"[Job {job.idx} - FFmpeg]"
 
-            settings_codec = s.config.encode_ffmpeg_codec
+            settings_codec = s.config.merge_workflow.get("encode_ffmpeg_codec")
             args, output_path = cls._get_audio_encode_args(job, settings_codec)
             cu.print_warning(f"{log_prefix} Encoding audio track to {settings_codec.name}", nl_before=False, wait=False)
            
