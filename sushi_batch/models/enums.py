@@ -71,7 +71,11 @@ class QueueTheme(Enum):
     YAML = "yaml-like" 
 
 class AudioEncodeCodec(Enum):
-    OPUS = "opus"
-    MP3 = "mp3"
-    AAC = "aac"
-    EAC3 = "eac3"
+    OPUS = "Opus"
+    AAC = "AAC"
+    EAC3 = "EAC-3"
+
+class AudioChannelLayout(Enum):
+    STEREO = "Stereo"
+    SURROUND_5_1 = "Surround (5.1)"
+    SURROUND_7_1 = "Surround (7.1)"

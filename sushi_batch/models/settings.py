@@ -4,7 +4,25 @@ from os import makedirs, path
 from ..utils import console_utils as cu
 from ..utils.json_utils import SettingsDecoder, SettingsEncoder
 
-from .enums import QueueTheme, AudioEncodeCodec
+from .enums import QueueTheme, AudioEncodeCodec, AudioChannelLayout
+
+DEFAULT_ENCODE_AUDIO_BITRATES = {
+    AudioEncodeCodec.OPUS.name: {
+        AudioChannelLayout.STEREO.name: "128k",
+        AudioChannelLayout.SURROUND_5_1.name: "320k",
+        AudioChannelLayout.SURROUND_7_1.name: "512k"
+    },
+    AudioEncodeCodec.AAC.name: {
+        AudioChannelLayout.STEREO.name: "192k",
+        AudioChannelLayout.SURROUND_5_1.name: "448k",      
+        AudioChannelLayout.SURROUND_7_1.name: "640k"      
+    },
+    AudioEncodeCodec.EAC3.name: {
+        AudioChannelLayout.STEREO.name: "192k",   
+        AudioChannelLayout.SURROUND_5_1.name: "640k",     
+        AudioChannelLayout.SURROUND_7_1.name: "768k"
+    }
+}
 
 class Settings():
 
@@ -35,6 +53,7 @@ class Settings():
         self.merge_files_after_execution = True
         self.encode_lossless_audio_before_merging = False
         self.encode_ffmpeg_codec = AudioEncodeCodec.OPUS
+        self.encode_audio_bitrates = DEFAULT_ENCODE_AUDIO_BITRATES.copy()
         self.resample_subs_on_merge = False
         self.delete_generated_files_after_merge = False
         

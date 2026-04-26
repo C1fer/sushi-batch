@@ -5,14 +5,30 @@ from pathlib import Path
 
 from ..utils import utils
 from ..utils import console_utils as cu
+
 from ..models import settings as s
 from ..models.streams import Stream
+from ..models.enums import AudioEncodeCodec, AudioChannelLayout
+
+BITRATE_KEY = "-b:a"
 
 LOSSY_AUDIO_CODEC_OPTIONS = {
-    "opus": "libopus",
-    "mp3": "libmp3lame",
-    "aac": "aac",
-    "eac3": "eac3",
+    AudioEncodeCodec.OPUS: {
+        "-c:a": "libopus",
+        BITRATE_KEY: "",
+        "-vbr": "on",
+        "-compression_level": "10"
+    },
+    AudioEncodeCodec.AAC: {
+        "-c:a": "aac",
+        BITRATE_KEY: "",
+        "-q:a": "2",
+        "-profile:a": "aac_low"
+    },
+    AudioEncodeCodec.EAC3: {
+        "-c:a": "eac3",
+        BITRATE_KEY: ""
+    }
 }
 
 LOSSLESS_AUDIO_CODECS = {"flac", "pcm", "wav"}
@@ -98,24 +114,33 @@ class FFmpeg:
             return False
 
     @classmethod
+    def _get_codec_params(cls, settings_codec):
+        ffmpeg_codec_params = LOSSY_AUDIO_CODEC_OPTIONS.get(settings_codec, None)
+        if not ffmpeg_codec_params:
+            raise ValueError(f"Unsupported audio codec selected for encoding: {settings_codec.name}")
+        
+        ffmpeg_codec_params[BITRATE_KEY] = s.config.encode_audio_bitrates.get(settings_codec.name, None).get("STEREO", None) #TODO: Map based on channel layout instead of defaulting to stereo bitrate
+        
+        args = []
+        for key, value in ffmpeg_codec_params.items():
+            args.extend([key, value])
+        return args  
+    
+    @classmethod
     def _get_audio_encode_args(cls, job, settings_codec):
         """Constructs ffmpeg arguments for encoding audio with the selected codec."""
-        ffmpeg_codec = LOSSY_AUDIO_CODEC_OPTIONS.get(settings_codec, None)
-        if not ffmpeg_codec:
-            raise ValueError(f"Unsupported audio codec selected for encoding: {settings_codec}")
-        
         input_file = Path(job.dst_file)
-        output_path = str(input_file.with_name(f"{input_file.stem}_encode.{settings_codec}"))
-
+        output_path = str(input_file.with_name(f"{input_file.stem}_encode.{settings_codec.value}"))
+        
         args = [
             'ffmpeg',
             '-i', job.dst_file,
             '-map', f'0:{job.dst_aud_id}',
-            '-c:a', ffmpeg_codec,
+            *cls._get_codec_params(settings_codec),
             '-y',  # Overwrite output file if it exists
             output_path
         ]
-        return args, output_path, ffmpeg_codec
+        return args, output_path
     
     @classmethod
     def encode_lossless_audio(cls, job):
@@ -123,9 +148,9 @@ class FFmpeg:
         try:
             log_prefix  = f"[Job {job.idx} - FFmpeg]"
 
-            settings_codec = s.config.encode_ffmpeg_codec.value
-            args, output_path, codec = cls._get_audio_encode_args(job, settings_codec)
-            cu.print_warning(f"{log_prefix} Encoding audio track using {codec}", nl_before=False, wait=False)
+            settings_codec = s.config.encode_ffmpeg_codec
+            args, output_path = cls._get_audio_encode_args(job, settings_codec)
+            cu.print_warning(f"{log_prefix} Encoding audio track to {settings_codec.name}", nl_before=False, wait=False)
            
             subprocess.run(
                 args,
@@ -136,7 +161,7 @@ class FFmpeg:
             )
             
             job.merge_audio_encode_done = True
-            job.merge_audio_encode_codec = codec
+            job.merge_audio_encode_codec = settings_codec.name
             return output_path
         except Exception as e:
             cu.print_error(f"{log_prefix} An error occurred during audio encoding: {e}")

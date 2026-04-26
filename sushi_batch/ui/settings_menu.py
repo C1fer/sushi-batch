@@ -2,6 +2,7 @@ from prettytable import PrettyTable
 
 from .prompts import choice_prompt, confirm_prompt, input_prompt
 from .sushi_advanced_args_menu import configure_advanced_sushi_args
+from.codec_bitrates_config_menu import configure_audio_encode_bitrates
 
 from ..models.settings import Settings
 
@@ -19,19 +20,20 @@ QUEUE_THEMES = {
 
 MENU_OPTIONS = [
     (1, "Change a Setting"),
-    (2, "Configure Advanced Sushi Arguments"),
-    (3, "Restore Default Settings"),
-    (4, "Clear Logs"),
-    (5, "Return to Main Menu")
+    (2, "Configure Advanced Sushi Arguments", lambda o: o.enable_sushi_advanced_args),
+    (3, "Configure Audio Encoding Bitrates", lambda o: o.encode_lossless_audio_before_merging),
+    (4, "Restore Default Settings"),
+    (5, "Clear Logs"),
+    (6, "Return to Main Menu")
 ]
 
 
 def _get_menu_options(settings_obj):
     """Return top-level settings menu options with visibility rules applied."""
     return [
-        option
+        option[:2]
         for option in MENU_OPTIONS
-        if not (option[0] == 2 and not settings_obj.enable_sushi_advanced_args)
+        if len(option) == 2 or (len(option) == 3 and option[2](settings_obj))
     ]
 
 SECTION_SUB_OPTIONS = [
@@ -55,7 +57,7 @@ def _get_formatted_value(value):
             theme_name = QUEUE_THEMES.get(value, "Unknown")
             return f"{cu.Fore.MAGENTA}{theme_name}{cu.style_reset}"
         case AudioEncodeCodec():
-            return f"{cu.Fore.MAGENTA}{value.name}{cu.style_reset}"
+            return f"{cu.Fore.MAGENTA}{value.value}{cu.style_reset}"
         case _:
             _color = cu.Fore.YELLOW if value else cu.Fore.LIGHTBLACK_EX
             _value = value if value else "Not set"
@@ -79,7 +81,7 @@ def _get_settings_rows(obj):
         # Merge - Workflow Section
         (Section.MERGE_WRK, "Merge automatically on sync completion", "merge_files_after_execution", obj.merge_files_after_execution),
         (Section.MERGE_WRK, "Encode lossless audio before merging", "encode_lossless_audio_before_merging", obj.encode_lossless_audio_before_merging),
-        (Section.MERGE_WRK, "Audio codec for lossless encoding", "encode_ffmpeg_codec", obj.encode_ffmpeg_codec) if obj.encode_lossless_audio_before_merging else None,
+        (Section.MERGE_WRK, "Encoding audio codec", "encode_ffmpeg_codec", obj.encode_ffmpeg_codec) if obj.encode_lossless_audio_before_merging else None,
         (Section.MERGE_WRK, "Resample synced sub before merge", "resample_subs_on_merge", obj.resample_subs_on_merge),
         (Section.MERGE_WRK, "Delete generated subtitle files after merge", "delete_generated_files_after_merge", obj.delete_generated_files_after_merge, divider_flag),
 
@@ -130,7 +132,6 @@ def _select_queue_theme():
         return None
 
     return next(theme for theme, label in QUEUE_THEMES.items() if label == options[choice_idx - 1][1])
-
 
 def _select_audio_codec():
     """Display audio codec options and update setting based on user selection"""
@@ -223,10 +224,12 @@ def show_settings_menu(settings_obj):
             case 2:
                 configure_advanced_sushi_args(settings_obj)
             case 3:
+                configure_audio_encode_bitrates(settings_obj)
+            case 4:
                 if confirm_prompt.get():
                     settings_obj.restore()
                     cu.print_success("Settings restored to default values.")
-            case 4:
+            case 5:
                 if confirm_prompt.get("Are you sure you want to clear the logs? This action cannot be undone.", nl_before=True, destructive=True):
                     fu.clear_logs(settings_obj.data_path)
                     cu.print_success("Logs cleared.")
