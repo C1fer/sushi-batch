@@ -1,4 +1,5 @@
-from ..utils import console_utils as cu
+import re
+
 from ..utils import constants
 
 
@@ -79,3 +80,26 @@ class Stream:
         for stream in streams:
             if stream.id == stream_id:
                 return constants.subtitle_codec_extension_map.get(stream.codec, None)
+            
+    @staticmethod
+    def get_codec_from_display_name(display_name):
+        """Get codec name from the constructor-built display string."""
+        if not display_name:
+            return None
+
+        display_name = str(display_name).strip()
+        if " - " not in display_name:
+            return None
+
+        suffix = display_name.split(" - ", 1)[1]
+        parts = [part.strip() for part in suffix.split(", ") if part.strip()]
+
+        if len(parts) >= 2:
+            return parts[1]
+
+        match = re.search(r"^.+? - .+?, (?P<codec>[^,]+)(?:,|$)", display_name)
+        if match:
+            return match.group("codec").strip()
+
+        return None
+        

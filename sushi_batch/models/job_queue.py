@@ -124,6 +124,21 @@ class JobQueue:
             cu.print_warning(f"[Job {job.idx} - SubResampler] Subtitle could not be resampled. Merging synced subtitle instead.", nl_before=False, wait=False)
             return False
         
+    def _encode_audio_before_merge(self, job):
+        """Encode audio file before merging if selected in settings. 
+        Skipped if source audio codec is already compatible with selected codec or if no audio stream is found.
+        """
+        if not FFmpeg.is_audio_encode_needed(job):
+            return None
+        
+        output_path = FFmpeg.encode_lossless_audio(job)
+        if output_path:
+            cu.print_success(f"[Job {job.idx} - FFmpeg] Audio Track encoded successfully.", nl_before=False, wait=False)
+            return output_path
+        else:
+            cu.print_warning(f"[Job {job.idx} - FFmpeg] Audio could not be encoded. Merging original audio track instead.", nl_before=False, wait=False)
+            return None
+        
     def _clean_generated_files(self, job_list, confirm_deletion=True):
         """Delete files generated for the specified jobs.
         This includes intermediate subtitle files generated for syncing and resampling.
@@ -136,12 +151,10 @@ class JobQueue:
         
     def merge_completed_video_jobs(self, selection_type, selected_jobs=None):
         """ Generate a new video file from completed video tasks """
-        def _run_merge():
-            use_resampled_sub = False
-            if do_resample:
-                use_resampled_sub = self._resample_before_merge(job)
-                pass
-            MKVMerge.run(job, use_resampled_sub=use_resampled_sub)
+        def _run_merge(job, do_resample, do_encode_audio):
+            encoded_audio_path = self._encode_audio_before_merge(job) if do_encode_audio else None
+            use_resampled_sub = self._resample_before_merge(job) if do_resample else False
+            MKVMerge.run(job, use_resampled_sub=use_resampled_sub, encoded_audio_path=encoded_audio_path)
             self.save()
 
         completed_jobs = [
@@ -157,13 +170,14 @@ class JobQueue:
 
         cu.print_subheader("Merging files")
         
+        do_audio_encode = settings.config.encode_lossless_audio_before_merging
         do_resample = True
         if settings.config.resample_subs_on_merge and not SubResampler.is_installed:
             do_resample = False
             cu.print_error("Aegisub-CLI could not be found. Subtitle resampling will be skipped.")
 
         for job in completed_jobs:
-            utils.interrupt_signal_handler(_run_merge)()
+            utils.interrupt_signal_handler(_run_merge)(job, do_resample, do_audio_encode)
 
         if settings.config.delete_generated_files_after_merge:
             successfully_merged_jobs = [job for job in completed_jobs if job.merged]
@@ -270,10 +284,12 @@ class JobQueue:
             "src_aud_display": src_aud_selected.display_name,
             "dst_aud_id": dst_aud_selected.id,
             "dst_aud_display": dst_aud_selected.display_name,
+            "dst_aud_codec": dst_aud_selected.codec,
+            "dst_aud_lang": Stream.get_stream_lang(dst_aud_streams, dst_aud_selected.id),
             "src_sub_id": src_sub_selected.id,
             "src_sub_display": src_sub_selected.display_name,
-            "src_sub_lang": Stream.get_stream_lang(src_sub_streams, src_sub_selected.id),
-            "src_sub_name": Stream.get_stream_name(src_sub_streams, src_sub_selected.id),
+            "src_sub_lang": src_sub_selected.lang,
+            "src_sub_name": src_sub_selected.title,
             "src_sub_ext": Stream.get_subtitle_extension(src_sub_streams, src_sub_selected.id),
             "dst_vid_width": dst_media_info.get('video', [{}])[0].get('width'),
             "dst_vid_height": dst_media_info.get('video', [{}])[0].get('height')

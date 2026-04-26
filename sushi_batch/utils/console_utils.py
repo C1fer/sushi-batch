@@ -24,7 +24,7 @@ def print_subheader(message):
     _print_colored(message, fore.YELLOW, nl_before=True)
 
 
-def print_error(message, wait=True):
+def print_error(message, wait=True, nl_before=False):
     _print_colored(message, fore.LIGHTRED_EX)
     if wait:
         sleep(1)

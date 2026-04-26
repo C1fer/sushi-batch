@@ -48,11 +48,20 @@ class MKVMerge:
         ))
 
     @classmethod
-    def _add_destination_file_args(cls, args, job):
+    def _add_destination_file_args(cls, args, job, encoded_audio_path=None):
         """Add destination file specific arguments."""
+        audio_track_arg = ""
+
+        if s.config.dst_copy_audio_tracks:
+            if encoded_audio_path:
+                _track_lang = job.dst_aud_lang if job.dst_aud_lang else "und"
+                audio_track_arg = ["--default-track", "0:1", "--language", f"0:{_track_lang}", encoded_audio_path, "--no-audio"]
+            elif job.dst_aud_id is not None:
+                audio_track_arg = ["--audio-tracks", str(job.dst_aud_id)]
+        
         args.extend(filter(lambda v: v is not None,
             [
-                *(["--audio-tracks", str(job.dst_aud_id)] if s.config.dst_copy_audio_tracks else [None]),
+                *audio_track_arg,
                 "--no-attachments" if not s.config.dst_copy_attachments else None,
                 "--no-chapters" if not s.config.dst_copy_chapters else None,
                 "--no-global-tags" if not s.config.dst_copy_global_tags else None,
@@ -79,7 +88,7 @@ class MKVMerge:
         ])
 
     @classmethod
-    def _get_merge_args(cls, job, use_resampled_sub=False):
+    def _get_merge_args(cls, job, use_resampled_sub=False, encoded_audio_path=None):
         output_file = MKVMerge._get_out_filepath(job.dst_file)
 
         args = [
@@ -89,7 +98,7 @@ class MKVMerge:
         ]
 
         cls._add_source_file_args(args, job)
-        cls._add_destination_file_args(args, job)
+        cls._add_destination_file_args(args, job, encoded_audio_path)
         cls._add_subtitle_args(args, job, use_resampled_sub)
         return args
 
@@ -101,9 +110,9 @@ class MKVMerge:
             print(f"{cu.fore.LIGHTYELLOW_EX}{warnings}\n")
            
     @classmethod
-    def run(cls, job, use_resampled_sub=False):
+    def run(cls, job, use_resampled_sub=False, encoded_audio_path=None):
         try:     
-            args = cls._get_merge_args(job, use_resampled_sub)
+            args = cls._get_merge_args(job, use_resampled_sub, encoded_audio_path)
             output_file = path.normpath(args[2])
 
             log_prefix = f"[Job {job.idx} - MKVMerge]"
@@ -128,13 +137,13 @@ class MKVMerge:
                 match (mkv_merge.returncode):
                     case 0:
                         sp.ok("✅")
-                        job.merged = True
+                        # job.merged = True
                         job.merged_file = output_file
                         job.merge_has_warnings = False
                     case 1:
                         sp.ok("⚠️")
                         job.merged_file = output_file
-                        job.merged = True
+                        # job.merged = True
                         job.merge_has_warnings = True
                         if not s.config.save_mkvmerge_logs:
                             cls._show_warnings(stdout, log_prefix)
