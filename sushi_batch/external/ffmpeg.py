@@ -144,8 +144,7 @@ class FFmpeg:
     @classmethod
     def _get_audio_encode_args(cls, job, settings_codec):
         """Constructs ffmpeg arguments for encoding audio with the selected codec."""
-        input_file = Path(job.dst_file)
-        output_path = str(input_file.with_name(f"{input_file.stem}_encode.{settings_codec.value}"))
+        output_path = f"{job.dst_file}_encode.{settings_codec.name.lower()}"
         codec_params, selected_bitrate = cls._get_codec_params(job, settings_codec)
         
         args = [
@@ -166,7 +165,7 @@ class FFmpeg:
 
             settings_codec = s.config.merge_workflow.get("encode_ffmpeg_codec")
             args, output_path, selected_bitrate = cls._get_audio_encode_args(job, settings_codec)
-            cu.print_warning(f"{log_prefix} Encoding audio track to {settings_codec.name} ({selected_bitrate})", nl_before=False, wait=False)
+            cu.print_warning(f"{log_prefix} Encoding audio track to {settings_codec.value} ({selected_bitrate})", nl_before=False, wait=False)
            
             subprocess.run(
                 args,

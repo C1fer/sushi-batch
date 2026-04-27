@@ -83,7 +83,7 @@ def _get_settings_rows(obj):
         (Section.MERGE_WRK, "Encode lossless audio before merging", "merge_workflow.encode_lossless_audio_before_merging", obj.merge_workflow.get("encode_lossless_audio_before_merging")),
         (Section.MERGE_WRK, "Encoding audio codec", "merge_workflow.encode_ffmpeg_codec", obj.merge_workflow.get("encode_ffmpeg_codec")) if obj.merge_workflow.get("encode_lossless_audio_before_merging") else None,
         (Section.MERGE_WRK, "Resample synced sub before merge", "merge_workflow.resample_subs_on_merge", obj.merge_workflow.get("resample_subs_on_merge")),
-        (Section.MERGE_WRK, "Delete generated subtitle files after merge", "merge_workflow.delete_generated_files_after_merge", obj.merge_workflow.get("delete_generated_files_after_merge"), divider_flag),
+        (Section.MERGE_WRK, "Delete generated audio/subtitle files after merge", "merge_workflow.delete_generated_files_after_merge", obj.merge_workflow.get("delete_generated_files_after_merge"), divider_flag),
 
         # Merge - Source File Section
         (Section.MERGE_SRC, "Copy attachments", "merge_src_file.copy_attachments", obj.merge_src_file.get("copy_attachments")),

@@ -5,6 +5,7 @@ from sushi_batch.external.ffmpeg import FFmpeg
 from ..ui.prompts import checklist_dialog, choice_prompt, input_prompt
 
 from ..utils import utils
+from ..utils import constants
 from ..utils import console_utils as cu
 from ..utils import file_utils as fu
 from ..utils.json_utils import JobDecoder, JobEncoder
@@ -144,7 +145,7 @@ class JobQueue:
         This includes intermediate subtitle files generated for syncing and resampling.
         """
         if any(job.sync_status == Status.COMPLETED for job in job_list):
-            if confirm_deletion and not confirm_prompt.get("Delete generated subtitle files?", destructive=True):
+            if confirm_deletion and not confirm_prompt.get("Delete generated files (excluding merged video files)?", destructive=True):
                 return
 
             fu.clean_generated_files(job_list)
