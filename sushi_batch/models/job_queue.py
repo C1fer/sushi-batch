@@ -282,15 +282,19 @@ class JobQueue:
         streams_info = {
             "src_aud_id": src_aud_selected.id,
             "src_aud_display": src_aud_selected.display_name,
-            "dst_aud_id": dst_aud_selected.id,
-            "dst_aud_display": dst_aud_selected.display_name,
-            "dst_aud_codec": dst_aud_selected.codec,
-            "dst_aud_lang": Stream.get_stream_lang(dst_aud_streams, dst_aud_selected.id),
+
             "src_sub_id": src_sub_selected.id,
             "src_sub_display": src_sub_selected.display_name,
             "src_sub_lang": src_sub_selected.lang,
             "src_sub_name": src_sub_selected.title,
             "src_sub_ext": Stream.get_subtitle_extension(src_sub_streams, src_sub_selected.id),
+
+            "dst_aud_id": dst_aud_selected.id,
+            "dst_aud_display": dst_aud_selected.display_name,
+            "dst_aud_codec": dst_aud_selected.codec,
+            "dst_aud_lang": dst_aud_selected.lang,
+            "dst_aud_channel_layout": dst_aud_selected.channel_layout,
+            
             "dst_vid_width": dst_media_info.get('video', [{}])[0].get('width'),
             "dst_vid_height": dst_media_info.get('video', [{}])[0].get('height')
         }

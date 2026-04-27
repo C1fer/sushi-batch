@@ -1,16 +1,32 @@
 import re
 
-from ..utils import constants
 
-
+SUBTITLE_CODEC_MAP = {
+    "ass": ".ass",
+    "subrip": ".srt",
+    "ssa": ".ssa"
+}
+    
 class Stream:
-    def __init__(self, track_id, codec, lang, info, title=""):
+    def __init__(
+        self,
+        track_id=None,
+        codec=None,
+        lang=None,
+        title=None,
+        channel_layout=None,
+        default=None,
+        forced=None,
+        display_name=None,
+    ):
         self.id = track_id
         self.codec = codec
         self.lang = lang
-        self.info = info
         self.title = title
-        self.display_name = f"{track_id} - {lang}, {codec}{info}" if title == "" else f"{track_id} - {title}, {codec}, {lang}{info}"
+        self.channel_layout = channel_layout
+        self.default = default
+        self.forced = forced
+        self.display_name = display_name
 
     @classmethod
     def get_audio_streams_from_probe(cls, probed_tracks):
@@ -23,17 +39,35 @@ class Stream:
             track_id = track.get('index')
             codec = track.get('codec_name')
             title = track.get('tags', {}).get('title', '')
+            channel_layout = track.get('channel_layout', '')
             lang = track.get('tags', {}).get('language', 'und')
-            
+            default = track.get('disposition', {}).get('default', 0) == 1
+            forced = track.get('disposition', {}).get('forced', 0) == 1
+
             info = ''.join(filter(None, [
                 f", {track.get('sample_rate')} Hz" if track.get('sample_rate') else None,
-                f", {track.get('channel_layout')}" if track.get('channel_layout') else None,
+                f", {channel_layout}" if channel_layout else None,
                 f", {track.get('bits_per_raw_sample')} bits" if track.get('bits_per_raw_sample') else None,
-                " (forced)" if track.get('disposition', {}).get('forced', 0) == 1 else None,
-                " (default)" if track.get('disposition', {}).get('default', 0) == 1 else None
+                " (forced)" if forced else None,
+                " (default)" if default else None
             ]))
 
-            streams.append(Stream(track_id, codec, lang, info, title))
+            display_name = (
+                f"{track_id} - {lang}, {codec}{info}"
+                if title == ""
+                else f"{track_id} - {title}, {codec}, {lang}{info}"
+            )
+
+            streams.append(Stream(
+                track_id=track_id, 
+                codec=codec, 
+                lang=lang, 
+                title=title,
+                channel_layout=channel_layout,
+                default=default,
+                forced=forced,
+                display_name=display_name,
+            ))
                
         return streams
     
@@ -49,13 +83,30 @@ class Stream:
             codec = track.get('codec_name', None)
             title = track.get('tags', {}).get('title', '')
             lang = track.get('tags', {}).get('language', 'und')
+            forced = track.get('disposition', {}).get('forced', 0) == 1
+            default = track.get('disposition', {}).get('default', 0) == 1
+
 
             info = ''.join(filter(None, [
                 " (forced)" if track.get('disposition', {}).get('forced', 0) == 1 else None,
                 " (default)" if track.get('disposition', {}).get('default', 0) == 1 else None
             ]))
 
-            streams.append(Stream(track_id, codec, lang, info, title))
+            display_name = (
+                f"{track_id} - {lang}, {codec}{info}"
+                if title == ""
+                else f"{track_id} - {title}, {codec}, {lang}{info}"
+            )
+
+            streams.append(Stream(
+                track_id=track_id,
+                codec=codec,
+                lang=lang,
+                title=title,
+                default=default,
+                forced=forced,
+                display_name=display_name,
+            ))
                
         return streams
     
@@ -79,7 +130,7 @@ class Stream:
         """Get subtitle file extension based on stream codec"""
         for stream in streams:
             if stream.id == stream_id:
-                return constants.subtitle_codec_extension_map.get(stream.codec, None)
+                return SUBTITLE_CODEC_MAP.get(stream.codec, None)
             
     @staticmethod
     def get_codec_from_display_name(display_name):
@@ -102,4 +153,12 @@ class Stream:
             return match.group("codec").strip()
 
         return None
+    
+    @staticmethod
+    def get_channel_layout_from_display_name(display_name):
+        """Get channel layout from the constructor-built display string."""
+        if not display_name:
+            return None
         
+        keys = {"stereo", "5.1", "7.1"}
+        return next((key for key in keys if f", {key}" in display_name), None)

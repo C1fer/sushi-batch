@@ -3,11 +3,6 @@ from ..models.enums import Task
 VIDEO_TASKS = (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL)
 AUDIO_TASKS = (Task.AUDIO_SYNC_DIR, Task.AUDIO_SYNC_FIL)
 
-subtitle_codec_extension_map = {
-    "ass": ".ass",
-    "subrip": ".srt",
-    "ssa": ".ssa"
-}
 
 COLOR_ACCENT = "#56b6c2"
 COLOR_DESTRUCTIVE = "#e06c75"

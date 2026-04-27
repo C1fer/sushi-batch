@@ -33,6 +33,12 @@ LOSSY_AUDIO_CODEC_OPTIONS = {
 
 LOSSLESS_AUDIO_CODECS = {"flac", "pcm", "wav"}
 
+PROBE_CHANNEL_LAYOUT_MAP = {
+    "stereo": AudioChannelLayout.STEREO,
+    "5.1": AudioChannelLayout.SURROUND_5_1,
+    "7.1": AudioChannelLayout.SURROUND_7_1,
+}
+
 class FFmpeg:
     is_installed = utils.is_app_installed("ffprobe")
 
@@ -114,37 +120,42 @@ class FFmpeg:
             return False
 
     @classmethod
-    def _get_codec_params(cls, settings_codec):
+    def _get_codec_params(cls, job, settings_codec):
         ffmpeg_codec_params = LOSSY_AUDIO_CODEC_OPTIONS.get(settings_codec, None)
         if not ffmpeg_codec_params:
             raise ValueError(f"Unsupported audio codec selected for encoding: {settings_codec.name}")
+        
+        track_layout = job.dst_aud_channel_layout if job.dst_aud_channel_layout else Stream.get_channel_layout_from_display_name(job.dst_aud_display)
+        layout_enum = PROBE_CHANNEL_LAYOUT_MAP.get(track_layout, None)
+        if not layout_enum:
+            cu.print_warning(f"[Job {job.idx} - FFmpeg] Unknown or unsupported channel layout '{track_layout}'. Defaulting to stereo.", nl_before=False, wait=False)
+            layout_enum = AudioChannelLayout.STEREO
 
-        ffmpeg_codec_params[BITRATE_KEY] = (
-            s.config.merge_workflow.get("encode_audio_bitrates", {})
-            .get(settings_codec.name, {})
-            .get("STEREO", None)
-        )  # TODO: Map based on channel layout instead of defaulting to stereo bitrate
+        selected_bitrate = s.config.merge_workflow.get("encode_audio_bitrates").get(settings_codec.name, {}).get(layout_enum.name, None)
+
+        ffmpeg_codec_params[BITRATE_KEY] = selected_bitrate
 
         args = []
         for key, value in ffmpeg_codec_params.items():
             args.extend([key, value])
-        return args  
+        return args, selected_bitrate
     
     @classmethod
     def _get_audio_encode_args(cls, job, settings_codec):
         """Constructs ffmpeg arguments for encoding audio with the selected codec."""
         input_file = Path(job.dst_file)
         output_path = str(input_file.with_name(f"{input_file.stem}_encode.{settings_codec.value}"))
+        codec_params, selected_bitrate = cls._get_codec_params(job, settings_codec)
         
         args = [
             'ffmpeg',
             '-i', job.dst_file,
             '-map', f'0:{job.dst_aud_id}',
-            *cls._get_codec_params(settings_codec),
+            *codec_params,
             '-y',  # Overwrite output file if it exists
             output_path
         ]
-        return args, output_path
+        return args, output_path, selected_bitrate
     
     @classmethod
     def encode_lossless_audio(cls, job):
@@ -153,8 +164,8 @@ class FFmpeg:
             log_prefix  = f"[Job {job.idx} - FFmpeg]"
 
             settings_codec = s.config.merge_workflow.get("encode_ffmpeg_codec")
-            args, output_path = cls._get_audio_encode_args(job, settings_codec)
-            cu.print_warning(f"{log_prefix} Encoding audio track to {settings_codec.name}", nl_before=False, wait=False)
+            args, output_path, selected_bitrate = cls._get_audio_encode_args(job, settings_codec)
+            cu.print_warning(f"{log_prefix} Encoding audio track to {settings_codec.name} ({selected_bitrate})", nl_before=False, wait=False)
            
             subprocess.run(
                 args,
