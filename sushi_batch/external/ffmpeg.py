@@ -13,11 +13,15 @@ from ..models.enums import AudioEncodeCodec, AudioChannelLayout
 BITRATE_KEY = "-b:a"
 
 LOSSY_AUDIO_CODEC_OPTIONS = {
-    AudioEncodeCodec.OPUS: {
+    AudioEncodeCodec.OPUS: { # Approximated to opusenc default params
         "-c:a": "libopus",
         BITRATE_KEY: "",
         "-vbr": "on",
-        "-compression_level": "10"
+        "-af": "asetpts=N/SR/TB", # Ensure proper timestamp handling, soxr: high quality resampling to opus standard freq. rate (48kHz)
+        "-compression_level": "10",
+        "-application": "audio",
+        "-frame_duration": "20",
+        "-map_chapters": "-1", # Exclude chapters to avoid issues when merging back with mkvmerge
     },
     AudioEncodeCodec.AAC: {
         "-c:a": "aac",
