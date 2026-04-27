@@ -155,8 +155,9 @@ def _show_card_theme(queued_jobs, current_task):
                         "value": merged_color + merged_icon + " " + merged_label,
                         "children": [
                             ("Generated File", f"{merged_child_color}{job.merged_file}") if job.merged_file is not None else None,
-                            ("Resampled", f"{merged_child_color}Yes") if job.resample_done else None,
                             ("Warning", MERGE_WARNING_MESSAGE) if job.merge_has_warnings else None,
+                            ("Resampled", f"{cu.fore.GREEN}Yes") if job.resample_done else None,
+                            ("Audio Encoded", f"{cu.fore.GREEN}Yes ({job.merge_audio_encode_codec.lower()})") if job.merge_audio_encode_done else None,
                         ],
                     }
                 )
@@ -225,7 +226,9 @@ def _show_yaml_like_theme(queued_jobs, current_task):
                         if job.merged_file:
                             print(f"{cu.fore.LIGHTBLACK_EX}  merged_file: {merge_child_color}{job.merged_file}")
                         if job.resample_done:
-                            print(f"{cu.fore.LIGHTBLACK_EX}  resampled: {merge_child_color}true")
+                            print(f"{cu.fore.LIGHTBLACK_EX}  resampled: {cu.fore.GREEN}true")
+                        if job.merge_audio_encode_done:
+                            print(f"{cu.fore.LIGHTBLACK_EX}  audio_encoded: {cu.fore.GREEN}true ({job.merge_audio_encode_codec.lower()})")
                     case False:
                         print(f"{cu.fore.LIGHTYELLOW_EX}  merge_status: pending")
                     case _:

@@ -137,13 +137,13 @@ class MKVMerge:
                 match (mkv_merge.returncode):
                     case 0:
                         sp.ok("✅")
-                        # job.merged = True
+                        job.merged = True
                         job.merged_file = output_file
                         job.merge_has_warnings = False
                     case 1:
                         sp.ok("⚠️")
                         job.merged_file = output_file
-                        # job.merged = True
+                        job.merged = True
                         job.merge_has_warnings = True
                         if not s.config.general.get("save_mkvmerge_logs"):
                             cls._show_warnings(stdout, log_prefix)
