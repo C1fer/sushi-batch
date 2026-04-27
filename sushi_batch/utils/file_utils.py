@@ -151,7 +151,7 @@ def clean_generated_files(job_list):
 
             for suffix in suffixes:
                 generated_file = Path(f"{job.dst_file}{suffix}")
-r                generated_file.unlink(missing_ok=True)
+                generated_file.unlink(missing_ok=True)
         cu.print_success("Generated files deleted successfully.")
     except OSError as e:
         cu.print_error(f"Error deleting generated files: {e}")

@@ -177,6 +177,7 @@ class FFmpeg:
             
             job.merge_audio_encode_done = True
             job.merge_audio_encode_codec = settings_codec.name
+            job.merge_audio_encode_bitrate = selected_bitrate
             return output_path
         except Exception as e:
             cu.print_error(f"{log_prefix} An error occurred during audio encoding: {e}")
