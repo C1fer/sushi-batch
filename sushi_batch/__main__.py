@@ -44,9 +44,17 @@ def _load_startup_data():
         return
 
 def main():
-    if not FFmpeg.is_installed:
-        cu.print_error("FFmpeg could not be found! \nInstall or add the program to PATH before running the tool", False)
-        sys.exit(1)
+    ffmpeg_requirements = {
+        "FFmpeg": FFmpeg.is_installed,
+        "FFprobe": FFmpeg.is_probe_installed,
+    }
+
+    for app_name, is_installed in ffmpeg_requirements.items():
+        if not is_installed:
+            cu.print_error(f"{app_name} could not be found! \nInstall or add the program to PATH before running the tool", False)
+            cu.print_subheader(f"{app_name} can be downloaded from: https://ffmpeg.org/download.html")
+            sys.exit(1)
+
 
     try:
         _load_startup_data()

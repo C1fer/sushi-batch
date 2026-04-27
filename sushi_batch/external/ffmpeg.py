@@ -41,7 +41,8 @@ PROBE_CHANNEL_LAYOUT_MAP = {
 }
 
 class FFmpeg:
-    is_installed = utils.is_app_installed("ffprobe")
+    is_installed = utils.is_app_installed("ffmpeg")
+    is_probe_installed = utils.is_app_installed("ffprobe")
 
     @classmethod
     def _get_probe_args(cls, filepath, stream_selector=None):
