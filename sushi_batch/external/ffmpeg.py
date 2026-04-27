@@ -34,6 +34,7 @@ LOSSY_AUDIO_CODEC_OPTIONS = {
 LOSSLESS_AUDIO_CODECS = {"flac", "pcm", "wav"}
 
 PROBE_CHANNEL_LAYOUT_MAP = {
+    "mono": AudioChannelLayout.MONO,
     "stereo": AudioChannelLayout.STEREO,
     "5.1": AudioChannelLayout.SURROUND_5_1,
     "7.1": AudioChannelLayout.SURROUND_7_1,

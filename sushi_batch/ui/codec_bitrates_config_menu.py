@@ -9,58 +9,74 @@ from ..models.settings import DEFAULT_ENCODE_AUDIO_BITRATES
 
 
 CODEC_OPTIONS = {
-    AudioEncodeCodec.OPUS: {
+   AudioEncodeCodec.OPUS: {
+        AudioChannelLayout.MONO: [
+            ("64k (Recommended)", "64k"),
+            ("48k (Efficient)", "48k"),
+            ("32k (Minimum recommended)", "32k"),
+        ],
         AudioChannelLayout.STEREO: [
-            ("160k (High-quality stereo music)", "160k"),
-            ("128k (Balanced stereo)", "128k"),
-            ("96k (Efficient stereo)", "96k"),
-            ("64k (Low bitrate / voice)", "64k"),
+            ("192k (Placebo)", "192k"),
+            ("160k (Covers edge cases)", "160k"),
+            ("128k (Recommended)", "128k"),
+            ("96k (Efficient)", "96k"),
         ],
         AudioChannelLayout.SURROUND_5_1: [
-            ("384k (Very high-quality 5.1 surround)", "384k"),
-            ("320k (High-quality 5.1 surround)", "320k"),
-            ("256k (Good 5.1 surround)", "256k"),
+            ("384k (Placebo)", "384k"),
+            ("320k (Recommended)", "320k"),
+            ("256k (Efficient)", "256k"),
+            ("192k (Minimum recommended)", "192k"),
         ],
         AudioChannelLayout.SURROUND_7_1: [
-            ("512k (High-quality 7.1 surround)", "512k"),
-            ("448k (Balanced 7.1 surround)", "448k"),
-            ("384k (Minimum recommended 7.1)", "384k"),
+            ("510k (Placebo)", "510k"), # Capped at Opus spec limit
+            ("448k (Recommended)", "448k"),
+            ("384k (Efficient)", "384k"),
         ],
     },
 
     AudioEncodeCodec.AAC: {
+        AudioChannelLayout.MONO: [
+            ("96k (Placebo)", "96k"),
+            ("64k (Recommended)", "64k"),
+            ("48k (Efficient / Voice)", "48k"),
+        ],
         AudioChannelLayout.STEREO: [
-            ("256k (High-quality stereo / near-transparent)", "256k"),
-            ("192k (Recommended stereo)", "192k"),
-            ("128k (Balanced stereo)", "128k"),
-            ("96k (Low bitrate stereo / voice)", "96k"),
+            ("256k (Placebo)", "256k"),
+            ("192k (Recommended)", "192k"),
+            ("128k (Efficient)", "128k"),
         ],
         AudioChannelLayout.SURROUND_5_1: [
-            ("512k (High-quality 5.1 surround)", "512k"),
-            ("448k (Balanced 5.1 surround)", "448k"),
-            ("384k (Minimum recommended 5.1)", "384k"),
+            ("512k (Placebo)", "512k"),
+            ("448k (Recommended)", "448k"),
+            ("384k (Efficient)", "384k"),
         ],
         AudioChannelLayout.SURROUND_7_1: [
-            ("768k (High-quality 7.1 surround)", "768k"),
-            ("640k (Balanced 7.1 surround)", "640k"),
-            ("576k (Minimum recommended 7.1)", "576k"),
+            ("768k (Placebo)", "768k"),
+            ("640k (Recommended)", "640k"),
+            ("576k (Efficient)", "576k"),
         ],
     },
 
-    AudioEncodeCodec.EAC3: {
+   AudioEncodeCodec.EAC3: {
+        AudioChannelLayout.MONO: [
+            ("128k (Placebo)", "128k"),
+            ("96k (Recommended)", "96k"),
+            ("64k (Efficient)", "64k"),
+        ],
         AudioChannelLayout.STEREO: [
-            ("256k (High-quality stereo)", "256k"),
-            ("192k (Standard stereo)", "192k"),
-            ("128k (Low bitrate stereo / voice)", "128k"),
+            ("256k (Placebo)", "256k"),
+            ("224k (Recommended)", "224k"), # 224k is a sweet spot for EAC3 Stereo
+            ("160k (Efficient)", "160k"),
         ],
         AudioChannelLayout.SURROUND_5_1: [
-            ("640k (Recommended 5.1 surround)", "640k"),
-            ("512k (High-quality 5.1)", "512k"),
-            ("384k (Efficient 5.1 streaming)", "384k"),
+            ("640k (Placebo)", "640k"),
+            ("448k (Recommended)", "448k"),
+            ("384k (Efficient)", "384k"),
         ],
         AudioChannelLayout.SURROUND_7_1: [
-            ("768k (High-quality 7.1 surround)", "768k"),
-            ("640k (Balanced 7.1 surround)", "640k"),
+            ("1024k (Placebo)", "1024k"), 
+            ("768k (Recommended)", "768k"),
+            ("640k (Efficient)", "640k"),
         ],
     },
 }
@@ -101,7 +117,7 @@ def _update_layout_bitrate(settings_obj, layout):
     _choice_options.append((len(options) + 1, "Go Back"))
     
     selected = choice_prompt.get(f"Select new bitrate for {layout.value}: ", options=_choice_options)
-    if selected == len(options):
+    if selected == len(_choice_options):
         return
     
     new_bitrate = options[selected - 1][1]

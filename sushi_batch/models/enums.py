@@ -76,6 +76,7 @@ class AudioEncodeCodec(Enum):
     EAC3 = "EAC-3"
 
 class AudioChannelLayout(Enum):
+    MONO = "Mono"
     STEREO = "Stereo"
     SURROUND_5_1 = "Surround (5.1)"
     SURROUND_7_1 = "Surround (7.1)"
