@@ -2,7 +2,7 @@ from prettytable import PrettyTable
 
 from .prompts import choice_prompt, confirm_prompt, input_prompt
 from .sushi_advanced_args_menu import configure_advanced_sushi_args
-from.codec_bitrates_config_menu import configure_audio_encode_bitrates
+from.encode_codec_settings_menu import configure_audio_encode_settings
 
 from ..models.settings import Settings
 
@@ -21,7 +21,7 @@ QUEUE_THEMES = {
 MENU_OPTIONS = [
     (1, "Change a Setting"),
     (2, "Configure Advanced Sushi Arguments", lambda o: o.sync_workflow.get("enable_sushi_advanced_args")),
-    (3, "Configure Audio Encoding Bitrates", lambda o: o.merge_workflow.get("encode_lossless_audio_before_merging")),
+    (3, "Configure Audio Encode Settings", lambda o: o.merge_workflow.get("encode_lossless_audio_before_merging")),
     (4, "Restore Default Settings"),
     (5, "Clear Logs"),
     (6, "Return to Main Menu")
@@ -81,7 +81,7 @@ def _get_settings_rows(obj):
         # Merge - Workflow Section
         (Section.MERGE_WRK, "Merge automatically on sync completion", "merge_workflow.merge_files_after_execution", obj.merge_workflow.get("merge_files_after_execution")),
         (Section.MERGE_WRK, "Encode lossless audio before merging", "merge_workflow.encode_lossless_audio_before_merging", obj.merge_workflow.get("encode_lossless_audio_before_merging")),
-        (Section.MERGE_WRK, "Encoding audio codec", "merge_workflow.encode_ffmpeg_codec", obj.merge_workflow.get("encode_ffmpeg_codec")) if obj.merge_workflow.get("encode_lossless_audio_before_merging") else None,
+        (Section.MERGE_WRK, "Encoding audio codec", "merge_workflow.encode_codec", obj.merge_workflow.get("encode_codec")) if obj.merge_workflow.get("encode_lossless_audio_before_merging") else None,
         (Section.MERGE_WRK, "Resample synced sub before merge", "merge_workflow.resample_subs_on_merge", obj.merge_workflow.get("resample_subs_on_merge")),
         (Section.MERGE_WRK, "Delete generated audio/subtitle files after merge", "merge_workflow.delete_generated_files_after_merge", obj.merge_workflow.get("delete_generated_files_after_merge"), divider_flag),
 
@@ -235,7 +235,8 @@ def show_settings_menu(settings_obj):
             case 2:
                 configure_advanced_sushi_args(settings_obj)
             case 3:
-                configure_audio_encode_bitrates(settings_obj)
+                current_codec = settings_obj.merge_workflow.get("encode_codec")
+                configure_audio_encode_settings(settings_obj, current_codec)
             case 4:
                 if confirm_prompt.get():
                     settings_obj.restore()

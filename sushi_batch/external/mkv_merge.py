@@ -50,12 +50,19 @@ class MKVMerge:
     @classmethod
     def _add_destination_file_args(cls, args, job, encoded_audio_path=None):
         """Add destination file specific arguments."""
-        audio_track_arg = ""
+        audio_track_arg = []
 
         if s.config.merge_dst_file.get("copy_audio_tracks"):
             if encoded_audio_path:
                 _track_lang = job.dst_aud_lang if job.dst_aud_lang else "und"
-                audio_track_arg = ["--default-track", "0:1", "--language", f"0:{_track_lang}", encoded_audio_path, "--no-audio"]
+                audio_track_arg = [
+                    "--default-track",
+                    "0:1",
+                    "--language",
+                    f"0:{_track_lang}",
+                    encoded_audio_path,
+                    "--no-audio", # Discard all original audio tracks from dst file since we're adding the encoded track as a new source
+                ]
             elif job.dst_aud_id is not None:
                 audio_track_arg = ["--audio-tracks", str(job.dst_aud_id)]
         

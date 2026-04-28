@@ -80,3 +80,7 @@ class AudioChannelLayout(Enum):
     STEREO = "Stereo"
     SURROUND_5_1 = "Surround (5.1)"
     SURROUND_7_1 = "Surround (7.1)"
+
+class AudioEncoder(Enum):
+    FFMPEG = "FFmpeg"
+    XIPH_OPUSENC = "opusenc"

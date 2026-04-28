@@ -2,7 +2,7 @@ from copy import deepcopy
 from json import JSONDecoder, JSONEncoder
 
 from ..utils import pop_many
-from ...models.enums import QueueTheme, AudioEncodeCodec
+from ...models.enums import AudioEncoder, QueueTheme, AudioEncodeCodec
 
 
 class SettingsEncoder(JSONEncoder):
@@ -11,7 +11,9 @@ class SettingsEncoder(JSONEncoder):
         if isinstance(obj, Settings):
             dct = deepcopy(obj.__dict__)
             dct["general"]["queue_theme"] = obj.general.get("queue_theme").name
-            dct["merge_workflow"]["encode_ffmpeg_codec"] = obj.merge_workflow.get("encode_ffmpeg_codec").name
+            dct["merge_workflow"]["encode_codec"] = obj.merge_workflow.get("encode_codec").name
+            for _, codec_settings in dct["merge_workflow"]["encode_codec_settings"].items():
+                codec_settings["encoder"] = codec_settings.get("encoder").name
             return dct
         return super().default(obj)    
 
@@ -100,8 +102,12 @@ class SettingsDecoder(JSONDecoder):
             dct["queue_theme"] = QueueTheme[dct["queue_theme"]]
             return dct
 
-        if dct.get("encode_ffmpeg_codec", None):
-            dct["encode_ffmpeg_codec"] = AudioEncodeCodec[dct["encode_ffmpeg_codec"]]
+        if dct.get("encode_codec", None):
+            dct["encode_codec"] = AudioEncodeCodec[dct["encode_codec"]]
+            return dct
+        
+        if dct.get("encoder", None):
+            dct["encoder"] = AudioEncoder[dct["encoder"]]
             return dct
         
         return dct

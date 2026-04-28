@@ -10,11 +10,12 @@ from ..models import settings as s
 from ..models.streams import Stream
 from ..models.enums import AudioEncodeCodec, AudioChannelLayout
 
+LIB_KEY = "-c:a"
 BITRATE_KEY = "-b:a"
 
 LOSSY_AUDIO_CODEC_OPTIONS = {
     AudioEncodeCodec.OPUS: { # Approximated to opusenc default params
-        "-c:a": "libopus",
+        LIB_KEY: "",
         BITRATE_KEY: "",
         "-vbr": "on",
         "-af": "asetpts=N/SR/TB", # Ensure proper timestamp handling, soxr: high quality resampling to opus standard freq. rate (48kHz)
@@ -24,13 +25,13 @@ LOSSY_AUDIO_CODEC_OPTIONS = {
         "-map_chapters": "-1", # Exclude chapters to avoid issues when merging back with mkvmerge
     },
     AudioEncodeCodec.AAC: {
-        "-c:a": "aac",
+        LIB_KEY: "",
         BITRATE_KEY: "",
         "-q:a": "2",
         "-profile:a": "aac_low"
     },
     AudioEncodeCodec.EAC3: {
-        "-c:a": "eac3",
+        LIB_KEY: "",
         BITRATE_KEY: ""
     }
 }
@@ -137,9 +138,13 @@ class FFmpeg:
             cu.print_warning(f"[Job {job.idx} - FFmpeg] Unknown or unsupported channel layout '{track_layout}'. Defaulting to stereo.", nl_before=False, wait=False)
             layout_enum = AudioChannelLayout.STEREO
 
-        selected_bitrate = s.config.merge_workflow.get("encode_audio_bitrates").get(settings_codec.name, {}).get(layout_enum.name, None)
-
-        ffmpeg_codec_params[BITRATE_KEY] = selected_bitrate
+        selected_bitrate = s.config.merge_workflow["encode_codec_settings"][settings_codec.name]["bitrates"].get(layout_enum.name, None)
+        selected_encoding_lib = s.config.merge_workflow["encode_codec_settings"][settings_codec.name].get("ffmpeg_lib", None)
+        
+        ffmpeg_codec_params.update({
+            LIB_KEY: selected_encoding_lib,
+            BITRATE_KEY: selected_bitrate
+        })
 
         args = []
         for key, value in ffmpeg_codec_params.items():
@@ -168,7 +173,7 @@ class FFmpeg:
         try:
             log_prefix  = f"[Job {job.idx} - FFmpeg]"
 
-            settings_codec = s.config.merge_workflow.get("encode_ffmpeg_codec")
+            settings_codec = s.config.merge_workflow.get("encode_codec")
             args, output_path, selected_bitrate = cls._get_audio_encode_args(job, settings_codec)
             cu.print_warning(f"{log_prefix} Encoding audio track to {settings_codec.value} ({selected_bitrate})", nl_before=False, wait=False)
            

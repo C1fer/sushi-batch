@@ -5,28 +5,42 @@ from os import makedirs, path
 from ..utils import console_utils as cu
 from ..utils.json.settings_json import SettingsDecoder, SettingsEncoder
 
-from .enums import QueueTheme, AudioEncodeCodec, AudioChannelLayout
+from .enums import QueueTheme, AudioEncodeCodec, AudioChannelLayout, AudioEncoder
 
-DEFAULT_ENCODE_AUDIO_BITRATES = {
+
+DEFAULT_ENCODE_CODEC_SETTINGS = {
     AudioEncodeCodec.OPUS.name: {
-        AudioChannelLayout.MONO.name: "64k",
-        AudioChannelLayout.STEREO.name: "128k",
-        AudioChannelLayout.SURROUND_5_1.name: "320k",
-        AudioChannelLayout.SURROUND_7_1.name: "448k"
+        "encoder": AudioEncoder.FFMPEG,
+        "ffmpeg_lib": "libopus",
+        "bitrates": {
+            AudioChannelLayout.MONO.name: "64k",
+            AudioChannelLayout.STEREO.name: "128k",
+            AudioChannelLayout.SURROUND_5_1.name: "320k",
+            AudioChannelLayout.SURROUND_7_1.name: "448k"
+        }
     },
     AudioEncodeCodec.AAC.name: {
-        AudioChannelLayout.MONO.name: "64k",
-        AudioChannelLayout.STEREO.name: "192k",
-        AudioChannelLayout.SURROUND_5_1.name: "448k",      
-        AudioChannelLayout.SURROUND_7_1.name: "640k"      
+        "encoder": AudioEncoder.FFMPEG,
+        "ffmpeg_lib": "aac",
+        "bitrates": {
+            AudioChannelLayout.MONO.name: "64k",
+            AudioChannelLayout.STEREO.name: "192k",
+            AudioChannelLayout.SURROUND_5_1.name: "448k",      
+            AudioChannelLayout.SURROUND_7_1.name: "640k"      
+        }
     },
     AudioEncodeCodec.EAC3.name: {
-        AudioChannelLayout.MONO.name: "96k",
-        AudioChannelLayout.STEREO.name: "224k",   
-        AudioChannelLayout.SURROUND_5_1.name: "448k",     
-        AudioChannelLayout.SURROUND_7_1.name: "768k"
+        "encoder": AudioEncoder.FFMPEG,
+        "ffmpeg_lib": "eac3",
+        "bitrates": {
+            AudioChannelLayout.MONO.name: "96k",
+            AudioChannelLayout.STEREO.name: "224k",   
+            AudioChannelLayout.SURROUND_5_1.name: "448k",     
+            AudioChannelLayout.SURROUND_7_1.name: "768k"
+        }
     }
 }
+
 
 class Settings():
 
@@ -61,8 +75,8 @@ class Settings():
         self.merge_workflow = {
             "merge_files_after_execution": True,
             "encode_lossless_audio_before_merging": False,
-            "encode_ffmpeg_codec": AudioEncodeCodec.OPUS,
-            "encode_audio_bitrates": deepcopy(DEFAULT_ENCODE_AUDIO_BITRATES),
+            "encode_codec": AudioEncodeCodec.OPUS,
+            "encode_codec_settings": deepcopy(DEFAULT_ENCODE_CODEC_SETTINGS),
             "resample_subs_on_merge": False,
             "delete_generated_files_after_merge": False,
         }
