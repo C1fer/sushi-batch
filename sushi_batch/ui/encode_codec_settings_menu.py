@@ -216,7 +216,7 @@ def _update_selection(settings_obj, field, codec, options):
         elif len(parts) == 2:
             base_key[parts[0]][parts[1]] = new_value
 
-        settings_obj._save()
+        settings_obj.handle_save()
     
 def _edit_codec_setting(settings_obj, field, codec):
     if field["type"] == AudioEncoder:
@@ -241,7 +241,7 @@ def _reset_all_values(settings_obj, selected_codec):
         settings_obj.merge_workflow["encode_codec_settings"][selected_codec.name] = (
             deepcopy(DEFAULT_ENCODE_CODEC_SETTINGS[selected_codec.name])
         )
-        settings_obj._save()
+        settings_obj.handle_save()
         cu.print_success("All settings have been reset to default.", wait=True)
 
 def _view_options_help(visible_rows):

@@ -120,7 +120,7 @@ def _edit_advanced_sushi_arg(settings_obj, field):
                 cu.print_warning("Already using default value. No changes made.", wait=True)
                 return
             settings_obj.sync_workflow["sushi_advanced_args"][attr] = None
-            settings_obj._save()
+            settings_obj.handle_save()
             return
 
         parsed = _parse_advanced_input(user_input, field)
@@ -134,7 +134,7 @@ def _edit_advanced_sushi_arg(settings_obj, field):
             return
 
         settings_obj.sync_workflow["sushi_advanced_args"][attr] = parsed
-        settings_obj._save()
+        settings_obj.handle_save()
         return
     
 def _select_arg_to_edit():
@@ -159,7 +159,7 @@ def _reset_all_values(settings_obj):
     if confirm_prompt.get("Reset all custom arguments to default values?"):
         for field in settings_obj.sync_workflow.get("sushi_advanced_args", {}).keys():
             settings_obj.sync_workflow["sushi_advanced_args"][field] = None
-        settings_obj._save()
+        settings_obj.handle_save()
         cu.print_success("All advanced arguments have been reset to default values.", wait=True)
 
 

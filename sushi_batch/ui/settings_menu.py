@@ -179,7 +179,7 @@ def _update_value(obj, option):
             parent_attr, dict_key = path[0], path[1]
             parent = getattr(obj, parent_attr)
             parent[dict_key] = new_val
-        obj._save()
+        obj.handle_save()
 
 def _handle_option_choice(section_options):
     """Handle user choice for setting inside a section"""

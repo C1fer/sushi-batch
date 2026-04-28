@@ -128,6 +128,10 @@ class Settings():
         else:
             makedirs(self.data_path, exist_ok=True)
             self._save()
+
+    def handle_save(self):
+        """Save settings to file"""
+        self._save()
         
     def restore(self):
         """Restore default settings"""
