@@ -96,7 +96,7 @@ class SubResampler:
             return False
         
         if video_resolution == script_resolution:
-            cu.print_warning(f"{log_prefix} Resampling not needed. Script resolution matches video resolution.", nl_before=False, wait=False)
+            print(f"{cu.fore.LIGHTBLACK_EX}{log_prefix} Resampling not needed. Script resolution matches video resolution.")
             return False
 
         cu.print_warning(f"{log_prefix} Resampling needed. Script resolution {script_resolution} does not match video resolution {video_resolution}.", nl_before=False, wait=False)
