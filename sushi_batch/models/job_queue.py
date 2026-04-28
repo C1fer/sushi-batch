@@ -3,7 +3,7 @@ from os import path
 
 from sushi_batch.external.ffmpeg import FFmpeg
 from sushi_batch.external.opusenc import XiphOpusEncoder
-from ..ui.prompts import checklist_dialog, choice_prompt, input_prompt
+from ..ui.prompts import checklist_dialog, input_prompt
 
 from ..utils import utils
 from ..utils import console_utils as cu
@@ -15,8 +15,8 @@ from ..external.sub_sync import Sushi
 from ..external.sub_resample import SubResampler
 
 from . import settings
-from .streams import Stream
 from .enums import Status, Task, JobSelection, AudioEncodeCodec, AudioEncoder
+from ..services.job_stream_selection_service import JobStreamSelectionService
 
 
 class JobQueue:
@@ -44,7 +44,7 @@ class JobQueue:
                 return
 
             if task in (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL):
-                self._set_video_job_indexes(jobs_to_add)
+                JobStreamSelectionService.set_video_sync_job_streams(jobs_to_add)
 
             self.contents.extend(jobs_to_add)
             self.save()
@@ -54,14 +54,6 @@ class JobQueue:
     def add_jobs(self, jobs_to_add, task):
         return utils.interrupt_signal_handler(self._add_sync_jobs)(jobs_to_add, task)
 
-    def _set_video_job_indexes(self, jobs_to_queue):
-        """Set audio and subtitle track indexes for video sync jobs"""
-        if confirm_prompt.get("Choose source and target tracks manually?", suffix=" (Y = manual, N = first available): ", nl_before=True):
-            self._set_stream_indexes(jobs_to_queue)
-        else:
-            for job in jobs_to_queue:
-                indexes = self._get_stream_indexes(job, False)
-                job.__dict__.update(indexes)
 
     def _remove_sync_jobs(self, jobs_to_remove):
         """Remove selected jobs from queue"""
@@ -252,75 +244,3 @@ class JobQueue:
             in self.contents 
             if job.idx in choice and (True if filter_fn is None else filter_fn(job))
         ]
-
-    def _get_stream_choice(self, streams, prompt, isTarget):
-        """"Get user-selected stream from list"""
-        if len(streams) == 1:
-            print(prompt)
-            _stream_color = cu.fore.YELLOW if isTarget else cu.fore.LIGHTBLUE_EX
-            _stream_label = f"{_stream_color}{streams[0].display_name}"
-            cu.print_warning(f"{cu.fore.LIGHTBLACK_EX}Only 1 stream available. Automatically selected: {_stream_label}", wait=False)
-            return streams[0]
-
-        options = [(int(stream.id), stream.display_name) for stream in streams]
-       
-        selected_stream_id = choice_prompt.get(prompt, options)
-        return next(stream for stream in streams if int(stream.id) == selected_stream_id)
-
-    def _show_stream_select_header(self, job):
-        src_label = f"{cu.fore.LIGHTBLUE_EX}{path.basename(job.src_file)}"
-        dst_label = f"{cu.fore.YELLOW}{path.basename(job.dst_file)}"
-        label = f"{cu.fore.MAGENTA}\nJob {job.idx}: {src_label}{cu.fore.MAGENTA} -> {dst_label}"
-        print(label)
-        print('-' * len(label))
-
-    def _get_stream_indexes(self, job, select_streams):
-        src_media_info = FFmpeg.get_clean_probe_info(job.src_file)
-        dst_media_info = FFmpeg.get_clean_probe_info(job.dst_file)
-
-        """"Get source and sync target media stream indexes"""
-        src_aud_streams = Stream.get_audio_streams_from_probe(src_media_info['audio']) if 'audio' in src_media_info else []
-        src_sub_streams = Stream.get_sub_streams_from_probe(src_media_info['subtitle']) if 'subtitle' in src_media_info else []
-        dst_aud_streams = Stream.get_audio_streams_from_probe(dst_media_info['audio']) if 'audio' in dst_media_info else []
-
-        if select_streams:
-            self._show_stream_select_header(job)
-
-        def _select_stream(streams, prompt, isTarget=False):
-            return self._get_stream_choice(streams, prompt, isTarget) if select_streams else streams[0]
-
-        src_aud_selected = _select_stream(src_aud_streams, "Select a source audio stream: ")
-        src_sub_selected = _select_stream(src_sub_streams, "Select a source subtitle stream: ")
-        dst_aud_selected = _select_stream(dst_aud_streams, "Select a target audio stream: ", isTarget=True)
-        
-        streams_info = {
-            "src_aud_id": src_aud_selected.id,
-            "src_aud_display": src_aud_selected.display_name,
-
-            "src_sub_id": src_sub_selected.id,
-            "src_sub_display": src_sub_selected.display_name,
-            "src_sub_lang": src_sub_selected.lang,
-            "src_sub_name": src_sub_selected.title,
-            "src_sub_ext": Stream.get_subtitle_extension(src_sub_streams, src_sub_selected.id),
-
-            "dst_aud_id": dst_aud_selected.id,
-            "dst_aud_display": dst_aud_selected.display_name,
-            "dst_aud_codec": dst_aud_selected.codec,
-            "dst_aud_lang": dst_aud_selected.lang,
-            "dst_aud_channel_layout": dst_aud_selected.channel_layout,
-            
-            "dst_vid_width": dst_media_info.get('video', [{}])[0].get('width'),
-            "dst_vid_height": dst_media_info.get('video', [{}])[0].get('height')
-        }
-        return streams_info
-
-    def _set_stream_indexes(self, unqueued_jobs):
-        """"Set audio and subtitle track indexes for video sync jobs"""
-        if len(unqueued_jobs) > 1 and confirm_prompt.get("Set tracks from first job as default?", suffix=" (Y = apply to all jobs, N = choose per job): ", nl_before=True):
-            default_indexes = self._get_stream_indexes(unqueued_jobs[0], True) # Use first job as reference
-            for job in unqueued_jobs:
-                job.__dict__.update(default_indexes)
-        else:
-            for job in unqueued_jobs:
-                indexes = self._get_stream_indexes(job, True)
-                job.__dict__.update(indexes)
