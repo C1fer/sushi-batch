@@ -64,7 +64,7 @@ class JobQueue:
                 if job.idx not in job_ids_to_remove
             ]
 
-            self._clean_generated_files(jobs_to_remove)
+            self.clean_generated_files(jobs_to_remove)
             self.save()
         except Exception as e:
             cu.print_error(f"Error removing jobs: {e}")
@@ -72,7 +72,7 @@ class JobQueue:
     def remove_jobs(self, jobs_to_remove):
         return utils.interrupt_signal_handler(self._remove_sync_jobs)(jobs_to_remove)
 
-    def _clean_generated_files(self, job_list, confirm_deletion=True):
+    def clean_generated_files(self, job_list, confirm_deletion=True):
         """Delete files generated for the specified jobs.
         This includes intermediate subtitle files generated for syncing and resampling.
         """

@@ -140,7 +140,7 @@ def show_main_queue(task):
         remove_choice = choice_prompt.get(message=TO_REMOVE_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_remove"], nl_before=False, bottom_toolbar=toolbar_stats)
         match remove_choice:
             case 1 if confirm_prompt.get("Clear job queue?", destructive=True, bottom_toolbar=toolbar_stats):
-                main_queue.clear(trigger_file_cleanup=True)
+                main_queue.clear()
                 cu.print_success("All jobs removed from queue.")
             case 2 if confirm_prompt.get(destructive=True, bottom_toolbar=toolbar_stats):
                 main_queue.clear_completed_and_failed_jobs()
@@ -152,7 +152,7 @@ def show_main_queue(task):
 
     def _handle_merge_options(toolbar_stats=None):
         if not  MKVMerge.is_installed:
-            cu.print_error("\nMKVMerge could not be found! Install MKVMerge to enable merging functionality.")
+            cu.print_error("MKVMerge could not be found! Install MKVMerge to enable merging functionality.", nl_before=True)
             return
         
         merge_choice = choice_prompt.get(message=TO_MERGE_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_merge"], nl_before=False, bottom_toolbar=toolbar_stats)
@@ -165,7 +165,8 @@ def show_main_queue(task):
                     and job.task in constants.VIDEO_TASKS
                     and not job.merged
                 ]
-                QueueExecutionService.merge_completed_video_jobs(selected_jobs, parent_queue=main_queue)
+                if confirm_prompt.get(bottom_toolbar=toolbar_stats):
+                    QueueExecutionService.merge_completed_video_jobs(selected_jobs, parent_queue=main_queue)
             case 2:
                 selected_jobs = main_queue.select_jobs(
                     prompt_message=TO_MERGE_SELECTED_PROMPT,
@@ -208,8 +209,10 @@ def show_main_queue(task):
 def show_temp_queue(temp_queue, task):
     """Handle options for the temporary job queue created after file selection."""
     def _run_and_queue_all(use_advanced_sushi_args=False):
+        current_queue_length = len(main_queue.contents)
         main_queue.add_jobs(temp_queue.contents, task)
-        QueueExecutionService.run_jobs(temp_queue.contents, use_advanced_sushi_args=use_advanced_sushi_args)
+        to_run = main_queue.contents[current_queue_length:]
+        QueueExecutionService.run_jobs(to_run, use_advanced_sushi_args=use_advanced_sushi_args, parent_queue=main_queue)
         return True
 
     def _queue_without_running_all():

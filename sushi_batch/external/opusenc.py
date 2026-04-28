@@ -28,7 +28,7 @@ class XiphOpusEncoder:
                 output_path
             ]
 
-            cu.print_warning(f"{log_prefix} Encoding audio track to Opus ({layout_bitrate} kbps)", nl_before=False, wait=False)
+            cu.print_warning(f"{log_prefix} Encoding audio track to Opus ({layout_bitrate.replace('k', ' kbps')})", nl_before=False, wait=False)
             
             ffmpeg_pipe_process = subprocess.Popen(FFmpeg.get_pcm_pipe_args(job), stdout=subprocess.PIPE)
 

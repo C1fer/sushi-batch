@@ -36,7 +36,7 @@ class QueueExecutionService:
             can_merge = settings.config.merge_workflow.get("merge_files_after_execution") and completed_video_jobs
             if can_merge:
                 if MKVMerge.is_installed:
-                    cls.merge_completed_video_jobs(completed_video_jobs, parent_queue=parent_queue)
+                    cls.merge_completed_video_jobs(completed_video_jobs, parent_queue=parent_queue, display_confirmation=False)
                 else:
                     cu.print_error("MKVMerge could not be found. Video files cannot be merged.", nl_before=True)
 
@@ -97,7 +97,7 @@ class QueueExecutionService:
         parent_queue.save()
 
     @classmethod
-    def merge_completed_video_jobs(cls, selected_jobs=None, parent_queue=None):
+    def merge_completed_video_jobs(cls, selected_jobs=None, parent_queue=None, display_confirmation=True):
         """Orchestrate the merging of selected video jobs."""
         if not selected_jobs:
             cu.print_error("No completed jobs to merge!")
@@ -116,6 +116,9 @@ class QueueExecutionService:
 
         if settings.config.merge_workflow.get("delete_generated_files_after_merge"):
             successfully_merged_jobs = [job for job in selected_jobs if job.merged]
-            parent_queue._clean_generated_files(successfully_merged_jobs, confirm_deletion=False)
+            parent_queue.clean_generated_files(successfully_merged_jobs, confirm_deletion=False)
 
-        input_prompt.get("Merging process completed. Press Enter to continue... ", success=True, allow_empty=True, nl_before=True)
+        if display_confirmation:
+            input_prompt.get("Merging process completed. Press Enter to continue... ", success=True, allow_empty=True, nl_before=True)
+        else:
+            cu.print_success("Merging process completed.", nl_before=True)
