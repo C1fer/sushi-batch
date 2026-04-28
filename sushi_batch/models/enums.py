@@ -82,5 +82,7 @@ class AudioChannelLayout(Enum):
     SURROUND_7_1 = "Surround (7.1)"
 
 class AudioEncoder(Enum):
-    FFMPEG = "FFmpeg"
-    XIPH_OPUSENC = "opusenc"
+    AAC_FFMPEG = "AAC (FFmpeg)"
+    EAC3_FFMPEG = "EAC-3 (FFmpeg)"
+    LIBOPUS_FFMPEG = "libopus (FFmpeg)"
+    XIPH_OPUSENC = "opusenc (opus-tools)"

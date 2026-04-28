@@ -10,8 +10,7 @@ from .enums import QueueTheme, AudioEncodeCodec, AudioChannelLayout, AudioEncode
 
 DEFAULT_ENCODE_CODEC_SETTINGS = {
     AudioEncodeCodec.OPUS.name: {
-        "encoder": AudioEncoder.FFMPEG,
-        "ffmpeg_lib": "libopus",
+        "encoder": AudioEncoder.LIBOPUS_FFMPEG,
         "bitrates": {
             AudioChannelLayout.MONO.name: "64k",
             AudioChannelLayout.STEREO.name: "128k",
@@ -20,8 +19,7 @@ DEFAULT_ENCODE_CODEC_SETTINGS = {
         }
     },
     AudioEncodeCodec.AAC.name: {
-        "encoder": AudioEncoder.FFMPEG,
-        "ffmpeg_lib": "aac",
+        "encoder": AudioEncoder.AAC_FFMPEG,
         "bitrates": {
             AudioChannelLayout.MONO.name: "64k",
             AudioChannelLayout.STEREO.name: "192k",
@@ -30,8 +28,7 @@ DEFAULT_ENCODE_CODEC_SETTINGS = {
         }
     },
     AudioEncodeCodec.EAC3.name: {
-        "encoder": AudioEncoder.FFMPEG,
-        "ffmpeg_lib": "eac3",
+        "encoder": AudioEncoder.EAC3_FFMPEG,
         "bitrates": {
             AudioChannelLayout.MONO.name: "96k",
             AudioChannelLayout.STEREO.name: "224k",   

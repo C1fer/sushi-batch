@@ -4,7 +4,7 @@ from prettytable import PrettyTable
 
 from ..models.enums import AudioEncodeCodec, AudioChannelLayout, AudioEncoder
 
-from .prompts import choice_prompt, confirm_prompt
+from .prompts import choice_prompt, confirm_prompt, input_prompt
 
 from ..utils import console_utils as cu
 from ..models.settings import DEFAULT_ENCODE_CODEC_SETTINGS
@@ -84,7 +84,7 @@ BITRATE_OPTIONS = {
 
 ENCODER_OPTIONS = {
     AudioEncodeCodec.OPUS: [
-        ("libopus (FFmpeg)", AudioEncoder.FFMPEG),
+        ("libopus (FFmpeg)", AudioEncoder.LIBOPUS_FFMPEG),
         ("opusenc (opus-tools)", AudioEncoder.XIPH_OPUSENC),
     ],
     AudioEncodeCodec.AAC: [], # Encoder choice not exposed for now
@@ -93,8 +93,9 @@ ENCODER_OPTIONS = {
 
 MENU_OPTIONS = [
     (1, "Change Setting Value"),
-    (2, "Reset All to Default"),
-    (3, "Go Back"),
+    (2, "View Options Description"),
+    (3, "Reset All to Default"),
+    (4, "Go Back"),
 ]
 
 def _get_base_options_rows(codec):
@@ -105,6 +106,7 @@ def _get_base_options_rows(codec):
             "type": str,
             "default": DEFAULT_ENCODE_CODEC_SETTINGS[codec.name]["bitrates"]["MONO"],
             "prompt": "Select new bitrate for Mono layout: ",
+            "description": "Target bitrate for Mono audio tracks."
         },
         {
             "label": "Stereo Bitrate",
@@ -112,6 +114,7 @@ def _get_base_options_rows(codec):
             "type": str,
             "default": DEFAULT_ENCODE_CODEC_SETTINGS[codec.name]["bitrates"]["STEREO"],
             "prompt": "Select new bitrate for Stereo layout: ",
+            "description": "Target bitrate for Stereo audio tracks."
         },
         {   
             "label": "5.1 Bitrate",
@@ -119,6 +122,7 @@ def _get_base_options_rows(codec):
             "type": str,
             "default": DEFAULT_ENCODE_CODEC_SETTINGS[codec.name]["bitrates"]["SURROUND_5_1"],
             "prompt": "Select new bitrate for 5.1 layout: ",
+            "description": "Target bitrate for 5.1 audio tracks"
         },
         {
             "label": "7.1 Bitrate",
@@ -126,6 +130,7 @@ def _get_base_options_rows(codec):
             "type": str,
             "default": DEFAULT_ENCODE_CODEC_SETTINGS[codec.name]["bitrates"]["SURROUND_7_1"],
             "prompt": "Select new bitrate for 7.1 layout: ",
+            "description": "Target bitrate for 7.1 audio tracks"
         },
     ]
 
@@ -138,6 +143,9 @@ def _get_visible_options_rows(codec):
             "type": AudioEncoder,
             "default": DEFAULT_ENCODE_CODEC_SETTINGS[codec.name]["encoder"],
             "prompt": "Select audio encoder: ",
+            "description": """Audio encoder to use for Opus encoding.
+libopus is the default encoder provided by FFmpeg and is suitable for most users.
+opusenc is the official Opus encoder. Recommended for users who need to ensure maximum compatibility with the Opus specification. Requires opus-tools to be installed and added to PATH."""
         })
     return options
 
@@ -236,6 +244,15 @@ def _reset_all_values(settings_obj, selected_codec):
         settings_obj._save()
         cu.print_success("All settings have been reset to default.", wait=True)
 
+def _view_options_help(visible_rows):
+    cu.print_header("Arguments Description")
+    for field in visible_rows:
+        if field["description"]:
+            cu.print_subheader(field['label'])
+            print(field["description"])
+    input_prompt.get("Press Enter to return to the menu... ", allow_empty=True, nl_before=True)
+
+
 
 def configure_audio_encode_settings(settings_obj, selected_codec):
     while True:
@@ -252,8 +269,10 @@ def configure_audio_encode_settings(settings_obj, selected_codec):
                 if field:
                     _edit_codec_setting(settings_obj, field, selected_codec)
             case 2:
-                _reset_all_values(settings_obj, selected_codec)
+                _view_options_help(visible_rows)
             case 3:
+                _reset_all_values(settings_obj, selected_codec)
+            case _:
                 break
 
         
