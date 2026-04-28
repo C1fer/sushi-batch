@@ -2,10 +2,10 @@ import json
 from os import path
 
 from sushi_batch.external.ffmpeg import FFmpeg
+from sushi_batch.external.opusenc import XiphOpusEncoder
 from ..ui.prompts import checklist_dialog, choice_prompt, input_prompt
 
 from ..utils import utils
-from ..utils import constants
 from ..utils import console_utils as cu
 from ..utils import file_utils as fu
 from ..utils.json_utils import JobDecoder, JobEncoder
@@ -16,7 +16,7 @@ from ..external.sub_resample import SubResampler
 
 from . import settings
 from .streams import Stream
-from .enums import Status, Task, JobSelection
+from .enums import Status, Task, JobSelection, AudioEncodeCodec, AudioEncoder
 
 
 class JobQueue:
@@ -125,6 +125,15 @@ class JobQueue:
             cu.print_warning(f"[Job {job.idx} - SubResampler] Subtitle could not be resampled. Merging synced subtitle instead.", nl_before=False, wait=False)
             return False
         
+    def _encode_to_opus(self, job):
+        selected_encoder = settings.config.merge_workflow.get("encode_codec_settings", {}).get(AudioEncodeCodec.OPUS.name, None).get("encoder", None)
+        if selected_encoder == AudioEncoder.XIPH_OPUSENC:
+            if XiphOpusEncoder.is_available:
+                return XiphOpusEncoder.encode(job)
+            else:
+                cu.print_warning(f"[Job {job.idx} - Opusenc] Opusenc could not be found. Attempting to encode with FFmpeg instead.", nl_before=False, wait=False)
+        return FFmpeg.encode_lossless_audio(job)
+        
     def _encode_audio_before_merge(self, job):
         """Encode audio file before merging if selected in settings. 
         Skipped if source audio codec is already compatible with selected codec or if no audio stream is found.
@@ -132,7 +141,11 @@ class JobQueue:
         if not FFmpeg.is_audio_encode_needed(job):
             return None
         
-        output_path = FFmpeg.encode_lossless_audio(job)
+        if settings.config.merge_workflow.get("encode_codec") == AudioEncodeCodec.OPUS:
+                output_path = self._encode_to_opus(job)
+        else: 
+            output_path = FFmpeg.encode_lossless_audio(job) 
+        
         if output_path:
             cu.print_success(f"[Job {job.idx} - FFmpeg] Audio Track encoded successfully.", nl_before=False, wait=False)
             return output_path

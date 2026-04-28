@@ -170,9 +170,8 @@ class FFmpeg:
     @classmethod
     def encode_lossless_audio(cls, job):
         """Encodes audio with the selected codec option and saves to *_encode.<ext>."""
+        log_prefix  = f"[Job {job.idx} - FFmpeg]"
         try:
-            log_prefix  = f"[Job {job.idx} - FFmpeg]"
-
             settings_codec = s.config.merge_workflow.get("encode_codec")
             args, output_path, selected_bitrate = cls._get_audio_encode_args(job, settings_codec)
             cu.print_warning(f"{log_prefix} Encoding audio track to {settings_codec.value} ({selected_bitrate})", nl_before=False, wait=False)
@@ -212,3 +211,16 @@ class FFmpeg:
             cu.print_warning(f"{log_prefix} Audio encoding not needed. Audio is already in a lossy codec ({dst_aud_codec}).", nl_before=False, wait=False)
             return False
         return dst_aud_codec in LOSSLESS_AUDIO_CODECS
+    
+    @staticmethod
+    def get_pcm_pipe_args(job):
+        """Constructs ffmpeg arguments for piping the selected audio track in pcm format to stdout"""
+        return [
+            'ffmpeg',
+            "-hide_banner",
+            "-loglevel", "error",
+            '-i', job.dst_file,
+            '-map', f'0:{job.dst_aud_id}',
+            "-f", "wav",  # Output format for piping (uncompressed PCM)
+            "-"
+        ]
