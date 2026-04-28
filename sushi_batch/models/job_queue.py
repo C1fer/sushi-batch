@@ -82,16 +82,8 @@ class JobQueue:
 
             fu.clean_generated_files(job_list)
 
-    def _clear_queue(self, trigger_file_cleanup):
-        """ Clear queue contents """
-        if trigger_file_cleanup:
-            self._clean_generated_files(self.contents.copy())
-
-        self.contents.clear()
-        self.save()
-
-    def clear(self, trigger_file_cleanup=True):
-        return utils.interrupt_signal_handler(self._clear_queue)(trigger_file_cleanup)
+    def clear(self):
+        self.remove_jobs(self.contents)
 
     def clear_completed_and_failed_jobs(self):
         """ Clear completed and failed jobs from queue """
