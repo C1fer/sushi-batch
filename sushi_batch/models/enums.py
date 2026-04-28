@@ -60,11 +60,6 @@ class Section(Enum):
     MERGE_SUB = "Merge - Synced Subtitle"
 
 
-class JobSelection(Enum):
-    ALL = "all"
-    SELECTED = "selected"
-
-
 class QueueTheme(Enum):
     CLASSIC = "classic"
     CARD = "card"

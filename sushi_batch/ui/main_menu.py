@@ -66,7 +66,8 @@ def handle_sync_option_selection(task):
         jobs = file_utils.select_files(task)
 
     if jobs:
-        return qm.show_temp_queue(JobQueue(jobs), task)
+        temp_queue = JobQueue(jobs, in_memory=True)
+        return qm.show_temp_queue(temp_queue, task)
 
     return False
 

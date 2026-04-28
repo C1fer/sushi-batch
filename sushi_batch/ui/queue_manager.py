@@ -1,5 +1,5 @@
 from ..models.job_queue import JobQueue
-from ..models.enums import JobSelection, Task, Status
+from ..models.enums import Task, Status
 from ..models import settings as s
 
 from ..external.mkv_merge import MKVMerge
@@ -8,6 +8,7 @@ from ..utils import constants
 from ..utils import console_utils as cu
 from .prompts import confirm_prompt, choice_prompt, input_prompt
 from .queue_themes import QUEUE_RENDERERS
+from ..services.queue_execution_service import QueueExecutionService
 
 MAIN_QUEUE_OPTIONS= {
     "top": [
@@ -125,15 +126,15 @@ def show_main_queue(task):
         run_choice = choice_prompt.get(message=TO_RUN_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_run"], nl_before=False, bottom_toolbar=toolbar_stats)
         match run_choice:
             case 1 if confirm_prompt.get(bottom_toolbar=toolbar_stats):
-                _jobs = [job for job in main_queue.contents if job.sync_status == Status.PENDING]
-                main_queue.run_jobs(_jobs, use_advanced_sushi_args=use_advanced_sushi_args)
+                selected_jobs = [job for job in main_queue.contents if job.sync_status == Status.PENDING]
+                QueueExecutionService.run_jobs(selected_jobs, use_advanced_sushi_args=use_advanced_sushi_args, parent_queue=main_queue)
             case 2:
                 selected_jobs = main_queue.select_jobs(
                     prompt_message=TO_RUN_SELECTED_PROMPT,
                     filter_fn=lambda j: j.sync_status == Status.PENDING,
                 )
                 if selected_jobs and confirm_prompt.get("Run selected jobs?", bottom_toolbar=toolbar_stats):
-                    main_queue.run_jobs(selected_jobs, use_advanced_sushi_args=use_advanced_sushi_args)
+                    QueueExecutionService.run_jobs(selected_jobs, use_advanced_sushi_args=use_advanced_sushi_args, parent_queue=main_queue)
 
     def _handle_remove_options(toolbar_stats=None):
         remove_choice = choice_prompt.get(message=TO_REMOVE_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_remove"], nl_before=False, bottom_toolbar=toolbar_stats)
@@ -157,7 +158,14 @@ def show_main_queue(task):
         merge_choice = choice_prompt.get(message=TO_MERGE_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_merge"], nl_before=False, bottom_toolbar=toolbar_stats)
         match merge_choice:
             case 1:
-                main_queue.merge_completed_video_jobs(JobSelection.ALL)
+                selected_jobs = [
+                    job
+                    for job in main_queue.contents
+                    if job.sync_status == Status.COMPLETED
+                    and job.task in constants.VIDEO_TASKS
+                    and not job.merged
+                ]
+                QueueExecutionService.merge_completed_video_jobs(selected_jobs, parent_queue=main_queue)
             case 2:
                 selected_jobs = main_queue.select_jobs(
                     prompt_message=TO_MERGE_SELECTED_PROMPT,
@@ -168,7 +176,7 @@ def show_main_queue(task):
                     ),
                 )
                 if selected_jobs and confirm_prompt.get("Merge selected jobs?", bottom_toolbar=toolbar_stats):
-                    main_queue.merge_completed_video_jobs(JobSelection.SELECTED, selected_jobs)
+                    QueueExecutionService.merge_completed_video_jobs(selected_jobs, parent_queue=main_queue)
     
     while True:
         _show_queue_items(main_queue.contents, task)
@@ -201,7 +209,7 @@ def show_temp_queue(temp_queue, task):
     """Handle options for the temporary job queue created after file selection."""
     def _run_and_queue_all(use_advanced_sushi_args=False):
         main_queue.add_jobs(temp_queue.contents, task)
-        temp_queue.run_jobs(temp_queue.contents, use_advanced_sushi_args=use_advanced_sushi_args)
+        QueueExecutionService.run_jobs(temp_queue.contents, use_advanced_sushi_args=use_advanced_sushi_args)
         return True
 
     def _queue_without_running_all():
@@ -218,7 +226,7 @@ def show_temp_queue(temp_queue, task):
                 selected_jobs = temp_queue.select_jobs(prompt_message=TO_RUN_SELECTED_PROMPT)
                 if selected_jobs and confirm_prompt.get("Run selected jobs and add to main queue?", nl_after=True):
                     main_queue.add_jobs(selected_jobs, task)
-                    temp_queue.run_jobs(selected_jobs, use_advanced_sushi_args=use_advanced_sushi_args)
+                    QueueExecutionService.run_jobs(selected_jobs, use_advanced_sushi_args=use_advanced_sushi_args)
                     return True
 
     def _handle_queue_without_running_multiple():
