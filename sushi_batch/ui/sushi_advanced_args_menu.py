@@ -73,7 +73,7 @@ def _format_value(value):
 
 def _render_advanced_sushi_table(settings_obj):
     table = PrettyTable(["Argument", "Current Value", "Default Value"])
-    for idx, field in enumerate(ADVANCED_SUSHI_ARG_FIELDS, 1):
+    for field in ADVANCED_SUSHI_ARG_FIELDS:
         current_value = settings_obj.sync_workflow.get("sushi_advanced_args", {}).get(field["attr"], None)
         table.add_row([
             field["label"],

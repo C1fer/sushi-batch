@@ -9,19 +9,22 @@ fore = Fore
 style_reset = Style.RESET_ALL
 
 
-def _print_colored(message, color, nl_before=False):
+def _print_colored(message, color, nl_before=False, nl_after=False):
     """Small helper to print a colored message, optionally prefixed by a newline."""
+    _to_print = f"{color}{message}{style_reset}"
     if nl_before:
-        print()
-    print(f"{color}{message}{style_reset}")
+        _to_print = f"\n{_to_print}"
+    if nl_after:
+        _to_print = f"{_to_print}\n"
+    print(_to_print)
 
 
-def print_header(message):
-    _print_colored(message, fore.CYAN)
+def print_header(message, nl_before=False, nl_after=False):
+    _print_colored(message, fore.CYAN, nl_before=nl_before, nl_after=nl_after)
 
 
-def print_subheader(message):
-    _print_colored(message, fore.YELLOW, nl_before=True)
+def print_subheader(message, nl_before=True):
+    _print_colored(message, fore.YELLOW, nl_before=nl_before)
 
 
 def print_error(message, wait=True, nl_before=False):
