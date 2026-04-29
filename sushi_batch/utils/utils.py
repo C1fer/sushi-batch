@@ -3,7 +3,7 @@ import subprocess
 import sys
 from importlib.util import find_spec
 
-from sushi_batch.ui.prompts import confirm_prompt
+from ..ui.prompts import confirm_prompt
 from . import console_utils as cu
 
 

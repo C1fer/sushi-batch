@@ -5,7 +5,7 @@ from .ffmpeg import FFmpeg
 from ..utils import utils
 from ..utils import console_utils as cu
 
-from ..models.enums import AudioEncodeCodec, AudioChannelLayout
+from ..models.enums import AudioEncodeCodec, AudioChannelLayout, AudioEncoder
 from ..models import settings as s
 
 
@@ -29,7 +29,7 @@ class XiphOpusEncoder:
 
             bitrate_display = layout_bitrate.replace('k', ' kbps')
             out_info = f"Opus ({bitrate_display})"
-            
+
             if spinner:
                 spinner.text = f"{log_prefix} Encoding audio track to {out_info}"
             else:
@@ -51,10 +51,11 @@ class XiphOpusEncoder:
             if encode_process.returncode != 0:
                 return None
             
-            cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Audio track encoded successfully to {out_info}.", spinner)
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Audio track successfully encoded to {out_info}.", spinner)
 
             job.merge_audio_encode_done = True
             job.merge_audio_encode_codec = AudioEncodeCodec.OPUS.name
+            job.merge_audio_encode_encoder = AudioEncoder.XIPH_OPUSENC.name
             job.merge_audio_encode_bitrate = bitrate_display
             return output_path
         except Exception as e:

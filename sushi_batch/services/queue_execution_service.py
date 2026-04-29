@@ -76,7 +76,7 @@ class QueueExecutionService:
                 else:
                     cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} Could not find opusenc. Encoding with FFmpeg instead.", spinner)
                     log_prefix = f"[Job {job.idx} - FFmpeg]"
-                    output_path = FFmpeg.encode_lossless_audio(job, spinner, log_prefix)
+                    output_path = FFmpeg.encode_lossless_audio(job, spinner, log_prefix, is_fallback=True)
             case _:
                 output_path = FFmpeg.encode_lossless_audio(job, spinner, log_prefix)
 

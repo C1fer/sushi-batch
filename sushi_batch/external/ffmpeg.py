@@ -49,7 +49,10 @@ ENCODER_LIB_MAP = {
     AudioEncoder.AAC_FFMPEG: "aac",
     AudioEncoder.EAC3_FFMPEG: "eac3",
     AudioEncoder.LIBOPUS_FFMPEG: "libopus",
-    AudioEncoder.XIPH_OPUSENC: "libopus", # Set to libopus for fallback when opusenc is not available
+}
+
+FALLBACK_ENCODERS = {
+    AudioEncoder.XIPH_OPUSENC: AudioEncoder.LIBOPUS_FFMPEG,
 }
 
 class FFmpeg:
@@ -134,7 +137,7 @@ class FFmpeg:
             return False
 
     @classmethod
-    def _get_codec_params(cls, job, settings_codec):
+    def _get_codec_params(cls, job, settings_codec, settings_encoder):
         ffmpeg_codec_params = LOSSY_AUDIO_CODEC_OPTIONS.get(settings_codec, None)
         if not ffmpeg_codec_params:
             raise ValueError(f"Unsupported audio codec selected for encoding: {settings_codec.name}")
@@ -146,10 +149,9 @@ class FFmpeg:
             layout_enum = AudioChannelLayout.STEREO
 
         selected_bitrate = s.config.merge_workflow["encode_codec_settings"][settings_codec.name]["bitrates"].get(layout_enum.name, None)
-        selected_encoder = s.config.merge_workflow["encode_codec_settings"][settings_codec.name].get("encoder")
         
         ffmpeg_codec_params.update({
-            LIB_KEY: ENCODER_LIB_MAP.get(selected_encoder, None),
+            LIB_KEY: ENCODER_LIB_MAP.get(settings_encoder, None),
             BITRATE_KEY: selected_bitrate
         })
 
@@ -159,10 +161,10 @@ class FFmpeg:
         return args, selected_bitrate
     
     @classmethod
-    def _get_audio_encode_args(cls, job, settings_codec):
+    def _get_audio_encode_args(cls, job, settings_codec, settings_encoder):
         """Constructs ffmpeg arguments for encoding audio with the selected codec."""
         output_path = f"{job.dst_file}_encode.{settings_codec.name.lower()}"
-        codec_params, selected_bitrate = cls._get_codec_params(job, settings_codec)
+        codec_params, selected_bitrate = cls._get_codec_params(job, settings_codec, settings_encoder)
         
         args = [
             'ffmpeg',
@@ -175,11 +177,15 @@ class FFmpeg:
         return args, output_path, selected_bitrate
     
     @classmethod
-    def encode_lossless_audio(cls, job, spinner=None, log_prefix="[FFmpeg]"):
+    def encode_lossless_audio(cls, job, spinner=None, log_prefix="[FFmpeg]", is_fallback=False):
         """Encodes audio with the selected codec option and saves to *_encode.<ext>."""
         try:
             settings_codec = s.config.merge_workflow.get("encode_codec")
-            args, output_path, selected_bitrate = cls._get_audio_encode_args(job, settings_codec)
+            selected_encoder = s.config.merge_workflow.get("encode_codec_settings", {}).get(settings_codec.name, {}).get("encoder")
+            if is_fallback:
+                selected_encoder = FALLBACK_ENCODERS.get(selected_encoder, None)
+
+            args, output_path, selected_bitrate = cls._get_audio_encode_args(job, settings_codec, selected_encoder)
 
             bitrate_display = selected_bitrate.replace('k', ' kbps')
             out_info = f"{settings_codec.value} ({bitrate_display})"
@@ -201,11 +207,12 @@ class FFmpeg:
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Audio track could not be encoded. Merging original audio track instead.", spinner)
                 return None
 
-            cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Audio track encoded successfully to {out_info}.", spinner)
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Audio track successfully encoded to {out_info}.", spinner)
 
             job.merge_audio_encode_done = True
             job.merge_audio_encode_codec = settings_codec.name
             job.merge_audio_encode_bitrate = bitrate_display
+            job.merge_audio_encode_encoder = selected_encoder.name
             return output_path
         except Exception as e:
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} An error occurred during audio encoding: {e}", spinner)

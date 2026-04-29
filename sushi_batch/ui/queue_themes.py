@@ -1,9 +1,8 @@
 import re
 
-from sushi_batch.external.sub_sync import Sushi
+from ..external.sub_sync import Sushi
 
-from ..models.enums import Task, Status, QueueTheme, AudioEncodeCodec
-
+from ..models.enums import Task, Status, QueueTheme, AudioEncodeCodec, AudioEncoder
 from ..utils import console_utils as cu
 
 SYNC_COMPLETED_WARNING = f"{cu.Fore.LIGHTYELLOW_EX}Sync completed with warnings. Check Sushi log for details."
@@ -21,8 +20,9 @@ def _avg_shift_exceeds_threshold(avg_shift):
     
 def _get_encode_info_display(job):
     """Format the display string for the audio encoding information (codec and bitrate)."""
+    encoder_name = AudioEncoder[job.merge_audio_encode_encoder].value if job.merge_audio_encode_encoder else "Unknown Encoder"
     codec_name = AudioEncodeCodec[job.merge_audio_encode_codec].value if job.merge_audio_encode_codec else "Unknown Codec"
-    return f"{codec_name} - {job.merge_audio_encode_bitrate}" if job.merge_audio_encode_bitrate else codec_name
+    return f"({codec_name} - {job.merge_audio_encode_bitrate}) [{encoder_name}]"
 
 def _get_track_values(job):
     """Resolve track values using display label first, then raw id."""
@@ -162,7 +162,7 @@ def _show_card_theme(queued_jobs, current_task):
                             ("Generated File", f"{merged_child_color}{job.merged_file}") if job.merged_file is not None else None,
                             ("Warning", MERGE_WARNING_MESSAGE) if job.merge_has_warnings else None,
                             ("Resampled", f"{cu.fore.GREEN}Yes") if job.resample_done else None,
-                            ("Encoded Audio", f"{cu.fore.GREEN}Yes ({_get_encode_info_display(job)})") if job.merge_audio_encode_done else None,
+                            ("Encoded Audio", f"{cu.fore.GREEN}Yes {_get_encode_info_display(job)}") if job.merge_audio_encode_done else None,
                         ],
                     }
                 )
@@ -233,7 +233,7 @@ def _show_yaml_like_theme(queued_jobs, current_task):
                         if job.resample_done:
                             print(f"{cu.fore.LIGHTBLACK_EX}  resampled: {cu.fore.GREEN}true")
                         if job.merge_audio_encode_done:
-                            print(f"{cu.fore.LIGHTBLACK_EX}  audio_encoded: {cu.fore.GREEN}true ({_get_encode_info_display(job)}) )")
+                            print(f"{cu.fore.LIGHTBLACK_EX}  audio_encoded: {cu.fore.GREEN}true {_get_encode_info_display(job)}")
                     case False:
                         print(f"{cu.fore.LIGHTYELLOW_EX}  merge_status: pending")
                     case _:

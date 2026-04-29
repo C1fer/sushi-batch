@@ -38,6 +38,7 @@ class Job:
         resample_done=None,
         merge_audio_encode_done=None,
         merge_audio_encode_codec=None,
+        merge_audio_encode_encoder=None,
         merge_audio_encode_bitrate=None
     ):
         self.idx = idx
@@ -72,6 +73,7 @@ class Job:
         self.resample_done = resample_done
         self.merge_audio_encode_done = merge_audio_encode_done
         self.merge_audio_encode_codec = merge_audio_encode_codec
+        self.merge_audio_encode_encoder = merge_audio_encode_encoder
         self.merge_audio_encode_bitrate = merge_audio_encode_bitrate
 
 
