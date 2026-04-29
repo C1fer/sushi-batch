@@ -82,3 +82,12 @@ def get_choice(start, end, prompt="Select an option: "):
                 return choice
             else:
                 print_error("Invalid choice! Please select a valid option.", False)
+
+def try_print_spinner_message(message, spinner=None):
+    try:
+        if spinner:
+            spinner.write(message)
+        else:
+            print(message)
+    except Exception:
+        print(message)

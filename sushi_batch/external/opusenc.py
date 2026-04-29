@@ -13,9 +13,8 @@ class XiphOpusEncoder:
     is_available = utils.is_app_installed("opusenc")
     
     @classmethod
-    def encode(cls, job):
+    def encode(cls, job, spinner=None, log_prefix="[Opusenc]"):
         """Encodes audio with opusenc using the codec settings. Pipes audio from ffmpeg and saves to *_encode.opus."""
-        log_prefix = f"[Job {job.idx} - Opusenc]"
         try:
             layout_bitrate = s.config.merge_workflow["encode_codec_settings"][AudioEncodeCodec.OPUS.name]["bitrates"].get(AudioChannelLayout.STEREO.name, None)
             output_path = f"{job.dst_file}_encode.opus"
@@ -28,7 +27,13 @@ class XiphOpusEncoder:
                 output_path
             ]
 
-            cu.print_warning(f"{log_prefix} Encoding audio track to Opus ({layout_bitrate.replace('k', ' kbps')})", nl_before=False, wait=False)
+            bitrate_display = layout_bitrate.replace('k', ' kbps')
+            out_info = f"Opus ({bitrate_display})"
+            
+            if spinner:
+                spinner.text = f"{log_prefix} Encoding audio track to {out_info}"
+            else:
+                cu.print_warning(f"{log_prefix} Encoding audio track to {out_info}", nl_before=False, wait=False)
             
             ffmpeg_pipe_process = subprocess.Popen(FFmpeg.get_pcm_pipe_args(job), stdout=subprocess.PIPE)
 
@@ -46,10 +51,11 @@ class XiphOpusEncoder:
             if encode_process.returncode != 0:
                 return None
             
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Audio track encoded successfully to {out_info}.", spinner)
+
             job.merge_audio_encode_done = True
             job.merge_audio_encode_codec = AudioEncodeCodec.OPUS.name
-            job.merge_audio_encode_bitrate = layout_bitrate
+            job.merge_audio_encode_bitrate = bitrate_display
             return output_path
-            
         except Exception as e:
-            cu.print_error(f"{log_prefix} Error encoding with opusenc: {e}")
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} Error encoding with opusenc: {e}", spinner)

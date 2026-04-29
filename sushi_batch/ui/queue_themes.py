@@ -22,9 +22,7 @@ def _avg_shift_exceeds_threshold(avg_shift):
 def _get_encode_info_display(job):
     """Format the display string for the audio encoding information (codec and bitrate)."""
     codec_name = AudioEncodeCodec[job.merge_audio_encode_codec].value if job.merge_audio_encode_codec else "Unknown Codec"
-    bitrate_display = job.merge_audio_encode_bitrate.replace("k", " kbps") if job.merge_audio_encode_bitrate else None
-
-    return f"{codec_name} - {bitrate_display}" if job.merge_audio_encode_bitrate else codec_name
+    return f"{codec_name} - {job.merge_audio_encode_bitrate}" if job.merge_audio_encode_bitrate else codec_name
 
 def _get_track_values(job):
     """Resolve track values using display label first, then raw id."""

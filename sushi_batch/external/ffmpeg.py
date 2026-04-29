@@ -8,7 +8,7 @@ from ..utils import console_utils as cu
 
 from ..models import settings as s
 from ..models.streams import Stream
-from ..models.enums import AudioEncodeCodec, AudioChannelLayout
+from ..models.enums import AudioEncodeCodec, AudioChannelLayout, AudioEncoder
 
 LIB_KEY = "-c:a"
 BITRATE_KEY = "-b:a"
@@ -43,6 +43,13 @@ PROBE_CHANNEL_LAYOUT_MAP = {
     "stereo": AudioChannelLayout.STEREO,
     "5.1": AudioChannelLayout.SURROUND_5_1,
     "7.1": AudioChannelLayout.SURROUND_7_1,
+}
+
+ENCODER_LIB_MAP = {
+    AudioEncoder.AAC_FFMPEG: "aac",
+    AudioEncoder.EAC3_FFMPEG: "eac3",
+    AudioEncoder.LIBOPUS_FFMPEG: "libopus",
+    AudioEncoder.XIPH_OPUSENC: "libopus", # Set to libopus for fallback when opusenc is not available
 }
 
 class FFmpeg:
@@ -139,10 +146,10 @@ class FFmpeg:
             layout_enum = AudioChannelLayout.STEREO
 
         selected_bitrate = s.config.merge_workflow["encode_codec_settings"][settings_codec.name]["bitrates"].get(layout_enum.name, None)
-        selected_encoding_lib = s.config.merge_workflow["encode_codec_settings"][settings_codec.name].get("ffmpeg_lib", None)
+        selected_encoder = s.config.merge_workflow["encode_codec_settings"][settings_codec.name].get("encoder")
         
         ffmpeg_codec_params.update({
-            LIB_KEY: selected_encoding_lib,
+            LIB_KEY: ENCODER_LIB_MAP.get(selected_encoder, None),
             BITRATE_KEY: selected_bitrate
         })
 
@@ -168,35 +175,45 @@ class FFmpeg:
         return args, output_path, selected_bitrate
     
     @classmethod
-    def encode_lossless_audio(cls, job):
+    def encode_lossless_audio(cls, job, spinner=None, log_prefix="[FFmpeg]"):
         """Encodes audio with the selected codec option and saves to *_encode.<ext>."""
-        log_prefix  = f"[Job {job.idx} - FFmpeg]"
         try:
             settings_codec = s.config.merge_workflow.get("encode_codec")
             args, output_path, selected_bitrate = cls._get_audio_encode_args(job, settings_codec)
-            cu.print_warning(f"{log_prefix} Encoding audio track to {settings_codec.value} ({selected_bitrate})", nl_before=False, wait=False)
+
+            bitrate_display = selected_bitrate.replace('k', ' kbps')
+            out_info = f"{settings_codec.value} ({bitrate_display})"
+
+            if spinner:
+                spinner.text = f"{log_prefix} Encoding audio track to {out_info}"
+            else:
+                cu.print_warning(f"{log_prefix} Encoding audio track to {out_info}", nl_before=False, wait=False)
            
-            subprocess.run(
+            ffmpeg_encode = subprocess.run(
                 args,
                 check=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
             )
-            
+
+            if ffmpeg_encode.returncode != 0:
+                cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Audio track could not be encoded. Merging original audio track instead.", spinner)
+                return None
+
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Audio track encoded successfully to {out_info}.", spinner)
+
             job.merge_audio_encode_done = True
             job.merge_audio_encode_codec = settings_codec.name
-            job.merge_audio_encode_bitrate = selected_bitrate
+            job.merge_audio_encode_bitrate = bitrate_display
             return output_path
         except Exception as e:
-            cu.print_error(f"{log_prefix} An error occurred during audio encoding: {e}")
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} An error occurred during audio encoding: {e}", spinner)
             return None
         
     @staticmethod
-    def is_audio_encode_needed(job):
+    def is_audio_encode_needed(job, spinner=None, log_prefix="[FFmpeg]"):
         """Determines if audio encoding is needed based on the selected codec and source audio format."""
-        log_prefix = f"[Job {job.idx} - FFmpeg]"
-        
         dst_aud_codec = (
             job.dst_aud_codec.lower()
             if job.dst_aud_codec
@@ -204,11 +221,11 @@ class FFmpeg:
         )
 
         if not dst_aud_codec:
-            cu.print_warning(f"{log_prefix} Destination audio codec is unknown. Skipping audio encoding.", nl_before=False, wait=False)
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Destination audio codec is unknown. Skipping audio encoding.", spinner)
             return False
 
         if dst_aud_codec in LOSSY_AUDIO_CODEC_OPTIONS.keys():
-            cu.print_warning(f"{log_prefix} Audio encoding not needed. Audio is already in a lossy codec ({dst_aud_codec}).", nl_before=False, wait=False)
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTBLACK_EX}{log_prefix} Audio encoding not needed. Audio is already in a lossy codec ({dst_aud_codec}).", spinner)
             return False
         return dst_aud_codec in LOSSLESS_AUDIO_CODECS
     

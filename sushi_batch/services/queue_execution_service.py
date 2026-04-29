@@ -8,13 +8,14 @@ from ..models.enums import AudioEncoder, Status
 from ..ui.prompts import input_prompt
 from ..utils import console_utils as cu
 from ..utils import constants, utils
-
+from yaspin import yaspin
 
 class QueueExecutionService:
     @classmethod
     def _run_sub_sync(cls, job, use_advanced_sushi_args, parent_queue):
         """Run Sushi subtitle sync for a given job."""
-        Sushi.run(job, use_advanced_args=use_advanced_sushi_args)
+        log_prefix = f"[Job {job.idx} - Sushi]"
+        Sushi.run(job, use_advanced_args=use_advanced_sushi_args, log_prefix=log_prefix)
         parent_queue.save()
 
     @classmethod
@@ -45,56 +46,59 @@ class QueueExecutionService:
             cu.print_error(f"Error running jobs: {e}")
 
     @classmethod
-    def _resample_before_merge(cls, job):
+    def _resample_before_merge(cls, job, spinner=None):
         """Resample subtitle file before merging, when needed."""
-        if not SubResampler.is_resample_needed(job):
+        log_prefix = f"[Job {job.idx} - Sub Resampler]"
+        if not SubResampler.is_resample_needed(job, spinner=spinner, log_prefix=log_prefix):
             return False
 
-        log_prefix = f"[Job {job.idx} - SubResampler]"
-
-        resample_done = SubResampler.run(job)
-        if resample_done:
-            cu.print_success(f"{log_prefix} Resampling completed successfully.", nl_before=False, wait=False)
-            return True
-
-        cu.print_warning(f"{log_prefix} Subtitle could not be resampled. Merging synced subtitle instead.", nl_before=False, wait=False)
-        return False
+        resample_done = SubResampler.run(job, spinner=spinner, log_prefix=log_prefix)
+        if not resample_done:
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Subtitle could not be resampled. Merging synced subtitle instead.", spinner)
+            return False
+        return True
 
     @classmethod
-    def _encode_audio_before_merge(cls, job):
+    def _encode_audio_before_merge(cls, job, spinner=None):
         """Encode audio before merge if configured and needed."""
-        if not FFmpeg.is_audio_encode_needed(job):
-            return None
-
         selected_codec = settings.config.merge_workflow.get("encode_codec")
         selected_encoder = settings.config.merge_workflow.get("encode_codec_settings", {}).get(selected_codec.name, {}).get("encoder")
+       
+        log_prefix = f"[Job {job.idx} - FFmpeg]" if selected_encoder != AudioEncoder.XIPH_OPUSENC else f"[Job {job.idx} - Opusenc]"
 
-        log_prefix = f"[Job {job.idx} - Audio Encoder]"
+        if not FFmpeg.is_audio_encode_needed(job, spinner, log_prefix):
+            return None
 
         match selected_encoder:
             case AudioEncoder.XIPH_OPUSENC:
-                if not XiphOpusEncoder.is_available:
-                    cu.print_error(f"{log_prefix} Could not find Opusenc. Using FFmpeg instead.", nl_before=False, wait=False)
-                    output_path = FFmpeg.encode_lossless_audio(job)
+                if XiphOpusEncoder.is_available:
+                    output_path = XiphOpusEncoder.encode(job, spinner, log_prefix)
                 else:
-                    output_path = XiphOpusEncoder.encode(job)
-            case AudioEncoder.LIBOPUS_FFMPEG:
-                output_path = FFmpeg.encode_lossless_audio(job)
+                    cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} Could not find opusenc. Encoding with FFmpeg instead.", spinner)
+                    log_prefix = f"[Job {job.idx} - FFmpeg]"
+                    output_path = FFmpeg.encode_lossless_audio(job, spinner, log_prefix)
+            case _:
+                output_path = FFmpeg.encode_lossless_audio(job, spinner, log_prefix)
 
-        if output_path:
-            cu.print_success(f"{log_prefix} Audio track encoded successfully.", nl_before=False, wait=False)
-            return output_path
-
-        cu.print_warning(f"{log_prefix} Audio track could not be encoded. Merging original audio track instead.", nl_before=False, wait=False)
-        return None
+        if not output_path:
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Audio track could not be encoded. Merging original audio track instead.", spinner)
+            return None
+        return output_path
 
     @classmethod
     def _run_merge(cls, job, do_resample, do_encode_audio, parent_queue):
         """Execute the merging process for a given job. Handles audio encoding and subtitle resampling if needed."""
-        encoded_audio_path = cls._encode_audio_before_merge(job) if do_encode_audio else None
-        use_resampled_sub = cls._resample_before_merge(job) if do_resample else False
-        MKVMerge.run(job, use_resampled_sub=use_resampled_sub, encoded_audio_path=encoded_audio_path)
-        parent_queue.save()
+        with yaspin(text="", color="cyan", timer=True, ellipsis="...") as sp:
+            encoded_audio_path = cls._encode_audio_before_merge(job, spinner=sp) if do_encode_audio else None
+            use_resampled_sub = cls._resample_before_merge(job, spinner=sp) if do_resample else False
+            MKVMerge.run(
+                job,
+                use_resampled_sub=use_resampled_sub,
+                encoded_audio_path=encoded_audio_path,
+                spinner=sp,
+                log_prefix=f"[Job {job.idx} - MKVMerge]",
+            )
+            parent_queue.save()
 
     @classmethod
     def merge_completed_video_jobs(cls, selected_jobs=None, parent_queue=None, display_confirmation=True):
@@ -113,6 +117,7 @@ class QueueExecutionService:
 
         for job in selected_jobs:
             utils.interrupt_signal_handler(cls._run_merge)(job, do_resample, do_audio_encode, parent_queue)
+            print()
 
         if settings.config.merge_workflow.get("delete_generated_files_after_merge"):
             successfully_merged_jobs = [job for job in selected_jobs if job.merged]

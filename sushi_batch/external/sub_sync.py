@@ -88,10 +88,10 @@ class Sushi:
             return lines[-1] if lines else "Unknown Sushi error"
 
     @classmethod
-    def run(cls, job, use_advanced_args=False):
+    def run(cls, job, use_advanced_args=False, log_prefix="[Sushi]"):
         file_display = f"{cu.fore.MAGENTA}{job.dst_file}{cu.Style.RESET_ALL}"
-        title = f"[Job {job.idx} - Sushi] Syncing subtitles to {file_display}"
-        with yaspin(text=title, color="cyan", timer=True) as sp:
+        title = f"{log_prefix} Syncing subtitles to {file_display}"
+        with yaspin(text=title, color="cyan", timer=True, ellipsis="...") as sp:
             try: 
                 args = cls._get_args(job, use_advanced_args)
                 sushi = subprocess.Popen(

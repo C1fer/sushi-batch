@@ -23,9 +23,14 @@ class SubResampler:
         ]
 
     @classmethod
-    def run(cls, job):
+    def run(cls, job, spinner=None, log_prefix="[Sub Resampler]"):
         try: 
             args = cls._get_args(job)
+
+            if spinner:
+                spinner.text = f"{log_prefix} Resampling subtitle file"
+            else:
+                cu.print_warning(f"{log_prefix} Resampling subtitle file", nl_before=False, wait=False)
 
             aegisub_resample = subprocess.Popen(
                 args=args,
@@ -44,11 +49,12 @@ class SubResampler:
 
             if aegisub_resample.returncode == 0:
                 job.resample_done = True
+                cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Resampling completed successfully.", spinner)
                 return True
             return False
             
         except Exception as e:
-            cu.print_error(f"Subtitle resampling error: {e}")
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} Subtitle resampling error: {e}", spinner)
             return False
         
     @staticmethod
@@ -73,31 +79,29 @@ class SubResampler:
         return playres_x, playres_y
     
     @classmethod
-    def is_resample_needed(cls, job):
+    def is_resample_needed(cls, job, spinner=None, log_prefix="[Sub Resampler]"):
         """Determines if subtitle resampling is needed based on script and video resolution"""
-        log_prefix = f"[Job {job.idx} - SubResampler]"
-
         if job.src_sub_ext is None:
-            cu.print_error(f"{log_prefix} Source subtitle file extension is unknown. Cannot determine if resampling is needed.", nl_before=False, wait=False)
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} Source subtitle file extension is unknown. Cannot determine if resampling is needed.", spinner)
             return False
         
         if job.src_sub_ext not in cls.whitelisted_resample_extensions:
-            cu.print_error(f"{log_prefix} Subtitle format {job.src_sub_ext} is not supported for resampling. Skipping resample.", nl_before=False, wait=False)
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} Subtitle format {job.src_sub_ext} is not supported for resampling. Skipping resample.", spinner)
             return False
 
         video_resolution = (job.dst_vid_width, job.dst_vid_height)
         if None in video_resolution:
-            cu.print_error(f"{log_prefix} Sync target video resolution is unknown. Cannot determine if subtitle resampling is needed.", nl_before=False, wait=False)
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} Sync target video resolution is unknown. Cannot determine if subtitle resampling is needed.", spinner)
             return False
         
         script_resolution = cls._get_script_resolution(f"{job.dst_file}.sushi{job.src_sub_ext}")
         if None in script_resolution:
-            cu.print_error(f"{log_prefix} Script resolution could not be determined from subtitle file. Cannot determine if resampling is needed.", nl_before=False, wait=False)
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} Script resolution could not be determined from subtitle file. Cannot determine if resampling is needed.", spinner)
             return False
         
         if video_resolution == script_resolution:
-            print(f"{cu.fore.LIGHTBLACK_EX}{log_prefix} Resampling not needed. Script resolution matches video resolution.")
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTBLACK_EX}{log_prefix} Resampling not needed. Script resolution matches video resolution.", spinner)
             return False
 
-        cu.print_warning(f"{log_prefix} Resampling needed. Script resolution {script_resolution} does not match video resolution {video_resolution}.", nl_before=False, wait=False)
+        cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Resampling needed. Script resolution {script_resolution} does not match video resolution {video_resolution}.", spinner)
         return True
