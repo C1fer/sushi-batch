@@ -9,6 +9,8 @@ from .prompts import choice_prompt, confirm_prompt, input_prompt
 from ..utils import console_utils as cu
 from ..models.settings import DEFAULT_ENCODE_CODEC_SETTINGS
 
+from ..external.opusenc import XiphOpusEncoder
+
 BITRATE_OPTIONS = {
    AudioEncodeCodec.OPUS: {
         AudioChannelLayout.MONO: [
@@ -255,6 +257,11 @@ def _view_options_help(visible_rows):
     input_prompt.get("Press Enter to close...  ", allow_empty=True, nl_before=True)
 
 
+def _get_warning_bottom_bar(selected_codec):
+    if selected_codec == AudioEncodeCodec.OPUS:
+        if XiphOpusEncoder.is_available:
+            return "  - Opusenc is not installed. FFmpeg will be used instead."
+        return None
 
 def configure_audio_encode_settings(settings_obj, selected_codec):
     while True:
@@ -264,7 +271,9 @@ def configure_audio_encode_settings(settings_obj, selected_codec):
         visible_rows = _get_visible_options_rows(selected_codec)
         print(_generate_settings_table(settings_obj, visible_rows, selected_codec))
 
-        selected = choice_prompt.get(options=MENU_OPTIONS)
+        warning_bottom_bar = _get_warning_bottom_bar(selected_codec)
+
+        selected = choice_prompt.get(options=MENU_OPTIONS, bottom_toolbar=warning_bottom_bar)
         match selected:
             case 1:
                 field = _select_setting_to_update(visible_rows)
