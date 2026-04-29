@@ -4,6 +4,7 @@ from ..external.ffmpeg import FFmpeg
 from ..models.streams import Stream
 from ..ui.prompts import choice_prompt, confirm_prompt
 from ..utils import console_utils as cu
+from ..utils import utils
 
 
 class JobStreamSelectionService:
@@ -76,13 +77,13 @@ class JobStreamSelectionService:
             nl_before=True,
         )
         if use_default:
-            default_streams = cls._get_job_streams(unqueued_jobs[0], do_select_streams=True)
+            default_streams = utils.interrupt_signal_handler(cls._get_job_streams)(unqueued_jobs[0], do_select_streams=True)
             for job in unqueued_jobs:
                 job.__dict__.update(default_streams)
             return
 
         for job in unqueued_jobs:
-            streams = cls._get_job_streams(job, do_select_streams=True)
+            streams = utils.interrupt_signal_handler(cls._get_job_streams)(job, do_select_streams=True)
             job.__dict__.update(streams)
     
     @classmethod

@@ -4,6 +4,7 @@ from ..models import settings as s
 
 from ..external.mkv_merge import MKVMerge
 
+from ..utils import utils
 from ..utils import constants
 from ..utils import console_utils as cu
 from .prompts import confirm_prompt, choice_prompt, input_prompt
@@ -206,7 +207,7 @@ def show_main_queue(task):
             case _:
                 break
 
-def show_temp_queue(temp_queue, task):
+def _show_temp_queue(temp_queue, task):
     """Handle options for the temporary job queue created after file selection."""
     def _run_and_queue_all(use_advanced_sushi_args=False):
         current_queue_length = len(main_queue.contents)
@@ -244,7 +245,6 @@ def show_temp_queue(temp_queue, task):
                     _show_continue_confirmation(selected_jobs)
                     return True
                 
-    # No need to filter for each render for now
     available_options = [
         opt[:2]
         for opt in TEMP_QUEUE_OPTIONS["top"]
@@ -255,7 +255,7 @@ def show_temp_queue(temp_queue, task):
         _show_queue_items(temp_queue.contents, task)
         is_single_job = len(temp_queue.contents) == 1
         
-        top_lvl_choice = choice_prompt.get(options=available_options)
+        top_lvl_choice = choice_prompt.get(options=available_options, nl_before=True)
         match top_lvl_choice:
             case 1 | 2:
                 use_advanced_sushi_args = top_lvl_choice == 2
@@ -269,3 +269,6 @@ def show_temp_queue(temp_queue, task):
                     return True
             case _:
                 return False
+
+def show_temp_queue(temp_queue, task):
+    return utils.interrupt_signal_handler(_show_temp_queue)(temp_queue, task)
