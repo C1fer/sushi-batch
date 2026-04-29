@@ -54,10 +54,10 @@ class Status(Enum):
 class Section(Enum):
     GEN = "General"
     SYNC = "Subtitle Sync"
-    MERGE_WRK = "Merge - Workflow"
-    MERGE_SRC = "Merge - Source"
-    MERGE_DST = "Merge - Sync Target"
-    MERGE_SUB = "Merge - Synced Subtitle"
+    MERGE_WRK = "Merge: Workflow"
+    MERGE_SRC = "Merge: Source"
+    MERGE_DST = "Merge: Sync Target"
+    MERGE_SUB = "Merge: Synced Subtitle"
 
 
 class QueueTheme(Enum):

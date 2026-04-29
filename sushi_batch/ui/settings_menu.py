@@ -293,11 +293,10 @@ def _render_settings_table(rows):
     
     for row in rows:
         tb.add_row(
-            [row["section"].value, row["label"], _get_formatted_value(row["value"])],
+            [row["section"].value, row["label"], 
+            _get_formatted_value(row["value"])],
             divider=row.get("divider", False)
         )
-    
-    tb.add_autoindex("Option")
     
     return tb
 
