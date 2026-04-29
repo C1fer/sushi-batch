@@ -35,6 +35,11 @@ def show_help_screen():
 
         f"\n{cu.fore.YELLOW}App Information{cu.style_reset}",
         "- Data and logs for all enabled operations are stored in the 'SushiBatchTool' directory inside your Documents folder.",
+
+        f"\n{cu.fore.YELLOW}Download Links for Optional Dependencies{cu.style_reset}",
+        f"- MKVMerge (for video merging): {cu.fore.BLUE}https://mkvtoolnix.download/downloads.html{cu.style_reset}",
+        f"- Aegisub-CLI (for subtitle resampling): {cu.fore.BLUE}https://github.com/Myaamori/aegisub-cli{cu.style_reset}",
+        f"- Opus-tools (alternative to FFmpeg for Opus encoding): {cu.fore.BLUE}https://www.videohelp.com/software/OpusTools{cu.style_reset}",
     ]
     print("\n".join(help_lines))
 
