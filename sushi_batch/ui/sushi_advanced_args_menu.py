@@ -58,8 +58,8 @@ ADVANCED_SUSHI_ARG_FIELDS = [
 
 MENU_OPTIONS = [
     (1, "Set Argument Value"),
-    (2, "View Arguments Description"),
-    (3, "Reset All to Default"),
+    (2, "Reset All to Default"),
+    (3, "View Arguments Help"),
     (4, "Go Back"),
 ]
 
@@ -72,11 +72,10 @@ def _format_value(value):
 
 
 def _render_advanced_sushi_table(settings_obj):
-    table = PrettyTable(["Option", "Argument", "Current Value", "Default Value"])
+    table = PrettyTable(["Argument", "Current Value", "Default Value"])
     for idx, field in enumerate(ADVANCED_SUSHI_ARG_FIELDS, 1):
         current_value = settings_obj.sync_workflow.get("sushi_advanced_args", {}).get(field["attr"], None)
         table.add_row([
-            idx,
             field["label"],
             _format_value(current_value),
             f"{cu.fore.YELLOW}{field['default']}{cu.style_reset}",
@@ -147,16 +146,15 @@ def _select_arg_to_edit():
 
     return ADVANCED_SUSHI_ARG_FIELDS[selected - 1]
 
-def _view_advanced_arg_descriptions():
-    cu.print_header("Arguments Description")
+def _view_advanced_arg_help():
+    cu.print_header("Help")
     for field in ADVANCED_SUSHI_ARG_FIELDS:
-        cu.print_subheader(field['label'])
-        print(field["description"] + "\n")
-    input_prompt.get("Press Enter to return to the menu... ", allow_empty=True)
+        cu.print_help_text(field['label'], field["description"])
+    input_prompt.get("Press Enter to close...  ", allow_empty=True, nl_before=True)
 
 
 def _reset_all_values(settings_obj):
-    if confirm_prompt.get("Reset all custom arguments to default values?"):
+    if confirm_prompt.get("Reset all advanced arguments to default?",destructive=True):
         for field in settings_obj.sync_workflow.get("sushi_advanced_args", {}).keys():
             settings_obj.sync_workflow["sushi_advanced_args"][field] = None
         settings_obj.handle_save()
@@ -176,9 +174,9 @@ def configure_advanced_sushi_args(settings_obj):
                 if field:
                     _edit_advanced_sushi_arg(settings_obj, field)
             case 2:
-                _view_advanced_arg_descriptions()
-            case 3:
                 _reset_all_values(settings_obj)
+            case 3:
+                _view_advanced_arg_help()
             case 4:
                 break
 

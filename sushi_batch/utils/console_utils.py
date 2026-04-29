@@ -91,3 +91,11 @@ def try_print_spinner_message(message, spinner=None):
             print(message)
     except Exception:
         print(message)
+
+def print_help_text(subheader, description):
+    print_subheader(subheader)
+    if isinstance(description, tuple):
+        for text in description:
+            print(text)
+    else:
+        print(description)

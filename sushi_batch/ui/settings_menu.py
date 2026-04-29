@@ -238,7 +238,7 @@ def show_settings_menu(settings_obj):
                 current_codec = settings_obj.merge_workflow.get("encode_codec")
                 configure_audio_encode_settings(settings_obj, current_codec)
             case 4:
-                if confirm_prompt.get():
+                if confirm_prompt.get(nl_before=True, destructive=True):
                     settings_obj.restore()
                     cu.print_success("Settings restored to default values.")
             case 5:

@@ -93,8 +93,8 @@ ENCODER_OPTIONS = {
 
 MENU_OPTIONS = [
     (1, "Change Setting Value"),
-    (2, "View Options Description"),
-    (3, "Reset All to Default"),
+    (2, "Reset All to Default"),
+    (3, "View Options Help"),
     (4, "Go Back"),
 ]
 
@@ -143,9 +143,12 @@ def _get_visible_options_rows(codec):
             "type": AudioEncoder,
             "default": DEFAULT_ENCODE_CODEC_SETTINGS[codec.name]["encoder"],
             "prompt": "Select audio encoder: ",
-            "description": """Audio encoder to use for Opus encoding.
-libopus is the default encoder provided by FFmpeg and is suitable for most users.
-opusenc is the official Opus encoder. Recommended for users who need to ensure maximum compatibility with the Opus specification. Requires opus-tools to be installed and added to PATH."""
+            "description": (
+                "Audio encoder to be used for Opus encoding.", 
+                f"{cu.fore.LIGHTWHITE_EX} - libopus.{cu.style_reset} Default encoder provided by FFmpeg. Suitable for most users.{cu.style_reset}", 
+                f"{cu.fore.LIGHTWHITE_EX} - opusenc.{cu.style_reset} Official Opus encoder. Recommended for users who want to ensure maximum compatibility with the Opus specification.",
+                f"{cu.fore.LIGHTBLACK_EX}   - Requires opus-tools to be installed and added to PATH.{cu.style_reset}"
+            )
         })
     return options
 
@@ -237,20 +240,19 @@ def _select_setting_to_update(visible_rows):
     return visible_rows[selected - 1]
 
 def _reset_all_values(settings_obj, selected_codec):
-    if confirm_prompt.get("Reset all custom arguments to default values?"):
+    if confirm_prompt.get("Reset all settings for this codec?",destructive=True):
         settings_obj.merge_workflow["encode_codec_settings"][selected_codec.name] = (
             deepcopy(DEFAULT_ENCODE_CODEC_SETTINGS[selected_codec.name])
         )
         settings_obj.handle_save()
-        cu.print_success("All settings have been reset to default.", wait=True)
+        cu.print_success("All settings for this codec have been reset to default.", wait=True)
 
 def _view_options_help(visible_rows):
-    cu.print_header("Arguments Description")
+    cu.print_header("Help")
     for field in visible_rows:
-        if field["description"]:
-            cu.print_subheader(field['label'])
-            print(field["description"])
-    input_prompt.get("Press Enter to return to the menu... ", allow_empty=True, nl_before=True)
+        cu.print_help_text(field['label'], field["description"])
+    print()
+    input_prompt.get("Press Enter to close...  ", allow_empty=True, nl_before=True)
 
 
 
@@ -269,9 +271,9 @@ def configure_audio_encode_settings(settings_obj, selected_codec):
                 if field:
                     _edit_codec_setting(settings_obj, field, selected_codec)
             case 2:
-                _view_options_help(visible_rows)
-            case 3:
                 _reset_all_values(settings_obj, selected_codec)
+            case 3:
+                _view_options_help(visible_rows)
             case _:
                 break
 
