@@ -188,7 +188,7 @@ def _generate_settings_table(settings_obj, visible_rows, codec):
         ])
     return table
 
-def _update_selection(settings_obj, field, codec, options):
+def _update_selection(settings_obj, field, codec, options, warning_bottom_bar=None):
     current_value = _get_current_value(settings_obj, codec, field["attr"])
 
     _options = []
@@ -206,7 +206,7 @@ def _update_selection(settings_obj, field, codec, options):
             default_option = idx
             
     _prompt = field["prompt"] or "Select an option:"
-    selected = choice_prompt.get(_prompt, options=_options, default=default_option)
+    selected = choice_prompt.get(_prompt, options=_options, default=default_option, bottom_toolbar=warning_bottom_bar)
     if selected == len(_options):
         return
     
@@ -223,19 +223,19 @@ def _update_selection(settings_obj, field, codec, options):
 
         settings_obj.handle_save()
     
-def _edit_codec_setting(settings_obj, field, codec):
+def _edit_codec_setting(settings_obj, field, codec, warning_bottom_bar=None):
     if field["type"] == AudioEncoder:
-        _update_selection(settings_obj, field, codec, ENCODER_OPTIONS[codec])
+        _update_selection(settings_obj, field, codec, ENCODER_OPTIONS[codec], warning_bottom_bar)
     elif "bitrates." in field["attr"]:
         layout_name = field["attr"].split(".")[1]
         options = BITRATE_OPTIONS[codec][AudioChannelLayout[layout_name]]
         _update_selection(settings_obj, field, codec, options)
 
-def _select_setting_to_update(visible_rows):
+def _select_setting_to_update(visible_rows, warning_bottom_bar=None):
     options = [(idx, row["label"]) for idx, row in enumerate(visible_rows, 1)]
     options.append((len(options) + 1, "Go Back"))
 
-    selected = choice_prompt.get("Select option to edit: ", options=options)
+    selected = choice_prompt.get("Select option to edit: ", options=options, bottom_toolbar=warning_bottom_bar)
     if selected == len(options):
         return None
 
@@ -257,10 +257,11 @@ def _view_options_help(visible_rows):
     input_prompt.get("Press Enter to close...  ", allow_empty=True, nl_before=True)
 
 
-def _get_warning_bottom_bar(selected_codec):
+def _get_warning_bottom_bar(selected_codec, settings_obj):
     if selected_codec == AudioEncodeCodec.OPUS:
-        if XiphOpusEncoder.is_available:
-            return "  - Opusenc is not installed. FFmpeg will be used instead."
+        selected_encoder = settings_obj.merge_workflow["encode_codec_settings"][selected_codec.name]["encoder"]
+        if not XiphOpusEncoder.is_available and selected_encoder == AudioEncoder.XIPH_OPUSENC:
+            return " Opusenc is not installed. FFmpeg will be used instead.\n Updated builds can be found at https://www.videohelp.com/software/OpusTools "
         return None
 
 def configure_audio_encode_settings(settings_obj, selected_codec):
@@ -271,14 +272,14 @@ def configure_audio_encode_settings(settings_obj, selected_codec):
         visible_rows = _get_visible_options_rows(selected_codec)
         print(_generate_settings_table(settings_obj, visible_rows, selected_codec))
 
-        warning_bottom_bar = _get_warning_bottom_bar(selected_codec)
+        warning_bottom_bar = _get_warning_bottom_bar(selected_codec, settings_obj)
 
         selected = choice_prompt.get(options=MENU_OPTIONS, bottom_toolbar=warning_bottom_bar)
         match selected:
             case 1:
-                field = _select_setting_to_update(visible_rows)
+                field = _select_setting_to_update(visible_rows, warning_bottom_bar)
                 if field:
-                    _edit_codec_setting(settings_obj, field, selected_codec)
+                    _edit_codec_setting(settings_obj, field, selected_codec, warning_bottom_bar)
             case 2:
                 _reset_all_values(settings_obj, selected_codec)
             case 3:
