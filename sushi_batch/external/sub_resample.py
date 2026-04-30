@@ -48,10 +48,11 @@ class SubResampler:
                 encoding="utf-8",
                 errors="replace",
             )
+            args_log = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(args))}\n\n"
 
             stdout, _ = aegisub_resample.communicate()
 
-            cls._try_save_log_content(log_path, stdout)
+            cls._try_save_log_content(log_path, args_log + stdout)
 
             if aegisub_resample.returncode == 0:
                 job.resample_done = True

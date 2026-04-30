@@ -142,7 +142,8 @@ class MKVMerge:
             stdout, _ = mkv_merge.communicate()
 
             if s.config.general.get("save_mkvmerge_logs") and log_path: # Unified with merge pipeline
-                ExecutionLogger.save_log_output(log_path, stdout, section_name=cls.log_section_name)
+                args_log = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(args))}\n\n"
+                ExecutionLogger.save_log_output(log_path, args_log + stdout, section_name=cls.log_section_name)
 
             match (mkv_merge.returncode):
                 case 0:

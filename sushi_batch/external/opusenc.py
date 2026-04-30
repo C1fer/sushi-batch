@@ -73,8 +73,9 @@ class XiphOpusEncoder:
 
             _, opusenc_stderr = encode_process.communicate()
 
-            _log = f"{ExecutionLogger.internal_log_indicator}Reading raw audio from FFmpeg...\n\n{ffmpeg_log}{opusenc_stderr}"
-            cls._try_save_log_content(log_path, _log)
+            opusenc_log = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(encode_args))}\n\n{opusenc_stderr}"
+
+            cls._try_save_log_content(log_path, opusenc_log)
 
             if encode_process.returncode != 0:
                 return None

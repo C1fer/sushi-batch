@@ -224,11 +224,11 @@ class FFmpeg:
                 encoding="utf-8",
                 errors="replace",
             )
-
             _, stderr = ffmpeg_encode.communicate()
 
-            clean_log = cls.get_clean_audio_encode_log(stderr)
-            cls._try_save_log_content(log_path, clean_log)
+            ffmpeg_log = cls.get_clean_audio_encode_log(stderr)
+            args_log = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(args))}\n\n"
+            cls._try_save_log_content(log_path, args_log + ffmpeg_log)
 
             if ffmpeg_encode.returncode != 0:
                 return None
