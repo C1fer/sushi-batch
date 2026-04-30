@@ -61,9 +61,9 @@ class Section(Enum):
 
 
 class QueueTheme(Enum):
-    CLASSIC = "classic"
-    CARD = "card"
-    YAML = "yaml-like" 
+    CLASSIC = "Classic"
+    CARD = "Card"
+    YAML = "YAML-inspired" 
 
 class AudioEncodeCodec(Enum):
     OPUS = "Opus"

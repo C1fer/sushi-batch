@@ -12,12 +12,6 @@ from ..models.enums import AudioEncodeCodec, Section, QueueTheme
 
 GO_BACK_OPTION_LABEL = "Go Back"
 
-QUEUE_THEMES = {
-    QueueTheme.CLASSIC: "Classic",
-    QueueTheme.CARD: "Card",
-    QueueTheme.YAML: "YAML-inspired"
-}
-
 MENU_OPTIONS = [
     (1, "Change a Setting"),
     (2, "Configure Advanced Sushi Arguments", lambda o: o.sync_workflow.get("enable_sushi_advanced_args")),
@@ -54,10 +48,7 @@ def _get_formatted_value(value):
             return f"{cu.Fore.GREEN}Enabled{cu.style_reset}"
         case False:
             return f"{cu.Fore.RED}Disabled{cu.style_reset}"
-        case QueueTheme():
-            theme_name = QUEUE_THEMES.get(value, "Unknown")
-            return f"{cu.Fore.MAGENTA}{theme_name}{cu.style_reset}"
-        case AudioEncodeCodec():
+        case QueueTheme() | AudioEncodeCodec():
             return f"{cu.Fore.MAGENTA}{value.value}{cu.style_reset}"
         case _:
             _color = cu.Fore.YELLOW if value else cu.Fore.LIGHTBLACK_EX
@@ -297,24 +288,22 @@ def _render_settings_table(rows):
 
 def _select_queue_theme():
     """Display queue theme options and update setting based on user selection"""
-    go_back_id = len(QUEUE_THEMES) + 1
-    options = [(idx, label) for idx, label in enumerate(QUEUE_THEMES.values(), 1)]
-    options.append((go_back_id, GO_BACK_OPTION_LABEL))
+    options = [(idx, theme.value) for idx, theme in enumerate(QueueTheme, 1)]
+    options.append((len(options) + 1, GO_BACK_OPTION_LABEL))
 
     choice_idx = choice_prompt.get(options=options, nl_before=False, nl_after=False)
-    if choice_idx == go_back_id:
+    if choice_idx == len(options):
         return None
 
-    return next(theme for theme, label in QUEUE_THEMES.items() if label == options[choice_idx - 1][1])
+    return next(theme for theme in QueueTheme if theme.value == options[choice_idx - 1][1])
 
 def _select_audio_codec():
     """Display audio codec options and update setting based on user selection"""
-    go_back_id = len(AudioEncodeCodec) + 1
     options = [(idx, codec.value) for idx, codec in enumerate(AudioEncodeCodec, 1)]
-    options.append((go_back_id, GO_BACK_OPTION_LABEL))
+    options.append((len(options) + 1, GO_BACK_OPTION_LABEL))
 
     choice_idx = choice_prompt.get(options=options, nl_before=False, nl_after=False)
-    if choice_idx == go_back_id:
+    if choice_idx == len(options):
         return None
 
     return next(codec for codec in AudioEncodeCodec if codec.value == options[choice_idx - 1][1])
@@ -346,7 +335,7 @@ def _update_value(obj, option):
             if confirm_prompt.get():
                 new_val = user_input
                 
-    if new_val is not None:
+    if new_val is not None and new_val != curr_val:
         if len(path) == 1:
             setattr(obj, option, new_val)
         else:
