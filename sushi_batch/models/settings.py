@@ -51,7 +51,7 @@ class Settings():
         self.general = {
             "queue_theme": QueueTheme.CARD,
             "save_sushi_logs": True,
-            "save_mkvmerge_logs": False,
+            "save_merge_logs": True,
         }
 
         # Sync Workflow Settings

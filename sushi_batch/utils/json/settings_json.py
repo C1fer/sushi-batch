@@ -55,7 +55,7 @@ class SettingsDecoder(JSONDecoder):
         dct["general"] = {
             "queue_theme": QueueTheme[dct.get("queue_theme", "CARD")],
             "save_sushi_logs": dct.get("save_sushi_logs", True),
-            "save_mkvmerge_logs": dct.get("save_mkvmerge_logs", False)
+            "save_merge_logs": dct.get("save_mkvmerge_logs", False)
         }
         pop_many(dct, "queue_theme", "save_sushi_logs", "save_mkvmerge_logs")
 

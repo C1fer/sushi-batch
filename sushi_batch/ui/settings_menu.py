@@ -87,8 +87,8 @@ def _get_settings_rows(obj):
         {
             "section": Section.GEN,
             "label": "Save Merge logs",
-            "attr": "general.save_mkvmerge_logs",
-            "value": obj.general.get("save_mkvmerge_logs"),
+            "attr": "general.save_merge_logs",
+            "value": obj.general.get("save_merge_logs"),
             "divider": True,
             "description": "Saves logs for each merge operation.",
             "show": True,

@@ -141,7 +141,7 @@ class MKVMerge:
 
             stdout, _ = mkv_merge.communicate()
 
-            if s.config.general.get("save_mkvmerge_logs") and log_path: # Unified with merge pipeline
+            if s.config.general.get("save_merge_logs") and log_path:
                 args_log = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(args))}\n\n"
                 ExecutionLogger.save_log_output(log_path, args_log + stdout, section_name=cls.log_section_name)
 
@@ -156,7 +156,7 @@ class MKVMerge:
                     job.merged_file = output_file
                     job.merged = True
                     job.merge_has_warnings = True
-                    if not s.config.general.get("save_mkvmerge_logs"):
+                    if not s.config.general.get("save_merge_logs"):
                         cls._show_warnings(stdout, log_prefix, spinner)
                 case 2:
                     lines = stdout.splitlines()
