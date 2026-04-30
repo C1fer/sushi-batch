@@ -124,18 +124,18 @@ def _get_settings_rows(obj):
         },
         {
             "section": Section.MERGE_WRK,
-            "label": "Encode lossless audio before merging",
+            "label": "Encode lossless sync target audio track before merge",
             "attr": "merge_workflow.encode_lossless_audio_before_merging",
             "value": obj.merge_workflow.get("encode_lossless_audio_before_merging"),
-            "description": "Encodes extracted lossless tracks to a configured lossy codec before merging.",
+            "description": "Encodes the selected sync audio track from the sync target file to a configured lossy codec before merging.",
             "show": True,
         },
         {
             "section": Section.MERGE_WRK,
-            "label": "Encoding audio codec",
+            "label": "Audio Encode Codec",
             "attr": "merge_workflow.encode_codec",
             "value": obj.merge_workflow.get("encode_codec"),
-            "description": "Selects which audio codec is used when pre-merge audio encoding is enabled.",
+            "description": "Selects which lossy audio codec to use when pre-merge audio encoding is enabled.",
             "show": obj.merge_workflow.get("encode_lossless_audio_before_merging"),
         },
         {
@@ -284,6 +284,9 @@ def _render_settings_table(rows):
     tb = PrettyTable(["Section", "Name", "Value"])
     
     for row in rows:
+        if not row.get("show"):
+            continue
+
         tb.add_row(
             [row["section"].value, row["label"], 
             _get_formatted_value(row["value"])],
