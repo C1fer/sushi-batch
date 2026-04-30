@@ -51,7 +51,6 @@ class Settings():
         self.general = {
             "queue_theme": QueueTheme.CARD,
             "save_sushi_logs": True,
-            "save_aegisub_resample_logs": False,
             "save_mkvmerge_logs": False,
         }
 

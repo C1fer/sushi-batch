@@ -55,10 +55,9 @@ class SettingsDecoder(JSONDecoder):
         dct["general"] = {
             "queue_theme": QueueTheme[dct.get("queue_theme", "CARD")],
             "save_sushi_logs": dct.get("save_sushi_logs", True),
-            "save_aegisub_resample_logs": dct.get("save_aegisub_resample_logs", False),
             "save_mkvmerge_logs": dct.get("save_mkvmerge_logs", False)
         }
-        pop_many(dct, "queue_theme", "save_sushi_logs", "save_aegisub_resample_logs", "save_mkvmerge_logs")
+        pop_many(dct, "queue_theme", "save_sushi_logs", "save_mkvmerge_logs")
 
     def _migrate_merge_workflow_settings_to_v2(self, dct):
         dct["merge_workflow"] = {
