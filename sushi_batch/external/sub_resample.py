@@ -7,6 +7,9 @@ from ..utils import console_utils as cu
 from .execution_logger import ExecutionLogger
 
 import re
+from ..models.job.video_sync_job import VideoSyncJob
+from yaspin.core import Yaspin
+
 class SubResampler:
     is_installed = utils.is_app_installed("aegisub-cli")
     whitelisted_resample_extensions = {".ass", ".ssa"}
@@ -20,18 +23,19 @@ class SubResampler:
 
     
     @staticmethod
-    def _get_args(job):
+    def _get_args(job: VideoSyncJob) -> list[str]:
+        selected_stream = job.src_streams.get_selected_subtitle_stream()
         return [
             "aegisub-cli",
-            f"{job.dst_file}.sushi{job.src_sub_ext}",
-            f"{job.dst_file}.sushi_resampled{job.src_sub_ext}",
+            f"{job.dst_filepath}.sushi{selected_stream.extension}",
+            f"{job.dst_filepath}.sushi_resampled{selected_stream.extension}",
             "tool/resampleres",
             "--video",
-            job.dst_file,
+            job.dst_filepath,
         ]
 
     @classmethod
-    def run(cls, job, spinner=None, log_prefix="[Sub Resampler]", log_path=None):
+    def run(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_prefix="[Sub Resampler]", log_path: str | None = None) -> bool:
         try: 
             args = cls._get_args(job)
 
@@ -55,7 +59,7 @@ class SubResampler:
             cls._try_save_log_content(log_path, args_log + stdout)
 
             if aegisub_resample.returncode == 0:
-                job.resample_done = True
+                job.merge.resample_done = True
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Resampling completed successfully.", spinner)
                 return True
             return False
@@ -87,23 +91,26 @@ class SubResampler:
 
   
     @classmethod
-    def is_resample_needed(cls, job, spinner=None, log_prefix="[Sub Resampler]", log_path=None):
+    def is_resample_needed(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_prefix="[Sub Resampler]", log_path: str | None = None) -> bool:
         """Determines if subtitle resampling is needed based on script and video resolution"""        
         try:
-            if job.src_sub_ext not in cls.whitelisted_resample_extensions:
-                _message = f"Subtitle format {job.src_sub_ext} is not supported for resampling. Skipping resample."
+            selected_stream = job.src_streams.get_selected_subtitle_stream()
+            if selected_stream.extension not in cls.whitelisted_resample_extensions:
+                _message = f"Subtitle format {selected_stream.extension} is not supported for resampling. Skipping resample."
                 cls._try_save_log_content(log_path, _message, is_internal=True)
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)
                 return False
 
-            video_resolution = (job.dst_vid_width, job.dst_vid_height)
+            
+            dst_video_stream = next(stream for stream in job.dst_streams.video if stream.default)
+            video_resolution = (dst_video_stream.width, dst_video_stream.height)
             if None in video_resolution:
                 _message = "Sync target video resolution is unknown. Cannot determine if subtitle resampling is needed."
                 cls._try_save_log_content(log_path, _message, is_internal=True)
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)
                 return False
             
-            script_resolution = cls._get_script_resolution(f"{job.dst_file}.sushi{job.src_sub_ext}")
+            script_resolution = cls._get_script_resolution(f"{job.dst_filepath}.sushi{selected_stream.extension}")
             if None in script_resolution:
                 _message = "Script resolution could not be determined from subtitle file. Cannot determine if resampling is needed."
                 cls._try_save_log_content(log_path, _message, is_internal=True)

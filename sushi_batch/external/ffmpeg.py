@@ -10,6 +10,8 @@ from ..external.execution_logger import ExecutionLogger
 from ..models import settings as s
 from ..models.streams import Stream
 from ..models.enums import AudioEncodeCodec, AudioChannelLayout, AudioEncoder
+from ..models.job.video_sync_job import VideoSyncJob
+from yaspin.core import Yaspin
 
 LIB_KEY = "-c:a"
 BITRATE_KEY = "-b:a"
@@ -112,7 +114,7 @@ class FFmpeg:
             cu.print_error(f"An error occurred while looking for streams in {filepath}: {e}")
 
     @classmethod 
-    def get_clean_probe_info(cls, filepath):
+    def get_clean_probe_info(cls, filepath) -> dict[str, list[dict]]:
         """
         Returns deserialized streams extracted from ffprobe output. Grouped by type.
         """
@@ -169,15 +171,15 @@ class FFmpeg:
         return args, selected_bitrate
     
     @classmethod
-    def _get_audio_encode_args(cls, job, settings_codec, settings_encoder):
+    def _get_audio_encode_args(cls, job: VideoSyncJob, settings_codec: AudioEncodeCodec, settings_encoder: AudioEncoder):
         """Constructs ffmpeg arguments for encoding audio with the selected codec."""
-        output_path = f"{job.dst_file}_encode.{settings_codec.name.lower()}"
+        output_path = f"{job.dst_filepath}_encode.{settings_codec.name.lower()}"
         codec_params, selected_bitrate = cls._get_codec_params(job, settings_codec, settings_encoder)
         
         args = [
             'ffmpeg',
-            '-i', job.dst_file,
-            '-map', f'0:{job.dst_aud_id}',
+            '-i', job.dst_filepath,
+            '-map', f'0:{job.dst_streams.get_selected_audio_stream().id}',
             *codec_params,
             '-y',  # Overwrite output file if it exists
             output_path
@@ -199,7 +201,7 @@ class FFmpeg:
             return content
     
     @classmethod
-    def encode_lossless_audio(cls, job, spinner=None, log_prefix="[FFmpeg]", is_fallback=False, log_path=None):
+    def encode_lossless_audio(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_prefix="[FFmpeg]", is_fallback=False, log_path: str | None = None) -> str | None:
         """Encodes audio with the selected codec option and saves to *_encode.<ext>."""
         try:
             settings_codec = s.config.merge_workflow.get("encode_codec")
@@ -235,23 +237,24 @@ class FFmpeg:
 
             cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Audio track successfully encoded to {out_info}.", spinner)
 
-            job.merge_audio_encode_done = True
-            job.merge_audio_encode_codec = settings_codec.name
-            job.merge_audio_encode_bitrate = bitrate_display
-            job.merge_audio_encode_encoder = selected_encoder.name
+            job.merge.audio_encode_done = True
+            job.merge.audio_encode_codec = settings_codec.name
+            job.merge.audio_encode_bitrate = bitrate_display
+            job.merge.audio_encode_encoder = selected_encoder.name
             return output_path
         except Exception as e:
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} An error occurred during audio encoding: {e}", spinner)
             return None
         
     @classmethod
-    def is_audio_encode_needed(cls, job, spinner=None, log_prefix="[FFmpeg]", log_path=None):
+    def is_audio_encode_needed(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_prefix="[FFmpeg]", log_path: str | None = None) -> bool:
         """Determines if audio encoding is needed based on the selected codec and source audio format."""
         try:
+            selected_stream = job.dst_streams.get_selected_audio_stream()
             dst_aud_codec = (
-                job.dst_aud_codec.lower()
-                if job.dst_aud_codec
-                else Stream.get_codec_from_display_name(job.dst_aud_display)
+                selected_stream.codec.lower()
+                if selected_stream.codec
+                else ""
             )
 
             if not dst_aud_codec:
@@ -274,14 +277,14 @@ class FFmpeg:
             return False
     
     @staticmethod
-    def get_pcm_pipe_args(job):
+    def get_pcm_pipe_args(job: VideoSyncJob) -> list[str]:
         """Constructs ffmpeg arguments for piping the selected audio track in pcm format to stdout"""
         return [
             'ffmpeg',
             "-hide_banner",
             "-v", "error",
-            '-i', job.dst_file,
-            '-map', f'0:{job.dst_aud_id}',
+            '-i', job.dst_filepath,
+            '-map', f'0:{job.dst_streams.get_selected_audio_stream().id}',
             "-f", "wav",  # Output format for piping (uncompressed PCM)
             "-"
         ]

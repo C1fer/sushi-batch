@@ -1,5 +1,7 @@
 import subprocess
 
+from yaspin.core import Yaspin
+
 from .ffmpeg import FFmpeg
 
 from ..utils import utils
@@ -8,6 +10,7 @@ from ..external.execution_logger import ExecutionLogger
 
 from ..models.enums import AudioEncodeCodec, AudioChannelLayout, AudioEncoder
 from ..models import settings as s
+from ..models.job.video_sync_job import VideoSyncJob
 
 
 class XiphOpusEncoder:
@@ -21,11 +24,11 @@ class XiphOpusEncoder:
             ExecutionLogger.save_log_output(log_path, content, section_name= _section_name, is_internal=is_internal)
     
     @classmethod
-    def encode(cls, job, spinner=None, log_prefix="[Opusenc]", log_path=None):
+    def encode(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_prefix="[Opusenc]", log_path: str | None = None) -> str | None:
         """Encodes audio with opusenc using the codec settings. Pipes decoded audio from FFmpeg to opusenc and saves to *_encode.opus."""
         try:
             layout_bitrate = s.config.merge_workflow["encode_codec_settings"][AudioEncodeCodec.OPUS.name]["bitrates"].get(AudioChannelLayout.STEREO.name, None)
-            output_path = f"{job.dst_file}_encode.opus"
+            output_path = f"{job.dst_filepath}_encode.opus"
             
             encode_args =  [
                 "opusenc",
@@ -82,10 +85,10 @@ class XiphOpusEncoder:
             
             cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Audio track successfully encoded to {out_info}.", spinner)
 
-            job.merge_audio_encode_done = True
-            job.merge_audio_encode_codec = AudioEncodeCodec.OPUS.name
-            job.merge_audio_encode_encoder = AudioEncoder.XIPH_OPUSENC.name
-            job.merge_audio_encode_bitrate = bitrate_display
+            job.merge.audio_encode_done = True
+            job.merge.audio_encode_codec = AudioEncodeCodec.OPUS.name
+            job.merge.audio_encode_encoder = AudioEncoder.XIPH_OPUSENC.name
+            job.merge.audio_encode_bitrate = bitrate_display
             return output_path
         except Exception as e:
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} Error encoding with opusenc: {e}", spinner)

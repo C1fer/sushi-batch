@@ -6,6 +6,8 @@ from ..utils import utils
 from ..models import settings as s
 
 from .execution_logger import ExecutionLogger
+from ..models.job.video_sync_job import VideoSyncJob
+from yaspin.core import Yaspin
 
 
 class MKVMerge:
@@ -116,7 +118,7 @@ class MKVMerge:
             cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{warnings}\n", spinner)
            
     @classmethod
-    def run(cls, job, use_resampled_sub=False, encoded_audio_path=None, spinner=None, log_prefix="[MKVMerge]", log_path=None):
+    def run(cls, job: VideoSyncJob, use_resampled_sub: bool = False, encoded_audio_path: str | None = None, spinner: Yaspin | None = None, log_prefix="[MKVMerge]", log_path: str | None = None) -> None:
         """Run MKVMerge and handle output logging. log_path can be provided to skip automatic log file creation."""
         try:     
             args = cls._get_merge_args(job, use_resampled_sub, encoded_audio_path)
@@ -147,21 +149,24 @@ class MKVMerge:
 
             match (mkv_merge.returncode):
                 case 0:
-                    spinner.ok("✅")
-                    job.merged = True
-                    job.merged_file = output_file
-                    job.merge_has_warnings = False
+                    if spinner:
+                        spinner.ok("✅")
+                    job.merge.done = True
+                    job.merge.merged_filepath = output_file
+                    job.merge.has_warnings = False
                 case 1:
-                    spinner.ok("⚠️")
-                    job.merged_file = output_file
-                    job.merged = True
-                    job.merge_has_warnings = True
+                    if spinner:
+                        spinner.ok("⚠️")
+                    job.merge.merged_filepath = output_file
+                    job.merge.done = True
+                    job.merge.has_warnings = True
                     if not s.config.general.get("save_merge_logs"):
                         cls._show_warnings(stdout, log_prefix, spinner)
                 case 2:
                     lines = stdout.splitlines()
                     error = [x.replace("Error: ", f"{log_prefix} Error: ") for x in lines if x.startswith("Error:")]
-                    spinner.fail("❌")
-                    spinner.write(f"{cu.fore.LIGHTRED_EX}{error[0]}\n")
+                    if spinner:
+                        spinner.fail("❌")
+                        spinner.write(f"{cu.fore.LIGHTRED_EX}{error[0]}\n")
         except Exception as e:
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} Error generating merged file: {e}", spinner)

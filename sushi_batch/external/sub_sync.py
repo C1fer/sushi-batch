@@ -4,8 +4,8 @@ from yaspin import yaspin
 
 from ..models import settings
 from ..models.enums import Status
-
-from ..utils import constants
+from ..models.job.audio_sync_job import AudioSyncJob
+from ..models.job.video_sync_job import VideoSyncJob
 from ..utils import console_utils as cu
 
 from .execution_logger import ExecutionLogger
@@ -26,24 +26,24 @@ class Sushi:
     }
 
     @classmethod
-    def _get_args(cls, job, use_advanced_args=False):
+    def _get_args(cls, job: AudioSyncJob | VideoSyncJob, use_advanced_args: bool = False) -> list[str]:
         base_args = [
             "sushi",
             "--src",
-            job.src_file,
+            job.src_filepath,
             "--dst",
-            job.dst_file,
+            job.dst_filepath,
         ]
 
-        is_video_task = job.task in constants.VIDEO_TASKS
         track_args = [
             "--src-audio", 
-            str(job.src_aud_id), 
+            str(job.src_streams.get_selected_audio_stream().id), 
             "--src-script", 
-            str(job.src_sub_id), 
+            str(job.src_streams.get_selected_subtitle_stream().id), 
             "--dst-audio", 
-            str(job.dst_aud_id)
-        ] if is_video_task else ["--script", job.sub_file]
+            str(job.dst_streams.get_selected_audio_stream().id)
+        ] if isinstance(job, VideoSyncJob) else ["--script", job.sub_filepath]
+        
         base_args.extend(track_args) 
 
         if settings.config.sync_workflow.get("use_high_quality_resample"):
@@ -88,8 +88,8 @@ class Sushi:
             return lines[-1] if lines else "Unknown Sushi error"
 
     @classmethod
-    def run(cls, job, use_advanced_args=False, log_prefix="[Sushi]"):
-        file_display = f"{cu.fore.MAGENTA}{job.dst_file}{cu.Style.RESET_ALL}"
+    def run(cls, job: AudioSyncJob | VideoSyncJob, use_advanced_args: bool = False, log_prefix: str = "[Sushi]") -> None:
+        file_display = f"{cu.fore.MAGENTA}{job.dst_filepath}{cu.Style.RESET_ALL}"
         title = f"{log_prefix} Syncing subtitles to {file_display}"
         with yaspin(text=title, color="cyan", timer=True, ellipsis="...") as sp:
             try: 
@@ -105,20 +105,20 @@ class Sushi:
                 _, stderr = sushi.communicate()
 
                 if settings.config.general.get("save_sushi_logs"):
-                    log_path = ExecutionLogger.set_log_path(job.src_file, "Sushi Logs")
+                    log_path = ExecutionLogger.set_log_path(job.src_filepath, "Sushi Logs")
                     ExecutionLogger.save_log_output(log_path, stderr)
 
                 lines = stderr.strip().splitlines()
 
                 if sushi.returncode == 0:
-                    job.sync_has_warnings = any(cls.warning_flag in line for line in lines)
-                    job.sync_status = Status.COMPLETED
-                    job.result = cls._calc_avg_shift(lines)
+                    job.sync.has_warnings = any(cls.warning_flag in line for line in lines)
+                    job.sync.status = Status.COMPLETED
+                    job.sync.result = cls._calc_avg_shift(lines)
                     sp.ok("✅")
                 else:
                     error_msg = cls._get_error_message(lines)
                     raise subprocess.SubprocessError(error_msg)
             except Exception as e:
                 sp.fail("❌")
-                job.sync_status = Status.FAILED
-                job.result = str(e)
+                job.sync.status = Status.FAILED
+                job.sync.result = str(e)
