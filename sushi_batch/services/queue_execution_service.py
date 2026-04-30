@@ -9,7 +9,7 @@ from ..ui.prompts import input_prompt
 from ..utils import console_utils as cu
 from ..utils import constants, utils
 from yaspin import yaspin
-from ..external.subprocess_logger import SubProcessLogger
+from ..external.execution_logger import ExecutionLogger
 
 class QueueExecutionService:
     @classmethod
@@ -90,7 +90,7 @@ class QueueExecutionService:
     def _run_merge(cls, job, do_resample, do_encode_audio, parent_queue):
         """Execute the merging process for a given job. Handles audio encoding and subtitle resampling if needed."""
         with yaspin(text="", color="cyan", timer=True, ellipsis="...") as sp:
-            log_path = SubProcessLogger.set_log_path(job.dst_file, "Merge Logs") if settings.config.general.get("save_mkvmerge_logs") else None
+            log_path = ExecutionLogger.set_log_path(job.dst_file, "Merge Logs") if settings.config.general.get("save_mkvmerge_logs") else None
             encoded_audio_path = cls._encode_audio_before_merge(job, spinner=sp, log_path=log_path) if do_encode_audio else None
             use_resampled_sub = cls._resample_before_merge(job, spinner=sp, log_path=log_path) if do_resample else False
             MKVMerge.run(

@@ -1,13 +1,11 @@
 import subprocess
 from os import makedirs, path
 
-from yaspin import yaspin
-
 from ..utils import console_utils as cu
 from ..utils import utils
 from ..models import settings as s
 
-from .subprocess_logger import SubProcessLogger
+from .execution_logger import ExecutionLogger
 
 
 class MKVMerge:
@@ -144,7 +142,7 @@ class MKVMerge:
             stdout, _ = mkv_merge.communicate()
 
             if s.config.general.get("save_mkvmerge_logs") and log_path: # Unified with merge pipeline
-                SubProcessLogger.save_log_output(log_path, stdout, section_name=cls.log_section_name)
+                ExecutionLogger.save_log_output(log_path, stdout, section_name=cls.log_section_name)
 
             match (mkv_merge.returncode):
                 case 0:

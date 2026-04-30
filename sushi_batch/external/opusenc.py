@@ -4,7 +4,7 @@ from .ffmpeg import FFmpeg
 
 from ..utils import utils
 from ..utils import console_utils as cu
-from ..external.subprocess_logger import SubProcessLogger
+from ..external.execution_logger import ExecutionLogger
 
 from ..models.enums import AudioEncodeCodec, AudioChannelLayout, AudioEncoder
 from ..models import settings as s
@@ -18,7 +18,7 @@ class XiphOpusEncoder:
     def _try_save_log_content(cls, log_path, content, section_name = None, is_internal=False):
         if s.config.general.get("save_mkvmerge_logs") and log_path: # Unified with merge pipeline
             _section_name = section_name or cls.log_section_name
-            SubProcessLogger.save_log_output(log_path, content, section_name= _section_name, is_internal=is_internal)
+            ExecutionLogger.save_log_output(log_path, content, section_name= _section_name, is_internal=is_internal)
     
     @classmethod
     def encode(cls, job, spinner=None, log_prefix="[Opusenc]", log_path=None):
@@ -73,7 +73,7 @@ class XiphOpusEncoder:
 
             _, opusenc_stderr = encode_process.communicate()
 
-            _log = f"{SubProcessLogger.internal_log_indicator}Reading raw audio from FFmpeg...\n\n{ffmpeg_log}{opusenc_stderr}"
+            _log = f"{ExecutionLogger.internal_log_indicator}Reading raw audio from FFmpeg...\n\n{ffmpeg_log}{opusenc_stderr}"
             cls._try_save_log_content(log_path, _log)
 
             if encode_process.returncode != 0:

@@ -5,7 +5,7 @@ from pathlib import Path
 
 from ..utils import utils
 from ..utils import console_utils as cu
-from ..external.subprocess_logger import SubProcessLogger
+from ..external.execution_logger import ExecutionLogger
 
 from ..models import settings as s
 from ..models.streams import Stream
@@ -65,7 +65,7 @@ class FFmpeg:
     def _try_save_log_content(cls, log_path, content, section_name = None, is_internal=False):
         if s.config.general.get("save_mkvmerge_logs") and log_path: # Unified with merge pipeline
             _section_name = section_name or cls.log_section_name
-            SubProcessLogger.save_log_output(log_path, content, section_name= _section_name, is_internal=is_internal)
+            ExecutionLogger.save_log_output(log_path, content, section_name= _section_name, is_internal=is_internal)
 
     @classmethod
     def _get_probe_args(cls, filepath, stream_selector=None):

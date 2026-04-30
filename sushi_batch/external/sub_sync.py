@@ -8,7 +8,7 @@ from ..models.enums import Status
 from ..utils import constants
 from ..utils import console_utils as cu
 
-from .subprocess_logger import SubProcessLogger
+from .execution_logger import ExecutionLogger
 
 
 class Sushi:
@@ -105,8 +105,8 @@ class Sushi:
                 _, stderr = sushi.communicate()
 
                 if settings.config.general.get("save_sushi_logs"):
-                    log_path = SubProcessLogger.set_log_path(job.src_file, "Sushi Logs")
-                    SubProcessLogger.save_log_output(log_path, stderr)
+                    log_path = ExecutionLogger.set_log_path(job.src_file, "Sushi Logs")
+                    ExecutionLogger.save_log_output(log_path, stderr)
 
                 lines = stderr.strip().splitlines()
 

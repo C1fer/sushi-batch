@@ -5,12 +5,13 @@ from ..models import settings
 
 from importlib.metadata import version
 
-class SubProcessLogger:
+class ExecutionLogger:
     internal_log_indicator = "[Sushi-Batch] "
     log_header = f"{internal_log_indicator}Running with version {version('sushi-batch')}\n\n"
     
     @staticmethod
     def set_log_path(src_file, dir_name):
+        """Create a log file path to write into a specified directory."""
         output_dirpath = path.join(settings.config.data_path, dir_name)
         makedirs(output_dirpath, exist_ok=True)
 

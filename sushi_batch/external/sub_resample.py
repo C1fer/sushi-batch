@@ -4,7 +4,7 @@ from ..models import settings
 from ..utils import utils
 from ..utils import console_utils as cu
 
-from .subprocess_logger import SubProcessLogger
+from .execution_logger import ExecutionLogger
 
 import re
 class SubResampler:
@@ -16,7 +16,7 @@ class SubResampler:
     def _try_save_log_content(cls, log_path, content, section_name = None, is_internal=False):
         if settings.config.general.get("save_mkvmerge_logs") and log_path: # Unified with merge pipeline
             _section_name = section_name or cls.log_section_name
-            SubProcessLogger.save_log_output(log_path, content, section_name= _section_name, is_internal=is_internal)
+            ExecutionLogger.save_log_output(log_path, content, section_name= _section_name, is_internal=is_internal)
 
     
     @staticmethod
