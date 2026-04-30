@@ -186,9 +186,9 @@ def _get_settings_rows(obj):
         {
             "section": Section.MERGE_DST,
             "label": "Copy only selected sync audio track",
-            "attr": "merge_dst_file.copy_audio_tracks",
-            "value": obj.merge_dst_file.get("copy_audio_tracks"),
-            "description": "Includes only the selected target audio track used during synchronization.",
+            "attr": "merge_dst_file.copy_only_selected_sync_audio_track",
+            "value": obj.merge_dst_file.get("copy_only_selected_sync_audio_track"),
+            "description": "Copies only the selected sync audio track from the target file into the merged output.",
             "show": True,
         },
         {

@@ -85,7 +85,7 @@ class Settings():
         }
         
         self.merge_dst_file = {
-            "copy_audio_tracks": False,
+            "copy_only_selected_sync_audio_track": False,
             "copy_attachments": True,
             "copy_chapters": True,
             "copy_subtitle_tracks": True,

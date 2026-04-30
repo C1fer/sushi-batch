@@ -33,7 +33,7 @@ class SettingsDecoder(JSONDecoder):
     
     def _migrate_merge_dst_to_v2(self, dct):
         dct["merge_dst_file"] = {
-            "copy_audio_tracks": dct.get("dst_copy_audio_tracks", False),
+            "copy_only_selected_sync_audio_track": dct.get("dst_copy_audio_tracks", False),
             "copy_attachments": dct.get("dst_copy_attachments", True),
             "copy_chapters": dct.get("dst_copy_chapters", True),
             "copy_subtitle_tracks": dct.get("dst_copy_subtitle_tracks", True),

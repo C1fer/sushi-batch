@@ -51,7 +51,7 @@ class MKVMerge:
         """Add destination file specific arguments."""
         audio_track_arg = []
 
-        if s.config.merge_dst_file.get("copy_audio_tracks"):
+        if s.config.merge_dst_file.get("copy_only_selected_sync_audio_track"):
             if encoded_audio_path:
                 _track_lang = job.dst_aud_lang if job.dst_aud_lang else "und"
                 audio_track_arg = [
