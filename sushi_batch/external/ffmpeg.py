@@ -5,6 +5,7 @@ from pathlib import Path
 
 from ..utils import utils
 from ..utils import console_utils as cu
+from ..external.subprocess_logger import SubProcessLogger
 
 from ..models import settings as s
 from ..models.streams import Stream
@@ -58,6 +59,13 @@ FALLBACK_ENCODERS = {
 class FFmpeg:
     is_installed = utils.is_app_installed("ffmpeg")
     is_probe_installed = utils.is_app_installed("ffprobe")
+    log_section_name = "Audio Encode (FFmpeg)"
+
+    @classmethod
+    def _try_save_log_content(cls, log_path, content, section_name = None, is_internal=False):
+        if s.config.general.get("save_mkvmerge_logs") and log_path: # Unified with merge pipeline
+            _section_name = section_name or cls.log_section_name
+            SubProcessLogger.save_log_output(log_path, content, section_name= _section_name, is_internal=is_internal)
 
     @classmethod
     def _get_probe_args(cls, filepath, stream_selector=None):
@@ -175,9 +183,23 @@ class FFmpeg:
             output_path
         ]
         return args, output_path, selected_bitrate
+
+    @classmethod
+    def get_clean_audio_encode_log(cls, content):
+        """Returns the clean audio encode log by removing input metadata"""
+        try:
+            version_info = content.split("Input #0")
+            if len(version_info) < 2:
+                return content
+            output_info = version_info[1].split("Press [q] to stop, [?] for help")
+            if len(output_info) < 2:
+                return content
+            return version_info[0] + output_info[1]
+        except Exception:
+            return content
     
     @classmethod
-    def encode_lossless_audio(cls, job, spinner=None, log_prefix="[FFmpeg]", is_fallback=False):
+    def encode_lossless_audio(cls, job, spinner=None, log_prefix="[FFmpeg]", is_fallback=False, log_path=None):
         """Encodes audio with the selected codec option and saves to *_encode.<ext>."""
         try:
             settings_codec = s.config.merge_workflow.get("encode_codec")
@@ -195,16 +217,20 @@ class FFmpeg:
             else:
                 cu.print_warning(f"{log_prefix} Encoding audio track to {out_info}", nl_before=False, wait=False)
            
-            ffmpeg_encode = subprocess.run(
+            ffmpeg_encode = subprocess.Popen(
                 args,
-                check=True,
-                stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
             )
 
+            _, stderr = ffmpeg_encode.communicate()
+
+            clean_log = cls.get_clean_audio_encode_log(stderr)
+            cls._try_save_log_content(log_path, clean_log)
+
             if ffmpeg_encode.returncode != 0:
-                cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Audio track could not be encoded. Merging original audio track instead.", spinner)
                 return None
 
             cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Audio track successfully encoded to {out_info}.", spinner)
@@ -218,23 +244,34 @@ class FFmpeg:
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} An error occurred during audio encoding: {e}", spinner)
             return None
         
-    @staticmethod
-    def is_audio_encode_needed(job, spinner=None, log_prefix="[FFmpeg]"):
+    @classmethod
+    def is_audio_encode_needed(cls, job, spinner=None, log_prefix="[FFmpeg]", log_path=None):
         """Determines if audio encoding is needed based on the selected codec and source audio format."""
-        dst_aud_codec = (
-            job.dst_aud_codec.lower()
-            if job.dst_aud_codec
-            else Stream.get_codec_from_display_name(job.dst_aud_display)
-        )
+        try:
+            dst_aud_codec = (
+                job.dst_aud_codec.lower()
+                if job.dst_aud_codec
+                else Stream.get_codec_from_display_name(job.dst_aud_display)
+            )
 
-        if not dst_aud_codec:
-            cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Destination audio codec is unknown. Skipping audio encoding.", spinner)
-            return False
+            if not dst_aud_codec:
+                _message = "Destination audio codec is unknown. Skipping encode."
+                cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} {_message}", spinner)
+                cls._try_save_log_content(log_path, _message, is_internal=True)
+                return False
 
-        if dst_aud_codec in LOSSY_AUDIO_CODEC_OPTIONS.keys():
-            cu.try_print_spinner_message(f"{cu.fore.LIGHTBLACK_EX}{log_prefix} Audio encoding not needed. Audio is already in a lossy codec ({dst_aud_codec}).", spinner)
+            if dst_aud_codec in LOSSY_AUDIO_CODEC_OPTIONS.keys():
+                _message = f"Encoding not needed. Audio is already in a lossy codec ({dst_aud_codec})."
+                cu.try_print_spinner_message(f"{cu.fore.LIGHTBLACK_EX}{log_prefix} {_message}", spinner)
+                cls._try_save_log_content(log_path, _message, is_internal=True)
+                return False
+
+            return dst_aud_codec in LOSSLESS_AUDIO_CODECS
+        except Exception as e:
+            _message = f"An error occurred while determining if audio encode is needed: {e}"
+            cls._try_save_log_content(log_path, _message, is_internal=True)
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)
             return False
-        return dst_aud_codec in LOSSLESS_AUDIO_CODECS
     
     @staticmethod
     def get_pcm_pipe_args(job):
@@ -242,7 +279,7 @@ class FFmpeg:
         return [
             'ffmpeg',
             "-hide_banner",
-            "-loglevel", "error",
+            "-v", "error",
             '-i', job.dst_file,
             '-map', f'0:{job.dst_aud_id}',
             "-f", "wav",  # Output format for piping (uncompressed PCM)

@@ -12,6 +12,7 @@ from .subprocess_logger import SubProcessLogger
 
 class MKVMerge:
     is_installed = utils.is_app_installed("mkvmerge")
+    log_section_name = "File Merge (MKVMerge)"
     
     @classmethod
     def _get_out_filepath(cls, dst_file_path):
@@ -117,7 +118,8 @@ class MKVMerge:
             cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{warnings}\n", spinner)
            
     @classmethod
-    def run(cls, job, use_resampled_sub=False, encoded_audio_path=None, spinner=None, log_prefix="[MKVMerge]"):
+    def run(cls, job, use_resampled_sub=False, encoded_audio_path=None, spinner=None, log_prefix="[MKVMerge]", log_path=None):
+        """Run MKVMerge and handle output logging. log_path can be provided to skip automatic log file creation."""
         try:     
             args = cls._get_merge_args(job, use_resampled_sub, encoded_audio_path)
             output_file = path.normpath(args[2])
@@ -141,9 +143,8 @@ class MKVMerge:
 
             stdout, _ = mkv_merge.communicate()
 
-            if s.config.general.get("save_mkvmerge_logs"):
-                log_path = SubProcessLogger.set_log_path(output_file, "Merge Logs")
-                SubProcessLogger.save_log_output(log_path, stdout)
+            if s.config.general.get("save_mkvmerge_logs") and log_path: # Unified with merge pipeline
+                SubProcessLogger.save_log_output(log_path, stdout, section_name=cls.log_section_name)
 
             match (mkv_merge.returncode):
                 case 0:
