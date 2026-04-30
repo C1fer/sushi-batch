@@ -147,15 +147,15 @@ class FFmpeg:
             return False
 
     @classmethod
-    def _get_codec_params(cls, job, settings_codec, settings_encoder):
+    def _get_codec_params(cls, job: VideoSyncJob, settings_codec, settings_encoder):
         ffmpeg_codec_params = LOSSY_AUDIO_CODEC_OPTIONS.get(settings_codec, None)
         if not ffmpeg_codec_params:
             raise ValueError(f"Unsupported audio codec selected for encoding: {settings_codec.name}")
-        
-        track_layout = job.dst_aud_channel_layout if job.dst_aud_channel_layout else Stream.get_channel_layout_from_display_name(job.dst_aud_display)
+
+        track_layout = job.dst_streams.get_selected_audio_stream().channel_layout
         layout_enum = PROBE_CHANNEL_LAYOUT_MAP.get(track_layout, None)
         if not layout_enum:
-            cu.print_warning(f"[Job {job.idx} - FFmpeg] Unknown or unsupported channel layout '{track_layout}'. Defaulting to stereo.", nl_before=False, wait=False)
+            cu.print_warning(f"[Job {job.id} - FFmpeg] Unknown or unsupported channel layout '{track_layout}'. Defaulting to stereo.", nl_before=False, wait=False)
             layout_enum = AudioChannelLayout.STEREO
 
         selected_bitrate = s.config.merge_workflow["encode_codec_settings"][settings_codec.name]["bitrates"].get(layout_enum.name, None)

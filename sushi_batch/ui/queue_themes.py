@@ -1,5 +1,5 @@
 import re
-
+from typing import Callable
 from ..external.sub_sync import Sushi
 
 from ..models.job.audio_sync_job import AudioSyncJob
@@ -38,13 +38,11 @@ def _get_sync_status_style(status: Status):
         
 def _merge_status_style(merge_status: bool):
     """Return display metadata for a job's merge status."""
-    match merge_status:
-        case True:
-            return (cu.fore.LIGHTGREEN_EX, "Completed", "✓", cu.fore.GREEN)
-        case False:
-            return (cu.fore.LIGHTYELLOW_EX, "Pending", "~", cu.fore.LIGHTYELLOW_EX)
-        case _:
-            return (cu.fore.LIGHTBLACK_EX, "Unknown", "?", cu.fore.LIGHTBLACK_EX)
+    return (
+        (cu.fore.LIGHTGREEN_EX, "Completed", "✓", cu.fore.GREEN)
+        if merge_status
+        else (cu.fore.LIGHTYELLOW_EX, "Pending", "~", cu.fore.LIGHTYELLOW_EX)
+    )
 
 def _show_classic_theme(queued_jobs: list[AudioSyncJob | VideoSyncJob], current_task: Task):
     """ Show Job List contents (Classic Theme) """
@@ -140,7 +138,7 @@ def _show_card_theme(queued_jobs: list[AudioSyncJob | VideoSyncJob], current_tas
                         "label": "Merge Status",
                         "value": merged_color + merged_icon + " " + merged_label,
                         "children": [
-                            ("Generated File", f"{merged_child_color}{job.dst_filepath}") if job.merge.done else None,
+                            ("Generated File", f"{merged_child_color}{job.merge.merged_filepath}") if job.merge.done and job.merge.merged_filepath else None,
                             ("Warning", MERGE_WARNING_MESSAGE) if job.merge.has_warnings else None,
                             ("Resampled", f"{cu.fore.GREEN}Yes") if job.merge.resample_done else None,
                             ("Encoded Audio", f"{cu.fore.GREEN}Yes {_get_encode_info_display(job)}") if job.merge.audio_encode_done else None,
@@ -169,7 +167,6 @@ def _show_card_theme(queued_jobs: list[AudioSyncJob | VideoSyncJob], current_tas
                 child_prefix = "   " if is_last_section else "│  "
                 child_divider = "└─" if is_last_child else "├─"
                 print(f"{cu.fore.LIGHTBLACK_EX}{child_prefix}{child_divider} {child_label}: {child_value}")
-
 
 def _show_yaml_like_theme(queued_jobs: list[AudioSyncJob | VideoSyncJob], current_task: Task):
     """Show job list in a YAML/config style format (YAML-like Theme)."""
@@ -221,7 +218,7 @@ def _show_yaml_like_theme(queued_jobs: list[AudioSyncJob | VideoSyncJob], curren
                             pass
             
 
-QUEUE_RENDERERS = {
+QUEUE_RENDERERS: dict[QueueTheme, Callable[[list[AudioSyncJob | VideoSyncJob], Task], None]] = {
     QueueTheme.CLASSIC: _show_classic_theme,
     QueueTheme.CARD: _show_card_theme,
     QueueTheme.YAML: _show_yaml_like_theme,
