@@ -7,6 +7,7 @@ from ..models.job import Job
 
 from ..external.ffmpeg import FFmpeg
 
+from . import constants
 from . import console_utils as cu
 from ..ui.file_dialogs import FileDialog
 
@@ -134,16 +135,19 @@ def clean_generated_files(job_list):
             if job.sync_status is not Status.COMPLETED: 
                 continue
             
-            if job.task in (Task.AUDIO_SYNC_DIR, Task.AUDIO_SYNC_FIL):
+            suffixes = []
+            if job.task in constants.AUDIO_TASKS:
                 sub_ext = Path(job.sub_file).suffix if job.sub_file else ""
                 if not sub_ext:
                     continue
-                suffixes = [f".sushi{sub_ext}"]
+                suffixes.append(f".sushi{sub_ext}")
             else:
+                if job.merge_audio_encode_done: 
+                    suffixes.append(f"_encode.{job.merge_audio_encode_codec.lower()}")
                 sub_ext = job.src_sub_ext
                 if not sub_ext:
                     continue
-                suffixes = [f".sushi{sub_ext}", f".sushi_resampled{sub_ext}"]
+                suffixes.extend([f".sushi{sub_ext}", f".sushi_resampled{sub_ext}"])
 
             for suffix in suffixes:
                 generated_file = Path(f"{job.dst_file}{suffix}")

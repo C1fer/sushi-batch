@@ -3,7 +3,7 @@ import subprocess
 import sys
 from importlib.util import find_spec
 
-from sushi_batch.ui.prompts import confirm_prompt
+from ..ui.prompts import confirm_prompt
 from . import console_utils as cu
 
 
@@ -63,3 +63,8 @@ def interrupt_signal_handler(func):
                 cu.print_warning("Resuming operation...", nl_before=True)
                 return wrapper(*args, **kwargs)  # Restart the function
     return wrapper
+
+
+def pop_many(dct, *keys):
+    for key in keys:
+        dct.pop(key, None)

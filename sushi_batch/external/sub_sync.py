@@ -8,7 +8,7 @@ from ..models.enums import Status
 from ..utils import constants
 from ..utils import console_utils as cu
 
-from .subprocess_logger import SubProcessLogger
+from .execution_logger import ExecutionLogger
 
 
 class Sushi:
@@ -46,7 +46,7 @@ class Sushi:
         ] if is_video_task else ["--script", job.sub_file]
         base_args.extend(track_args) 
 
-        if settings.config.use_high_quality_resample:
+        if settings.config.sync_workflow.get("use_high_quality_resample"):
             base_args.extend(["--sample-rate", "24000"])
 
         if use_advanced_args:
@@ -58,7 +58,7 @@ class Sushi:
     def _add_advanced_args(cls, args):
         """Add advanced arguments to the base args list if enabled in settings.""" 
         for setting_attr, (arg_name, default_value) in cls.advanced_args_mapping.items():
-            current_value = getattr(settings.config, f"sushi_{setting_attr}")
+            current_value = settings.config.sync_workflow.get("sushi_advanced_args", {}).get(setting_attr, None)
             if current_value is not None and current_value != default_value:
                     args.extend([arg_name, str(current_value)])
 
@@ -88,10 +88,10 @@ class Sushi:
             return lines[-1] if lines else "Unknown Sushi error"
 
     @classmethod
-    def run(cls, job, use_advanced_args=False):
+    def run(cls, job, use_advanced_args=False, log_prefix="[Sushi]"):
         file_display = f"{cu.fore.MAGENTA}{job.dst_file}{cu.Style.RESET_ALL}"
-        title = f"[Job {job.idx} - Sushi] Syncing subtitles to {file_display}"
-        with yaspin(text=title, color="cyan", timer=True) as sp:
+        title = f"{log_prefix} Syncing subtitles to {file_display}"
+        with yaspin(text=title, color="cyan", timer=True, ellipsis="...") as sp:
             try: 
                 args = cls._get_args(job, use_advanced_args)
                 sushi = subprocess.Popen(
@@ -104,9 +104,9 @@ class Sushi:
 
                 _, stderr = sushi.communicate()
 
-                if settings.config.save_sushi_logs:
-                    log_path = SubProcessLogger.set_log_path(job.src_file, "Sushi Logs")
-                    SubProcessLogger.save_log_output(log_path, stderr)
+                if settings.config.general.get("save_sushi_logs"):
+                    log_path = ExecutionLogger.set_log_path(job.src_file, "Sushi Logs")
+                    ExecutionLogger.save_log_output(log_path, stderr)
 
                 lines = stderr.strip().splitlines()
 

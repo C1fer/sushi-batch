@@ -1,18 +1,20 @@
 from ..models.job_queue import JobQueue
-from ..models.enums import JobSelection, Task, Status
+from ..models.enums import Task, Status
 from ..models import settings as s
 
 from ..external.mkv_merge import MKVMerge
 
+from ..utils import utils
 from ..utils import constants
 from ..utils import console_utils as cu
 from .prompts import confirm_prompt, choice_prompt, input_prompt
 from .queue_themes import QUEUE_RENDERERS
+from ..services.queue_execution_service import QueueExecutionService
 
 MAIN_QUEUE_OPTIONS= {
     "top": [
         (1, "Run Jobs"),
-        (2, "Run Jobs (Include Advanced Sushi Args)", lambda q: s.config.enable_sushi_advanced_args),
+        (2, "Run Jobs (Include Advanced Sushi Args)", lambda q: s.config.sync_workflow.get("enable_sushi_advanced_args")),
         (3, "Remove Jobs"),
         (4, "Merge Completed Video Jobs", lambda args: MKVMerge.is_installed and args["to_merge"]),
         (5, "Go Back"),
@@ -38,7 +40,7 @@ MAIN_QUEUE_OPTIONS= {
 TEMP_QUEUE_OPTIONS= {
     "top": [
         (1, "Run and Add to Main Queue"),
-        (2, "Run and Add to Main Queue (Include Advanced Sushi Args)", lambda: s.config.enable_sushi_advanced_args),
+        (2, "Run and Add to Main Queue (Include Advanced Sushi Args)", lambda: s.config.sync_workflow.get("enable_sushi_advanced_args")),
         (3, "Queue Without Running"),
         (4, "Return to Main Menu"),
     ],
@@ -69,7 +71,8 @@ def _show_queue_items(queue, current_task):
     title = "Job Queue" if current_task == Task.JOB_QUEUE else "Jobs"
     cu.print_header(f"{title}")
     
-    renderer = QUEUE_RENDERERS.get(s.config.queue_theme, lambda q, t: cu.print_error("Invalid queue theme selected."))
+    current_theme = s.config.general.get("queue_theme")
+    renderer = QUEUE_RENDERERS.get(current_theme, lambda q, t: cu.print_error("Invalid queue theme selected."))
     renderer(queue, current_task)
 
 def get_queue_stats(queue = None, requested_key=None):    
@@ -124,21 +127,21 @@ def show_main_queue(task):
         run_choice = choice_prompt.get(message=TO_RUN_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_run"], nl_before=False, bottom_toolbar=toolbar_stats)
         match run_choice:
             case 1 if confirm_prompt.get(bottom_toolbar=toolbar_stats):
-                _jobs = [job for job in main_queue.contents if job.sync_status == Status.PENDING]
-                main_queue.run_jobs(_jobs, use_advanced_sushi_args=use_advanced_sushi_args)
+                selected_jobs = [job for job in main_queue.contents if job.sync_status == Status.PENDING]
+                QueueExecutionService.run_jobs(selected_jobs, use_advanced_sushi_args=use_advanced_sushi_args, parent_queue=main_queue)
             case 2:
                 selected_jobs = main_queue.select_jobs(
                     prompt_message=TO_RUN_SELECTED_PROMPT,
                     filter_fn=lambda j: j.sync_status == Status.PENDING,
                 )
                 if selected_jobs and confirm_prompt.get("Run selected jobs?", bottom_toolbar=toolbar_stats):
-                    main_queue.run_jobs(selected_jobs, use_advanced_sushi_args=use_advanced_sushi_args)
+                    QueueExecutionService.run_jobs(selected_jobs, use_advanced_sushi_args=use_advanced_sushi_args, parent_queue=main_queue)
 
     def _handle_remove_options(toolbar_stats=None):
         remove_choice = choice_prompt.get(message=TO_REMOVE_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_remove"], nl_before=False, bottom_toolbar=toolbar_stats)
         match remove_choice:
             case 1 if confirm_prompt.get("Clear job queue?", destructive=True, bottom_toolbar=toolbar_stats):
-                main_queue.clear(trigger_file_cleanup=True)
+                main_queue.clear()
                 cu.print_success("All jobs removed from queue.")
             case 2 if confirm_prompt.get(destructive=True, bottom_toolbar=toolbar_stats):
                 main_queue.clear_completed_and_failed_jobs()
@@ -150,13 +153,21 @@ def show_main_queue(task):
 
     def _handle_merge_options(toolbar_stats=None):
         if not  MKVMerge.is_installed:
-            cu.print_error("\nMKVMerge could not be found! Install MKVMerge to enable merging functionality.")
+            cu.print_error("MKVMerge could not be found! Install MKVMerge to enable merging functionality.", nl_before=True)
             return
         
         merge_choice = choice_prompt.get(message=TO_MERGE_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_merge"], nl_before=False, bottom_toolbar=toolbar_stats)
         match merge_choice:
             case 1:
-                main_queue.merge_completed_video_jobs(JobSelection.ALL)
+                selected_jobs = [
+                    job
+                    for job in main_queue.contents
+                    if job.sync_status == Status.COMPLETED
+                    and job.task in constants.VIDEO_TASKS
+                    and not job.merged
+                ]
+                if confirm_prompt.get(bottom_toolbar=toolbar_stats):
+                    QueueExecutionService.merge_completed_video_jobs(selected_jobs, parent_queue=main_queue)
             case 2:
                 selected_jobs = main_queue.select_jobs(
                     prompt_message=TO_MERGE_SELECTED_PROMPT,
@@ -167,7 +178,7 @@ def show_main_queue(task):
                     ),
                 )
                 if selected_jobs and confirm_prompt.get("Merge selected jobs?", bottom_toolbar=toolbar_stats):
-                    main_queue.merge_completed_video_jobs(JobSelection.SELECTED, selected_jobs)
+                    QueueExecutionService.merge_completed_video_jobs(selected_jobs, parent_queue=main_queue)
     
     while True:
         _show_queue_items(main_queue.contents, task)
@@ -196,11 +207,13 @@ def show_main_queue(task):
             case _:
                 break
 
-def show_temp_queue(temp_queue, task):
+def _show_temp_queue(temp_queue, task):
     """Handle options for the temporary job queue created after file selection."""
     def _run_and_queue_all(use_advanced_sushi_args=False):
+        current_queue_length = len(main_queue.contents)
         main_queue.add_jobs(temp_queue.contents, task)
-        temp_queue.run_jobs(temp_queue.contents, use_advanced_sushi_args=use_advanced_sushi_args)
+        to_run = main_queue.contents[current_queue_length:]
+        QueueExecutionService.run_jobs(to_run, use_advanced_sushi_args=use_advanced_sushi_args, parent_queue=main_queue)
         return True
 
     def _queue_without_running_all():
@@ -217,7 +230,7 @@ def show_temp_queue(temp_queue, task):
                 selected_jobs = temp_queue.select_jobs(prompt_message=TO_RUN_SELECTED_PROMPT)
                 if selected_jobs and confirm_prompt.get("Run selected jobs and add to main queue?", nl_after=True):
                     main_queue.add_jobs(selected_jobs, task)
-                    temp_queue.run_jobs(selected_jobs, use_advanced_sushi_args=use_advanced_sushi_args)
+                    QueueExecutionService.run_jobs(selected_jobs, use_advanced_sushi_args=use_advanced_sushi_args)
                     return True
 
     def _handle_queue_without_running_multiple():
@@ -232,7 +245,6 @@ def show_temp_queue(temp_queue, task):
                     _show_continue_confirmation(selected_jobs)
                     return True
                 
-    # No need to filter for each render for now
     available_options = [
         opt[:2]
         for opt in TEMP_QUEUE_OPTIONS["top"]
@@ -243,7 +255,7 @@ def show_temp_queue(temp_queue, task):
         _show_queue_items(temp_queue.contents, task)
         is_single_job = len(temp_queue.contents) == 1
         
-        top_lvl_choice = choice_prompt.get(options=available_options)
+        top_lvl_choice = choice_prompt.get(options=available_options, nl_before=True)
         match top_lvl_choice:
             case 1 | 2:
                 use_advanced_sushi_args = top_lvl_choice == 2
@@ -257,3 +269,6 @@ def show_temp_queue(temp_queue, task):
                     return True
             case _:
                 return False
+
+def show_temp_queue(temp_queue, task):
+    return utils.interrupt_signal_handler(_show_temp_queue)(temp_queue, task)

@@ -54,18 +54,30 @@ class Status(Enum):
 class Section(Enum):
     GEN = "General"
     SYNC = "Subtitle Sync"
-    MERGE_WRK = "Merge - Workflow"
-    MERGE_SRC = "Merge - Source"
-    MERGE_DST = "Merge - Sync Target"
-    MERGE_SUB = "Merge - Synced Subtitle"
-
-
-class JobSelection(Enum):
-    ALL = "all"
-    SELECTED = "selected"
+    MERGE_WRK = "Merge: Workflow"
+    MERGE_SRC = "Merge: Source"
+    MERGE_DST = "Merge: Sync Target"
+    MERGE_SUB = "Merge: Synced Subtitle"
 
 
 class QueueTheme(Enum):
-    CLASSIC = "classic"
-    CARD = "card"
-    YAML = "yaml-like" 
+    CLASSIC = "Classic"
+    CARD = "Card"
+    YAML = "YAML-inspired" 
+
+class AudioEncodeCodec(Enum):
+    OPUS = "Opus"
+    AAC = "AAC"
+    EAC3 = "EAC-3"
+
+class AudioChannelLayout(Enum):
+    MONO = "Mono"
+    STEREO = "Stereo"
+    SURROUND_5_1 = "Surround (5.1)"
+    SURROUND_7_1 = "Surround (7.1)"
+
+class AudioEncoder(Enum):
+    AAC_FFMPEG = "AAC (FFmpeg)"
+    EAC3_FFMPEG = "EAC-3 (FFmpeg)"
+    LIBOPUS_FFMPEG = "libopus (FFmpeg)"
+    XIPH_OPUSENC = "opusenc (opus-tools)"

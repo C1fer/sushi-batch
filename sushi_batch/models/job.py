@@ -6,29 +6,40 @@ from .enums import Status
 class Job:
     def __init__(
         self,
-        idx,
-        src_file,
-        dst_file,
-        sub_file=None,
-        task=None,
+        idx=None,
+        src_file=None,
         src_aud_id=None,
         src_aud_display=None,
-        dst_aud_id=None,
-        dst_aud_display=None,
         src_sub_id=None,
         src_sub_display=None,
         src_sub_lang=None,
         src_sub_name=None,
         src_sub_ext = None,
+
+        dst_file=None,
+        dst_aud_id=None,
+        dst_aud_display=None,
+        dst_aud_codec=None,
+        dst_aud_lang=None,
+        dst_aud_channel_layout=None,
         dst_vid_width=None,
         dst_vid_height=None,
+
+        sub_file=None,
+      
+        task=None,
         sync_status=Status.PENDING,
         sync_has_warnings=None,
         result=None,
+
         merged=None,
         merged_file=None,
         merge_has_warnings=None,
         resample_done=None,
+        merge_audio_encode_done=None,
+        merge_audio_encode_codec=None,
+        merge_audio_encode_encoder=None,
+        merge_audio_encode_bitrate=None
     ):
         self.idx = idx
         self.src_file = self._normalize_path(src_file)
@@ -43,8 +54,12 @@ class Job:
         self.dst_file = self._normalize_path(dst_file)
         self.dst_aud_id = dst_aud_id
         self.dst_aud_display = dst_aud_display
+        self.dst_aud_codec = dst_aud_codec
+        self.dst_aud_lang = dst_aud_lang
+        self.dst_aud_channel_layout = dst_aud_channel_layout
         self.dst_vid_width = dst_vid_width
         self.dst_vid_height = dst_vid_height
+
         self.sub_file = self._normalize_path(sub_file)
     
         self.task = task
@@ -56,6 +71,10 @@ class Job:
         self.merged_file = self._normalize_path(merged_file)
         self.merge_has_warnings = merge_has_warnings
         self.resample_done = resample_done
+        self.merge_audio_encode_done = merge_audio_encode_done
+        self.merge_audio_encode_codec = merge_audio_encode_codec
+        self.merge_audio_encode_encoder = merge_audio_encode_encoder
+        self.merge_audio_encode_bitrate = merge_audio_encode_bitrate
 
 
     @staticmethod
