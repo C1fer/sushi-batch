@@ -32,7 +32,7 @@ def get_directories():
     return src_path, dst_path
 
 
-def get_files_in_directory(directory, formats, task):
+def get_files_in_directory(directory: str, formats: list[str]) -> list[str]:
     """Recursively find files matching given formats."""
     matched_files = []
     for root, _, files in walk(directory):
@@ -44,24 +44,24 @@ def get_files_in_directory(directory, formats, task):
     return matched_files
 
 
-def search_directories(src_path, dst_path, task):
+def search_directories(src_path: str, dst_path: str, task: Task) -> list[AudioSyncJob] | list[VideoSyncJob]:
     """Search directories and create jobs from matching files."""
     formats = Formats.AUDIO.value if task == Task.AUDIO_SYNC_DIR else Formats.VIDEO.value
     
-    src_files = get_files_in_directory(src_path, formats, task)
-    dst_files = get_files_in_directory(dst_path, formats, task)
+    src_files = get_files_in_directory(src_path, formats)
+    dst_files = get_files_in_directory(dst_path, formats)
     sub_files = (
-        get_files_in_directory(src_path, Formats.SUBTITLE.value, task) 
+        get_files_in_directory(src_path, Formats.SUBTITLE.value) 
         if task == Task.AUDIO_SYNC_DIR 
         else []
     )
 
     if validate_files(src_files, dst_files, sub_files, task):
         return _get_jobs_from_combinations(src_files, dst_files, sub_files, task)
-    return None
+    return []
 
 
-def select_files(task):
+def select_files(task: Task) -> list[AudioSyncJob] | list[VideoSyncJob]:
     """Select files via dialog and create jobs."""
     src_files = []
     dst_files = []
@@ -78,7 +78,7 @@ def select_files(task):
 
     if validate_files(src_files, dst_files, sub_files, task):
         return _get_jobs_from_combinations(src_files, dst_files, sub_files, task)
-    return None
+    return []
 
 
 def validate_files(src_files: list[str], dst_files: list[str], sub_files: list[str], task: Task) -> bool:
@@ -100,7 +100,7 @@ def validate_files(src_files: list[str], dst_files: list[str], sub_files: list[s
     return True
 
 
-def _get_jobs_from_combinations(src_files: list[str], dst_files: list[str], sub_files: list[str], task: Task) -> list[AudioSyncJob | VideoSyncJob]:
+def _get_jobs_from_combinations(src_files: list[str], dst_files: list[str], sub_files: list[str], task: Task) -> list[AudioSyncJob] | list[VideoSyncJob]:
     if task in constants.AUDIO_TASKS:
         return JobCreationService.create_audio_sync_jobs(src_files, dst_files, sub_files, task)
     else:

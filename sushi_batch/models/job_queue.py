@@ -38,7 +38,12 @@ class JobQueue:
         if self.in_memory or self._persistence is None:
             self.contents = []
             return
-        self.contents = self._persistence.load()
+        self.contents = [
+            AudioSyncJob.from_dct(dct)
+            if dct.get("sync").get("task") in (Task.AUDIO_SYNC_DIR.name, Task.AUDIO_SYNC_FIL.name)
+            else VideoSyncJob.from_dct(dct)
+            for dct in self._persistence.load()
+        ]
 
     def _add_sync_jobs(self, jobs_to_add: list[AudioSyncJob | VideoSyncJob], task: Task) -> None:
         """Add selected jobs to queue"""

@@ -7,11 +7,11 @@ from ..models.job.audio_sync_job import AudioSyncJob
 
 class JobCreationService:
     @staticmethod
-    def _can_create_video_sync_job(src_probe_info: dict, dst_probe_info: dict) -> bool:
+    def _is_video_sync_job_invalid(src_probe_info: dict, dst_probe_info: dict) -> bool:
         return any([
             len(src_probe_info.get("audio", [])) == 0,
             len(src_probe_info.get("subtitle", [])) == 0,
-            len(dst_probe_info.get("audio", [])) == 0,
+            len(dst_probe_info.get("audio", [])) == 0
         ])
             
 
@@ -22,7 +22,7 @@ class JobCreationService:
             src_media_info = FFmpeg.get_clean_probe_info(src_filepath)
             dst_media_info = FFmpeg.get_clean_probe_info(dst_filepath)
             
-            if not cls._can_create_video_sync_job(src_media_info, dst_media_info):
+            if cls._is_video_sync_job_invalid(src_media_info, dst_media_info):
                 continue
             
             jobs.append(

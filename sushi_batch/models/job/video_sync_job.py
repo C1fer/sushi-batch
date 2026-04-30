@@ -92,10 +92,12 @@ class VideoSyncJob(BaseJob):
     
     @classmethod
     def from_dct(cls, dct: dict) -> "VideoSyncJob":
-        dct = super().from_dct(dct).__dict__
-        dct.update({
-            "src_streams": JobMediaStreams.from_dct(dct["src_streams"]),
-            "dst_streams": JobMediaStreams.from_dct(dct["dst_streams"]),
-            "merge": JobMerge(**dct["merge"])
-        })
-        return cls(**dct)
+        return cls(
+            id=dct["id"],
+            sync=JobSync.from_dct(dct["sync"]),
+            src_filepath=dct["src_filepath"],
+            dst_filepath=dct["dst_filepath"],
+            src_streams=JobMediaStreams.from_dct(dct["src_streams"]),
+            dst_streams=JobMediaStreams.from_dct(dct["dst_streams"]),
+            merge=JobMerge(**dct["merge"])
+        )

@@ -33,7 +33,7 @@ class MKVMerge:
         return output_filepath
     
     @classmethod
-    def _add_source_file_args(cls, args, job):
+    def _add_source_file_args(cls, args, job: VideoSyncJob):
         """Add source file specific arguments."""
         args.extend(filter(lambda v: v is not None,
             [
@@ -44,18 +44,18 @@ class MKVMerge:
                 "--no-chapters" if not s.config.merge_src_file.get("copy_chapters") else None,
                 "--no-global-tags" if not s.config.merge_src_file.get("copy_global_tags") else None,
                 "--no-track-tags" if not s.config.merge_src_file.get("copy_track_tags") else None,
-                job.src_file
+                job.src_filepath
             ]
         ))
 
     @classmethod
-    def _add_destination_file_args(cls, args, job, encoded_audio_path=None):
+    def _add_destination_file_args(cls, args, job: VideoSyncJob, encoded_audio_path: str | None = None):
         """Add destination file specific arguments."""
         audio_track_arg = []
-
+        selected_audio_stream = job.dst_streams.get_selected_audio_stream()
         if s.config.merge_dst_file.get("copy_only_selected_sync_audio_track"):
             if encoded_audio_path:
-                _track_lang = job.dst_aud_lang if job.dst_aud_lang else "und"
+                _track_lang = selected_audio_stream.lang if selected_audio_stream.lang else "und"
                 audio_track_arg = [
                     "--default-track",
                     "0:1",
@@ -64,8 +64,8 @@ class MKVMerge:
                     encoded_audio_path,
                     "--no-audio", # Discard all original audio tracks from dst file since we're adding the encoded track as a new source
                 ]
-            elif job.dst_aud_id is not None:
-                audio_track_arg = ["--audio-tracks", str(job.dst_aud_id)]
+            elif selected_audio_stream.id is not None:
+                audio_track_arg = ["--audio-tracks", str(selected_audio_stream.id)]
         
         args.extend(filter(lambda v: v is not None,
             [
@@ -75,29 +75,29 @@ class MKVMerge:
                 "--no-global-tags" if not s.config.merge_dst_file.get("copy_global_tags") else None,
                 "--no-subtitles" if not s.config.merge_dst_file.get("copy_subtitle_tracks") else None,
                 "--no-track-tags" if not s.config.merge_dst_file.get("copy_track_tags") else None,
-                job.dst_file
+                job.dst_filepath
             ]
         ))
 
     @classmethod
-    def _add_subtitle_args(cls, args, job, use_resampled_sub):
+    def _add_subtitle_args(cls, args, job: VideoSyncJob, use_resampled_sub: bool):
         """Add subtitle specific arguments."""
-        trackname = s.config.merge_synced_sub_file.get("trackname") if s.config.merge_synced_sub_file.get("custom_trackname") else job.src_sub_name
-        sub_suffix = f".sushi_resampled{job.src_sub_ext}" if use_resampled_sub else f".sushi{job.src_sub_ext}"
+        trackname = s.config.merge_synced_sub_file.get("trackname") if s.config.merge_synced_sub_file.get("custom_trackname") else job.src_streams.get_selected_subtitle_stream().title
+        sub_suffix = f".sushi_resampled{job.src_streams.get_selected_subtitle_stream().extension}" if use_resampled_sub else f".sushi{job.src_streams.get_selected_subtitle_stream().extension}"
         
         args.extend([
-            "--language", f"0:{job.src_sub_lang}",
+            "--language", f"0:{job.src_streams.get_selected_subtitle_stream().lang}",
             "--track-name", f"0:{trackname}",
             "--default-track-flag",
             "0:0" if not s.config.merge_synced_sub_file.get("default_flag") else "0:1",
             "--forced-display-flag",
             "0:0" if not s.config.merge_synced_sub_file.get("forced_flag") else "0:1",
-            f"{job.dst_file}{sub_suffix}"
+            f"{job.dst_filepath}{sub_suffix}"
         ])
 
     @classmethod
-    def _get_merge_args(cls, job, use_resampled_sub=False, encoded_audio_path=None):
-        output_file = MKVMerge._get_out_filepath(job.dst_file)
+    def _get_merge_args(cls, job: VideoSyncJob, use_resampled_sub: bool = False, encoded_audio_path: str | None = None):
+        output_file = MKVMerge._get_out_filepath(job.dst_filepath)
 
         args = [
             "mkvmerge",
