@@ -1,3 +1,5 @@
+from ..models.job.audio_sync_job import AudioSyncJob
+from ..models.job.video_sync_job import VideoSyncJob
 from ..models.job_queue import JobQueue
 from ..models.enums import Task, Status
 from ..models import settings as s
@@ -10,6 +12,7 @@ from ..utils import console_utils as cu
 from .prompts import confirm_prompt, choice_prompt, input_prompt
 from .queue_themes import QUEUE_RENDERERS
 from ..services.queue_execution_service import QueueExecutionService
+
 
 MAIN_QUEUE_OPTIONS= {
     "top": [
@@ -56,7 +59,7 @@ TO_REMOVE_SELECTED_PROMPT = "Select which jobs to remove from queue:"
 TO_RUN_SELECTED_PROMPT = "Select which jobs to run:"
 TO_MERGE_SELECTED_PROMPT = "Select which video jobs to merge:"
 
-main_queue = JobQueue()
+main_queue = JobQueue(in_memory=False)
 
 def _show_continue_confirmation(jobs, is_removing=False):
     """Show confirmation prompt after adding jobs to main queue."""
@@ -65,7 +68,7 @@ def _show_continue_confirmation(jobs, is_removing=False):
     action = "removed from" if is_removing else "added to"
     input_prompt.get(f"{job_count} {action} main queue. Press Enter to continue... ", success=True, nl_before=True, allow_empty=True)
 
-def _show_queue_items(queue, current_task):
+def _show_queue_items(queue: list[AudioSyncJob | VideoSyncJob], current_task: Task) -> None:
     """Display the current job queue in the selected theme. Theme is chosen from settings."""
     cu.clear_screen()
     title = "Job Queue" if current_task == Task.JOB_QUEUE else "Jobs"
@@ -75,29 +78,28 @@ def _show_queue_items(queue, current_task):
     renderer = QUEUE_RENDERERS.get(current_theme, lambda q, t: cu.print_error("Invalid queue theme selected."))
     renderer(queue, current_task)
 
-def get_queue_stats(queue = None, requested_key=None):    
+def get_queue_stats(queue: list[AudioSyncJob | VideoSyncJob] | None = None, requested_key: str | None = None) -> dict[str, int] | int:    
     """Return summary statistics for the job queue, including total jobs, pending, completed, and failed counts."""
-    _queue = queue if queue is not None else main_queue.contents
-    _key = requested_key.lower() if requested_key else None
-    
-    match _key:
-        case "total":
-            return len(_queue)
-        case "pending":
-            return sum(1 for job in _queue if job.sync_status == Status.PENDING)
-        case "completed":
-            return sum(1 for job in _queue if job.sync_status == Status.COMPLETED)
-        case "failed":
-            return sum(1 for job in _queue if job.sync_status == Status.FAILED)
+    queue = queue if queue is not None else main_queue.contents
+    key: str | None = requested_key.lower() if requested_key else None
 
+    match key:
+        case "total":
+            return len(queue)
+        case "pending":
+            return sum(1 for job in queue if job.sync.status == Status.PENDING)
+        case "completed":
+            return sum(1 for job in queue if job.sync.status == Status.COMPLETED)
+        case "failed":
+            return sum(1 for job in queue if job.sync.status == Status.FAILED)
     return {
-        "total": len(_queue),
-        "pending": sum(1 for job in _queue if job.sync_status == Status.PENDING),
-        "completed": sum(1 for job in _queue if job.sync_status == Status.COMPLETED),
-        "failed": sum(1 for job in _queue if job.sync_status == Status.FAILED),
+        "total": len(queue),
+        "pending": sum(1 for job in queue if job.sync.status == Status.PENDING),
+        "completed": sum(1 for job in queue if job.sync.status == Status.COMPLETED),
+        "failed": sum(1 for job in queue if job.sync.status == Status.FAILED),
     }
 
-def get_stats_bar(queue=None):
+def get_stats_bar(queue: list[AudioSyncJob | VideoSyncJob] | None = None) -> tuple[list[tuple[str, str]], int]:
     """Generate a formatted status bar with per-field colors."""
     stats = get_queue_stats(queue)
     separator_classname = ("class:bottom-toolbar.sep", " | ")
@@ -117,9 +119,9 @@ def get_stats_bar(queue=None):
     ]
     return bar, stats["pending"]
 
-def show_main_queue(task):
+def show_main_queue(task: Task) -> None:
     """Display the main job queue and handle user interactions."""
-    def _handle_run_options(toolbar_stats=None, pending_count=None, use_advanced_sushi_args=False):
+    def _handle_run_options(toolbar_stats: list[tuple[str, str]], pending_count: int, use_advanced_sushi_args: bool = False) -> None:
         if pending_count == 0:
             cu.print_warning("No pending jobs to run.")
             return
@@ -127,17 +129,17 @@ def show_main_queue(task):
         run_choice = choice_prompt.get(message=TO_RUN_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_run"], nl_before=False, bottom_toolbar=toolbar_stats)
         match run_choice:
             case 1 if confirm_prompt.get(bottom_toolbar=toolbar_stats):
-                selected_jobs = [job for job in main_queue.contents if job.sync_status == Status.PENDING]
+                selected_jobs = [job for job in main_queue.contents if job.sync.status == Status.PENDING]
                 QueueExecutionService.run_jobs(selected_jobs, use_advanced_sushi_args=use_advanced_sushi_args, parent_queue=main_queue)
             case 2:
                 selected_jobs = main_queue.select_jobs(
                     prompt_message=TO_RUN_SELECTED_PROMPT,
-                    filter_fn=lambda j: j.sync_status == Status.PENDING,
+                    filter_fn=lambda j: j.sync.status == Status.PENDING,
                 )
                 if selected_jobs and confirm_prompt.get("Run selected jobs?", bottom_toolbar=toolbar_stats):
                     QueueExecutionService.run_jobs(selected_jobs, use_advanced_sushi_args=use_advanced_sushi_args, parent_queue=main_queue)
 
-    def _handle_remove_options(toolbar_stats=None):
+    def _handle_remove_options(toolbar_stats: list[tuple[str, str]]):
         remove_choice = choice_prompt.get(message=TO_REMOVE_SELECTED_PROMPT, options=MAIN_QUEUE_OPTIONS["sub_remove"], nl_before=False, bottom_toolbar=toolbar_stats)
         match remove_choice:
             case 1 if confirm_prompt.get("Clear job queue?", destructive=True, bottom_toolbar=toolbar_stats):
@@ -151,7 +153,7 @@ def show_main_queue(task):
                     main_queue.remove_jobs(selected_jobs)
                     _show_continue_confirmation(selected_jobs, is_removing=True)
 
-    def _handle_merge_options(toolbar_stats=None):
+    def _handle_merge_options(toolbar_stats: list[tuple[str, str]]):
         if not  MKVMerge.is_installed:
             cu.print_error("MKVMerge could not be found! Install MKVMerge to enable merging functionality.", nl_before=True)
             return
@@ -162,9 +164,9 @@ def show_main_queue(task):
                 selected_jobs = [
                     job
                     for job in main_queue.contents
-                    if job.sync_status == Status.COMPLETED
-                    and job.task in constants.VIDEO_TASKS
-                    and not job.merged
+                    if job.sync.status == Status.COMPLETED
+                    and isinstance(job, VideoSyncJob)
+                    and not job.merge.done
                 ]
                 if confirm_prompt.get(bottom_toolbar=toolbar_stats):
                     QueueExecutionService.merge_completed_video_jobs(selected_jobs, parent_queue=main_queue)
@@ -172,9 +174,9 @@ def show_main_queue(task):
                 selected_jobs = main_queue.select_jobs(
                     prompt_message=TO_MERGE_SELECTED_PROMPT,
                     filter_fn=lambda j: (
-                        j.sync_status == Status.COMPLETED
-                        and j.task in constants.VIDEO_TASKS
-                        and not j.merged
+                        j.sync.status == Status.COMPLETED
+                        and isinstance(j, VideoSyncJob)
+                        and not j.merge.done
                     ),
                 )
                 if selected_jobs and confirm_prompt.get("Merge selected jobs?", bottom_toolbar=toolbar_stats):
@@ -185,7 +187,7 @@ def show_main_queue(task):
         bottom_toolbar, pending_count = get_stats_bar()
 
         validations = {
-            "to_merge": any(j for j in main_queue.contents if j.sync_status == Status.COMPLETED and j.task in constants.VIDEO_TASKS and not j.merged)
+            "to_merge": any(j for j in main_queue.contents if j.sync.status == Status.COMPLETED and isinstance(j, VideoSyncJob) and not j.merge.done)
         }
 
         available_options = [
@@ -207,21 +209,22 @@ def show_main_queue(task):
             case _:
                 break
 
-def _show_temp_queue(temp_queue, task):
+
+def _show_temp_queue(temp_queue: JobQueue, task: Task) -> None:
     """Handle options for the temporary job queue created after file selection."""
-    def _run_and_queue_all(use_advanced_sushi_args=False):
+    def _run_and_queue_all(use_advanced_sushi_args: bool= False) -> bool:
         current_queue_length = len(main_queue.contents)
         main_queue.add_jobs(temp_queue.contents, task)
-        to_run = main_queue.contents[current_queue_length:]
+        to_run = main_queue.contents[current_queue_length:] # Run the new jobs that were added to the main queue
         QueueExecutionService.run_jobs(to_run, use_advanced_sushi_args=use_advanced_sushi_args, parent_queue=main_queue)
         return True
 
-    def _queue_without_running_all():
+    def _queue_without_running_all() -> bool:
         main_queue.add_jobs(temp_queue.contents, task)
         _show_continue_confirmation(temp_queue.contents)
         return True
 
-    def _handle_run_and_queue_multiple(use_advanced_sushi_args=False):
+    def _handle_run_and_queue_multiple(use_advanced_sushi_args: bool = False) -> bool:
         run_choice = choice_prompt.get(message=TO_RUN_SELECTED_PROMPT, options=TEMP_QUEUE_OPTIONS["sub_run_add"], nl_before=False)
         match run_choice:
             case 1 if confirm_prompt.get():
@@ -268,7 +271,7 @@ def _show_temp_queue(temp_queue, task):
                 if exit_loop:
                     return True
             case _:
-                return False
+                return
 
-def show_temp_queue(temp_queue, task):
+def show_temp_queue(temp_queue: JobQueue, task: Task) -> None:
     return utils.interrupt_signal_handler(_show_temp_queue)(temp_queue, task)

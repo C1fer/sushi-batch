@@ -34,6 +34,7 @@ class JobMediaStreams:
             "audio": [stream.__dict__ for stream in self.audio],
             "subtitle": [stream.__dict__ for stream in self.subtitle]
         }
+        
     
     @classmethod
     def from_dct(cls, dct: dict) -> "JobMediaStreams":
@@ -49,6 +50,19 @@ class JobMediaStreams:
     def get_selected_subtitle_stream(self) -> SubtitleStream:
         return next(stream for stream in self.subtitle if stream.default)
 
+    def set_selected_audio_stream_by_id(self, stream_id: int) -> None:
+        stream = next(stream for stream in self.audio if stream.id == stream_id)
+        if stream:
+            stream.selected = True
+        else:
+            raise ValueError(f"Stream with ID {stream_id} not found")
+
+    def set_selected_subtitle_stream_by_id(self, stream_id: int) -> None:
+        stream = next(stream for stream in self.subtitle if stream.id == stream_id)
+        if stream:
+            stream.selected = True
+        else:
+            raise ValueError(f"Stream with ID {stream_id} not found")
 
 
 class VideoSyncJob(BaseJob):
@@ -67,3 +81,21 @@ class VideoSyncJob(BaseJob):
         self.merge = merge
         super().__init__(id, sync, src_filepath, dst_filepath)
 
+    def to_dct(self) -> dict:
+        dct = super().to_dct()
+        dct.update({
+            "src_streams": self.src_streams.to_dct(),
+            "dst_streams": self.dst_streams.to_dct(),
+            "merge": self.merge.__dict__
+        })
+        return dct
+    
+    @classmethod
+    def from_dct(cls, dct: dict) -> "VideoSyncJob":
+        dct = super().from_dct(dct).__dict__
+        dct.update({
+            "src_streams": JobMediaStreams.from_dct(dct["src_streams"]),
+            "dst_streams": JobMediaStreams.from_dct(dct["dst_streams"]),
+            "merge": JobMerge(**dct["merge"])
+        })
+        return cls(**dct)

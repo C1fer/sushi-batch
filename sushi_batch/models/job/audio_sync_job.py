@@ -15,3 +15,18 @@ class AudioSyncJob(BaseJob):
     ):
         self.sub_filepath = str(Path(sub_filepath))
         super().__init__(id, sync, src_filepath, dst_filepath)
+
+    def to_dct(self) -> dict:
+        dct = super().to_dct()
+        dct.update({
+            "sub_filepath": self.sub_filepath,
+        })
+        return dct
+    
+    @classmethod
+    def from_dct(cls, dct: dict) -> "AudioSyncJob":
+        dct = super().from_dct(dct).__dict__
+        dct.update({
+            "sub_filepath": dct["sub_filepath"],
+        })  
+        return cls(**dct)

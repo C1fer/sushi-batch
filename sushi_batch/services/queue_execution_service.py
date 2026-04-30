@@ -12,6 +12,7 @@ from ..ui.prompts import input_prompt
 from ..utils import console_utils as cu
 from ..utils import utils
 from yaspin import yaspin
+from yaspin.core import Yaspin
 from ..external.execution_logger import ExecutionLogger
 class QueueExecutionService:
     @classmethod
@@ -50,7 +51,7 @@ class QueueExecutionService:
             cu.print_error(f"Error running jobs: {e}")
 
     @classmethod
-    def _resample_before_merge(cls, job: VideoSyncJob, spinner: yaspin | None = None, log_path: str | None = None) -> bool:
+    def _resample_before_merge(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_path: str | None = None) -> bool:
         """Resample subtitle file before merging, when needed."""
         log_prefix = f"[Job {job.id} - Sub Resampler]"
         if not SubResampler.is_resample_needed(job, spinner=spinner, log_prefix=log_prefix, log_path=log_path):
@@ -63,7 +64,7 @@ class QueueExecutionService:
         return True
 
     @classmethod
-    def _encode_audio_before_merge(cls, job: VideoSyncJob, spinner: yaspin | None = None, log_path: str | None = None) -> str | None:
+    def _encode_audio_before_merge(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_path: str | None = None) -> str | None:
         """Encode audio before merge if configured and needed."""
         selected_codec = settings.config.merge_workflow.get("encode_codec")
         selected_encoder = settings.config.merge_workflow.get("encode_codec_settings", {}).get(selected_codec.name, {}).get("encoder")

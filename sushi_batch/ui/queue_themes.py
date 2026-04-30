@@ -2,6 +2,8 @@ import re
 
 from ..external.sub_sync import Sushi
 
+from ..models.job.audio_sync_job import AudioSyncJob
+from ..models.job.video_sync_job import VideoSyncJob
 from ..models.enums import Task, Status, QueueTheme, AudioEncodeCodec, AudioEncoder
 from ..utils import console_utils as cu
 
@@ -18,31 +20,13 @@ def _avg_shift_exceeds_threshold(avg_shift):
     except ValueError:
         return False
     
-def _get_encode_info_display(job):
+def _get_encode_info_display(job: VideoSyncJob):
     """Format the display string for the audio encoding information (codec and bitrate)."""
-    encoder_name = AudioEncoder[job.merge_audio_encode_encoder].value if job.merge_audio_encode_encoder else "Unknown Encoder"
-    codec_name = AudioEncodeCodec[job.merge_audio_encode_codec].value if job.merge_audio_encode_codec else "Unknown Codec"
-    return f"({codec_name} - {job.merge_audio_encode_bitrate}) [{encoder_name}]"
+    encoder_name = AudioEncoder[job.merge.audio_encode_encoder].value if job.merge.audio_encode_encoder else "Unknown Encoder"
+    codec_name = AudioEncodeCodec[job.merge.audio_encode_codec].value if job.merge.audio_encode_codec else "Unknown Codec"
+    return f"({codec_name} - {job.merge.audio_encode_bitrate}) [{encoder_name}]"
 
-def _get_track_values(job):
-    """Resolve track values using display label first, then raw id."""
-    src_audio = job.src_aud_display if job.src_aud_display is not None else job.src_aud_id
-    src_sub = job.src_sub_display if job.src_sub_display is not None else job.src_sub_id
-    dst_audio = job.dst_aud_display if job.dst_aud_display is not None else job.dst_aud_id
-    return src_audio, src_sub, dst_audio
-
-def _has_any_track_data(job):
-    """Return True when any source/sync target track metadata is available."""
-    return any(
-        value is not None
-        for value in (
-            job.src_aud_id,
-            job.src_sub_id,
-            job.dst_aud_id
-        )
-    )
-
-def _get_sync_status_style(status):
+def _get_sync_status_style(status: Status):
     """Return display metadata for a job status."""
     match status:
         case Status.COMPLETED:
@@ -52,7 +36,7 @@ def _get_sync_status_style(status):
         case _:
             return (cu.fore.LIGHTYELLOW_EX, "Pending", "~", cu.fore.LIGHTYELLOW_EX)
         
-def _merge_status_style(merge_status):
+def _merge_status_style(merge_status: bool):
     """Return display metadata for a job's merge status."""
     match merge_status:
         case True:
@@ -62,107 +46,104 @@ def _merge_status_style(merge_status):
         case _:
             return (cu.fore.LIGHTBLACK_EX, "Unknown", "?", cu.fore.LIGHTBLACK_EX)
 
-def _show_classic_theme(queued_jobs, current_task):
+def _show_classic_theme(queued_jobs: list[AudioSyncJob | VideoSyncJob], current_task: Task):
     """ Show Job List contents (Classic Theme) """
     for idx, job in enumerate(queued_jobs, start=1):
-        job.idx = idx
-        print(f"\n{cu.fore.LIGHTBLACK_EX}Job {job.idx}")
-        print(f"{cu.fore.LIGHTBLUE_EX}Source file: {job.src_file}")
-        print(f"{cu.fore.YELLOW}Sync Target File: {job.dst_file}")
+        job.id = idx
+        print(f"\n{cu.fore.LIGHTBLACK_EX}Job {job.id}")
+        print(f"{cu.fore.LIGHTBLUE_EX}Source file: {job.src_filepath}")
+        print(f"{cu.fore.YELLOW}Sync Target File: {job.dst_filepath}")
 
-        if job.sub_file is not None:
-            print(f"{cu.fore.LIGHTCYAN_EX }Subtitle file: {job.sub_file}")
+        if isinstance(job, AudioSyncJob):
+            print(f"{cu.fore.LIGHTCYAN_EX }Subtitle file: {job.sub_filepath}")
 
-        src_audio, src_sub, dst_audio = _get_track_values(job)
-
-        if src_audio is not None:
-            print(f"{cu.fore.LIGHTMAGENTA_EX}Source Audio Track: {src_audio}")
-
-        if src_sub is not None:
-            print(f"{cu.fore.LIGHTCYAN_EX}Source Subtitle Track: {src_sub}")
-
-        if dst_audio is not None:
-            print(f"{cu.fore.LIGHTMAGENTA_EX}Sync Target Audio Track: {dst_audio}")
+        elif isinstance(job, VideoSyncJob):
+            print(f"{cu.fore.LIGHTMAGENTA_EX}Source Audio Track: {job.src_streams.get_selected_audio_stream().display_label}")
+            print(f"{cu.fore.LIGHTCYAN_EX}Source Subtitle Track: {job.src_streams.get_selected_subtitle_stream().display_label}")
+            print(f"{cu.fore.LIGHTMAGENTA_EX}Sync Target Audio Track: {job.dst_streams.get_selected_audio_stream().display_label}")
 
         if current_task == Task.JOB_QUEUE: 
-            match job.sync_status:
+            match job.sync.status:
                 case Status.PENDING:
                     print(f"{cu.fore.LIGHTYELLOW_EX}Sync Status: Pending")
                 case Status.COMPLETED:
                     print(f"{cu.fore.LIGHTGREEN_EX}Sync Status: Completed")
-                    print(f"{cu.fore.GREEN}Average Shift: {job.result}")
+                    print(f"{cu.fore.GREEN}Average Shift: {job.sync.result}")
                 case Status.FAILED:
                     print(f"{cu.fore.LIGHTRED_EX}Sync Status: Failed")
-                    print(f"{cu.fore.RED}Error: {job.result}")
+                    print(f"{cu.fore.RED}Error: {job.sync.result}")
 
-            match job.merged:
-                case True:
-                    print(f"{cu.fore.GREEN}Merged: Yes")
-                case False:
-                    print(f"{cu.fore.LIGHTYELLOW_EX}Merged: Pending")
-                case _:
-                    pass
+            if isinstance(job, VideoSyncJob):
+                match job.merge.done:
+                    case True:
+                        print(f"{cu.fore.GREEN}Merged: Yes")
+                    case False:
+                        print(f"{cu.fore.LIGHTYELLOW_EX}Merged: Pending")
+                    case _:
+                        pass
 
-def _show_card_theme(queued_jobs, current_task):
+def _show_card_theme(queued_jobs: list[AudioSyncJob | VideoSyncJob], current_task: Task):
     """Show job list using card-style blocks (Card Theme)."""
 
     for idx, job in enumerate(queued_jobs, start=1):
-        job.idx = idx
+        job.id = idx
         print(f"\n{cu.fore.LIGHTBLUE_EX}┌─ Job {idx}")
+        sections = []
 
-        src_audio, src_sub, dst_audio = _get_track_values(job)
+        
+
         sections = [
             {
                 "label": "Source",
-                "value": f"{cu.fore.LIGHTBLUE_EX}{job.src_file}",
+                "value": f"{cu.fore.LIGHTBLUE_EX}{job.src_filepath}",
                 "children": [
-                    ("Audio Track", f"{cu.fore.LIGHTMAGENTA_EX}{src_audio}") if src_audio is not None else None,
-                    ("Sub Track", f"{cu.fore.LIGHTCYAN_EX}{src_sub}") if src_sub is not None else None,
-                ],
+                    ("Audio Track", f"{cu.fore.LIGHTMAGENTA_EX}{job.src_streams.get_selected_audio_stream().display_label}"),
+                    ("Sub Track", f"{cu.fore.LIGHTCYAN_EX}{job.src_streams.get_selected_subtitle_stream().display_label}"),
+                ] if isinstance(job, VideoSyncJob) else [],
             },
             {
                 "label": "Sync Target",
-                "value": f"{cu.fore.YELLOW}{job.dst_file}",
+                "value": f"{cu.fore.YELLOW}{job.dst_filepath}",
                 "children": [
-                    ("Audio Track", f"{cu.fore.LIGHTMAGENTA_EX}{dst_audio}") if dst_audio is not None else None,
-                ],
+                    ("Audio Track", f"{cu.fore.LIGHTMAGENTA_EX}{job.dst_streams.get_selected_audio_stream().display_label}"),
+                ] if isinstance(job, VideoSyncJob) else [],
             },
         ]
 
-        if job.sub_file is not None:
+        if isinstance(job, AudioSyncJob):
             sections.append(
                 {
                     "label": "Subtitle",
-                    "value": f"{cu.fore.LIGHTCYAN_EX}{job.sub_file}",
+                    "value": f"{cu.fore.LIGHTCYAN_EX}{job.sub_filepath}",
                 }
             )
 
         if current_task == Task.JOB_QUEUE:
-            status_color, status_label, status_icon, detail_color = _get_sync_status_style(job.sync_status)
+            status_color, status_label, status_icon, detail_color = _get_sync_status_style(job.sync.status)
             sections.append(
                 {
                     "label": "Sync Status",
                     "value": f"{status_color}{status_icon} {status_label}",
                     "children": [
-                        ("Average Shift", f"{detail_color}{job.result}") if job.sync_status == Status.COMPLETED else None,           
-                        ("Sync Warning", SYNC_COMPLETED_WARNING) if job.sync_has_warnings else None,
-                        ("Shift Warning", SYNC_EXCEED_WARNING) if _avg_shift_exceeds_threshold(job.result) else None,
-                        ("Error", f"{detail_color}{job.result}") if job.sync_status == Status.FAILED else None,
+                        ("Average Shift", f"{detail_color}{job.sync.result}") if job.sync.status == Status.COMPLETED else None,           
+                        ("Sync Warning", SYNC_COMPLETED_WARNING) if job.sync.has_warnings else None,
+                        ("Shift Warning", SYNC_EXCEED_WARNING) if _avg_shift_exceeds_threshold(job.sync.result) else None,
+                        ("Error", f"{detail_color}{job.sync.result}") if job.sync.status == Status.FAILED else None,
                     ],
                 }
             )
 
-            if job.merged is not None and job.sync_status == Status.COMPLETED:
-                merged_color, merged_label, merged_icon, merged_child_color = _merge_status_style(job.merged)
+            if isinstance(job, VideoSyncJob) and job.merge.done is not None and job.sync.status == Status.COMPLETED:
+                merged_color, merged_label, merged_icon, merged_child_color = _merge_status_style(job.merge.done)
                 sections.append(
                     {
                         "label": "Merge Status",
                         "value": merged_color + merged_icon + " " + merged_label,
                         "children": [
-                            ("Generated File", f"{merged_child_color}{job.merged_file}") if job.merged_file is not None else None,
-                            ("Warning", MERGE_WARNING_MESSAGE) if job.merge_has_warnings else None,
-                            ("Resampled", f"{cu.fore.GREEN}Yes") if job.resample_done else None,
-                            ("Encoded Audio", f"{cu.fore.GREEN}Yes {_get_encode_info_display(job)}") if job.merge_audio_encode_done else None,
+                            ("Generated File", f"{merged_child_color}{job.dst_filepath}") if job.merge.done else None,
+                            ("Warning", MERGE_WARNING_MESSAGE) if job.merge.has_warnings else None,
+                            ("Resampled", f"{cu.fore.GREEN}Yes") if job.merge.resample_done else None,
+                            ("Encoded Audio", f"{cu.fore.GREEN}Yes {_get_encode_info_display(job)}") if job.merge.audio_encode_done else None,
                         ],
                     }
                 )
@@ -189,55 +170,55 @@ def _show_card_theme(queued_jobs, current_task):
                 child_divider = "└─" if is_last_child else "├─"
                 print(f"{cu.fore.LIGHTBLACK_EX}{child_prefix}{child_divider} {child_label}: {child_value}")
 
-def _show_yaml_like_theme(queued_jobs, current_task):
+
+def _show_yaml_like_theme(queued_jobs: list[AudioSyncJob | VideoSyncJob], current_task: Task):
     """Show job list in a YAML/config style format (YAML-like Theme)."""
     for idx, job in enumerate(queued_jobs, start=1):
-        job.idx = idx
-        status_color, status_label, _, detail_color = _get_sync_status_style(job.sync_status)
+        job.id = idx
+        status_color, status_label, _, detail_color = _get_sync_status_style(job.sync.status)
 
         print(f"\n{cu.fore.LIGHTBLUE_EX}Job {idx}:")
-        print(f"{cu.fore.LIGHTBLACK_EX}  source_file: {cu.fore.LIGHTBLUE_EX}{job.src_file}")
-        print(f"{cu.fore.LIGHTBLACK_EX}  sync_target_file: {cu.fore.YELLOW}{job.dst_file}")
+        print(f"{cu.fore.LIGHTBLACK_EX}  source_file: {cu.fore.LIGHTBLUE_EX}{job.src_filepath}")
+        print(f"{cu.fore.LIGHTBLACK_EX}  sync_target_file: {cu.fore.YELLOW}{job.dst_filepath}")
         
-        if job.sub_file is not None:
-            print(f"{cu.fore.LIGHTBLACK_EX}  subtitle_file: {cu.fore.LIGHTCYAN_EX}{job.sub_file}")
+        if isinstance(job, AudioSyncJob):
+            print(f"{cu.fore.LIGHTBLACK_EX}  subtitle_file: {cu.fore.LIGHTCYAN_EX}{job.sub_filepath}")
 
-        show_tracks_section = _has_any_track_data(job)
 
-        if show_tracks_section:
-            src_audio, src_sub, dst_audio = _get_track_values(job)
-
+        if isinstance(job, VideoSyncJob):
             print(f"{cu.fore.LIGHTBLACK_EX}  tracks:")
-            print(f"{cu.fore.LIGHTBLACK_EX}    source_audio: {cu.fore.LIGHTMAGENTA_EX}{src_audio if src_audio is not None else 'null'}")
-            print(f"{cu.fore.LIGHTBLACK_EX}    source_subtitle: {cu.fore.LIGHTCYAN_EX}{src_sub if src_sub is not None else 'null'}")
-            print(f"{cu.fore.LIGHTBLACK_EX}    sync_target_audio: {cu.fore.LIGHTMAGENTA_EX}{dst_audio if dst_audio is not None else 'null'}")
+            print(f"{cu.fore.LIGHTBLACK_EX}    source_audio: {cu.fore.LIGHTMAGENTA_EX}{job.src_streams.get_selected_audio_stream().display_label}")
+            print(f"{cu.fore.LIGHTBLACK_EX}    source_subtitle: {cu.fore.LIGHTCYAN_EX}{job.src_streams.get_selected_subtitle_stream().display_label}")
+            print(f"{cu.fore.LIGHTBLACK_EX}    sync_target_audio: {cu.fore.LIGHTMAGENTA_EX}{job.dst_streams.get_selected_audio_stream().display_label}")
 
         if current_task == Task.JOB_QUEUE:
             print(f"{cu.fore.LIGHTBLACK_EX}  sync_status: {status_color}{status_label.lower()}")
-            if job.sync_status == Status.FAILED:
-                print(f"{cu.fore.LIGHTBLACK_EX}  error: {detail_color}{job.result}")
-            elif job.sync_status == Status.COMPLETED:
-                print(f"{cu.fore.LIGHTBLACK_EX}  average_shift: {detail_color}{job.result}")
-                if job.sync_has_warnings:
+            if job.sync.status == Status.FAILED:
+                print(f"{cu.fore.LIGHTBLACK_EX}  error: {detail_color}{job.sync.result}")
+            elif job.sync.status == Status.COMPLETED:
+                print(f"{cu.fore.LIGHTBLACK_EX}  average_shift: {detail_color}{job.sync.result}")
+                if job.sync.has_warnings:
                     print(f"{cu.fore.LIGHTBLACK_EX}  sync_warning: {SYNC_COMPLETED_WARNING}")
-                if _avg_shift_exceeds_threshold(job.result):
+                if _avg_shift_exceeds_threshold(job.sync.result):
                     print(f"{cu.fore.LIGHTBLACK_EX}  shift_warning: {SYNC_EXCEED_WARNING}")
-                match job.merged:
-                    case True:
-                        merge_color, merge_label, _, merge_child_color = _merge_status_style(job.merged)
-                        print(f"{cu.fore.LIGHTBLACK_EX}  merge_status: {merge_color}{merge_label.lower()}")
-                        if job.merge_has_warnings:
-                            print(f"{cu.fore.LIGHTBLACK_EX}  merge_warning: {MERGE_WARNING_MESSAGE}")
-                        if job.merged_file:
-                            print(f"{cu.fore.LIGHTBLACK_EX}  merged_file: {merge_child_color}{job.merged_file}")
-                        if job.resample_done:
-                            print(f"{cu.fore.LIGHTBLACK_EX}  resampled: {cu.fore.GREEN}true")
-                        if job.merge_audio_encode_done:
-                            print(f"{cu.fore.LIGHTBLACK_EX}  audio_encoded: {cu.fore.GREEN}true {_get_encode_info_display(job)}")
-                    case False:
-                        print(f"{cu.fore.LIGHTYELLOW_EX}  merge_status: pending")
-                    case _:
-                        pass
+                
+                if isinstance(job, VideoSyncJob):
+                    match job.merge.done:
+                        case True:
+                            merge_color, merge_label, _, merge_child_color = _merge_status_style(job.merge.done)
+                            print(f"{cu.fore.LIGHTBLACK_EX}  merge_status: {merge_color}{merge_label.lower()}")
+                            if job.merge.has_warnings:
+                                print(f"{cu.fore.LIGHTBLACK_EX}  merge_warning: {MERGE_WARNING_MESSAGE}")
+                            if job.merge.merged_filepath:
+                                print(f"{cu.fore.LIGHTBLACK_EX}  merged_file: {merge_child_color}{job.merge.merged_filepath}")
+                            if job.merge.resample_done:
+                                print(f"{cu.fore.LIGHTBLACK_EX}  resampled: {cu.fore.GREEN}true")
+                            if job.merge.audio_encode_done:
+                                print(f"{cu.fore.LIGHTBLACK_EX}  audio_encoded: {cu.fore.GREEN}true {_get_encode_info_display(job)}")
+                        case False:
+                            print(f"{cu.fore.LIGHTYELLOW_EX}  merge_status: pending")
+                        case _:
+                            pass
             
 
 QUEUE_RENDERERS = {
