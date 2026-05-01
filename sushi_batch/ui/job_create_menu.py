@@ -7,7 +7,7 @@ from ..models.job_queue import JobQueue, JobQueueContents
 from ..services.job_creation_service import JobCreationService
 from ..utils import console_utils as cu
 from ..utils import constants, file_utils
-from . import queue_manager as qm
+from .queue.temp_queue import show_temp_queue
 from .prompts import choice_prompt
 
 FileSelectionMode = Literal["directory", "file-select"]
@@ -43,7 +43,7 @@ def _handle_option_select(task: Task, file_mode: FileSelectionMode) -> bool:
             else JobCreationService.create_video_sync_jobs(src_files, dst_files, task)
         )
         temp_queue = JobQueue(contents=cast(JobQueueContents, jobs), in_memory=True)
-        should_return_to_home: bool = qm.show_temp_queue(temp_queue, is_main_queue=False)
+        should_return_to_home: bool = show_temp_queue(temp_queue, task)
         return should_return_to_home
 
     return False

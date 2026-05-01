@@ -31,7 +31,7 @@ class StreamService:
                 display_label="",
             )
 
-            info: str = ''.join(filter[str](None, [
+            info: str = ''.join(filter(None, [
                 f", {track.get('sample_rate')} Hz" if track.get('sample_rate') else None,
                 f", {new_stream.channel_layout}" if new_stream.channel_layout else None,
                 f", {track.get('bits_per_raw_sample')} bits" if track.get('bits_per_raw_sample') else None,
@@ -75,7 +75,7 @@ class StreamService:
                 display_label="",
             )
             
-            info: str = ''.join(filter[str](None, [
+            info: str = ''.join(filter(None, [
                 " (forced)" if new_stream.forced else None,
                 " (default)" if new_stream.default else None
             ]))

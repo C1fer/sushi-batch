@@ -14,6 +14,8 @@ from ..utils import utils
 from yaspin import yaspin
 from yaspin.core import Yaspin
 from ..external.execution_logger import ExecutionLogger
+
+
 class QueueExecutionService:
     @classmethod
     def _run_sub_sync(cls, job: AudioSyncJob | VideoSyncJob, use_advanced_sushi_args: bool = False, parent_queue: JobQueue | None = None) -> None:

@@ -6,7 +6,8 @@ from ..external.mkv_merge import MKVMerge
 from ..external.sub_resample import SubResampler
 from ..models.settings import Settings
 from ..utils import console_utils as cu
-from . import queue_manager as qm
+from .queue.queue_manager import main_queue, get_queue_stats_by_key
+from .queue.main_queue import show_main_queue
 from .help_menu import show_help_screen
 from .job_create_menu import show_job_create_menu
 from .prompts import choice_prompt
@@ -26,7 +27,7 @@ MENU_OPTIONS:list[tuple[int, str]] = [
 
 def _get_status_box(version: str) -> str:
     """Get the status box for the main menu."""
-    pending_jobs_count: int = qm.get_queue_stats_by_key(queue=qm.main_queue.contents, key="pending")
+    pending_jobs_count: int = get_queue_stats_by_key(queue=main_queue.contents, key="pending")
     _count_display: str = "None" if not pending_jobs_count else str(pending_jobs_count)
     pending_jobs_display = f"{cu.fore.LIGHTBLACK_EX}Pending Jobs: {cu.fore.LIGHTYELLOW_EX}{_count_display}{cu.fore.RESET}"
 
@@ -52,8 +53,8 @@ def _handle_main_menu_selection(selected_option: int, settings_obj: Settings) ->
         case 2:
             show_job_create_menu(is_video=False)
         case 3:
-            if qm.main_queue.contents:
-                qm.show_main_queue()
+            if main_queue.contents:
+                show_main_queue()
             else:
                 cu.print_error("No jobs queued!")
         case 4:

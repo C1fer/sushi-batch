@@ -5,7 +5,7 @@ from importlib.metadata import version
 from .external.ffmpeg import FFmpeg
 from .external.ffprobe import FFprobe
 from .models import settings as s
-from .ui import queue_manager as qm
+from .ui.queue import queue_manager as qm
 from .ui.main_menu import run_main_menu
 from .utils import console_utils as cu
 from .utils import utils

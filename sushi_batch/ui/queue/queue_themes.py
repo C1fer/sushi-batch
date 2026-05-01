@@ -1,13 +1,13 @@
 import re
 from typing import Callable,TypedDict
 
-from ..external.sub_sync import Sushi
-from ..models.enums import AudioEncodeCodec, AudioEncoder, QueueTheme, Status
-from ..models.job.audio_sync_job import AudioSyncJob
-from ..models.job.video_sync_job import VideoSyncJob
-from ..models.job_queue import JobQueueContents
-from ..utils import console_utils as cu
-from ..utils.console_utils import ConsoleColor
+from ...external.sub_sync import Sushi
+from ...models.enums import AudioEncodeCodec, AudioEncoder, QueueTheme, Status
+from ...models.job.audio_sync_job import AudioSyncJob
+from ...models.job.video_sync_job import VideoSyncJob
+from ...models.job_queue import JobQueueContents
+from ...utils import console_utils as cu
+from ...utils.console_utils import ConsoleColor
 
 class CardDisplaySection(TypedDict):
     label: str
