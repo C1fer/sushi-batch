@@ -4,7 +4,6 @@ from art import text2art
 
 from ..external.mkv_merge import MKVMerge
 from ..external.sub_resample import SubResampler
-from ..models.enums import Task
 from ..models.settings import Settings
 from ..utils import console_utils as cu
 from . import queue_manager as qm
@@ -54,7 +53,7 @@ def _handle_main_menu_selection(selected_option: int, settings_obj: Settings) ->
             show_job_create_menu(is_video=False)
         case 3:
             if qm.main_queue.contents:
-                qm.show_main_queue(Task.JOB_QUEUE)
+                qm.show_main_queue()
             else:
                 cu.print_error("No jobs queued!")
         case 4:

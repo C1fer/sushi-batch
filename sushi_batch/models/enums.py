@@ -42,7 +42,6 @@ class Task(Enum):
     AUDIO_SYNC_FIL = 2
     VIDEO_SYNC_DIR = 3
     VIDEO_SYNC_FIL = 4
-    JOB_QUEUE = 5
 
 
 class Status(Enum):

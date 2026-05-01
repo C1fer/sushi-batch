@@ -30,10 +30,10 @@ def get_directories() -> tuple[str, str]:
 
 def get_files_in_directory(directory: str, formats: tuple[str, ...]) -> list[str]:
     """Recursively find files matching given formats."""
-    matched_files = []
+    matched_files: list[str] = []
     for root, _, files in Path(directory).walk():
         matched_files.extend(
-            Path(root) / name 
+            str(Path(root) / name) 
             for name in files 
             if name.endswith(formats)
         )
@@ -73,7 +73,7 @@ def select_files(task: Task) -> tuple[list[str], list[str], list[str]]:
     return src_files, dst_files, sub_files
 
 
-def clean_generated_files(job_list: list[AudioSyncJob] | list[VideoSyncJob]) -> None:
+def clean_generated_files(job_list: list[AudioSyncJob | VideoSyncJob]) -> None:
     """Delete generated files for the specified jobs"""
     try:
         for job in job_list:

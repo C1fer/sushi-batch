@@ -1,4 +1,3 @@
-from pathlib import Path
 from dataclasses import dataclass
 
 from ..enums import Task, Status
@@ -37,10 +36,10 @@ class BaseJob:
         src_filepath: str,
         dst_filepath: str,
     ):
-        self.id = id
-        self.sync = sync
-        self.src_filepath = str(Path(src_filepath))
-        self.dst_filepath = str(Path(dst_filepath))
+        self.id: int = id
+        self.sync: JobSync = sync
+        self.src_filepath: str = src_filepath
+        self.dst_filepath: str = dst_filepath
 
     def to_dct(self) -> dict:
         return {

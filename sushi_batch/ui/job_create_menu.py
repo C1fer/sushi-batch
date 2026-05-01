@@ -3,7 +3,7 @@ from typing import Literal, cast
 from ..models.enums import Task
 from ..models.job.audio_sync_job import AudioSyncJob
 from ..models.job.video_sync_job import VideoSyncJob
-from ..models.job_queue import JobQueue
+from ..models.job_queue import JobQueue, JobQueueContents
 from ..services.job_creation_service import JobCreationService
 from ..utils import console_utils as cu
 from ..utils import constants, file_utils
@@ -42,8 +42,8 @@ def _handle_option_select(task: Task, file_mode: FileSelectionMode) -> bool:
             if task in constants.AUDIO_TASKS
             else JobCreationService.create_video_sync_jobs(src_files, dst_files, task)
         )
-        temp_queue = JobQueue(contents=cast(list[AudioSyncJob | VideoSyncJob], jobs), in_memory=True)
-        should_return_to_home: bool = qm.show_temp_queue(temp_queue, task)
+        temp_queue = JobQueue(contents=cast(JobQueueContents, jobs), in_memory=True)
+        should_return_to_home: bool = qm.show_temp_queue(temp_queue, is_main_queue=False)
         return should_return_to_home
 
     return False

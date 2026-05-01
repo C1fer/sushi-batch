@@ -6,6 +6,7 @@ from ..models.job.video_sync_job import JobMediaStreams, VideoSyncJob
 from ..services.stream_service import StreamService
 from ..utils import console_utils as cu
 from ..utils import constants
+from pathlib import Path
 
 
 class JobCreationService:
@@ -50,8 +51,8 @@ class JobCreationService:
             jobs.append(
                 VideoSyncJob(
                     id=idx,
-                    src_filepath=src_filepath,
-                    dst_filepath=dst_filepath,
+                    src_filepath=str(Path(src_filepath)) if task == Task.VIDEO_SYNC_FIL else src_filepath, # Path is already normalized for directory search,
+                    dst_filepath=str(Path(dst_filepath)) if task == Task.VIDEO_SYNC_FIL else dst_filepath,
                     src_streams=JobMediaStreams(
                         video=StreamService.get_video_streams_from_probe(src_media_info["video"]),
                         audio=StreamService.get_audio_streams_from_probe(src_media_info["audio"]),
@@ -75,9 +76,9 @@ class JobCreationService:
             jobs.append(
                 AudioSyncJob(
                     id=idx,
-                    src_filepath=src_filepath,
-                    dst_filepath=dst_filepath,
-                    sub_filepath=sub_filepath,
+                    src_filepath=str(Path(src_filepath)) if task == Task.AUDIO_SYNC_FIL else src_filepath, # Path is already normalized for directory search,
+                    dst_filepath=str(Path(dst_filepath)) if task == Task.AUDIO_SYNC_FIL else dst_filepath,
+                    sub_filepath=str(Path(sub_filepath)) if task == Task.AUDIO_SYNC_FIL else sub_filepath,
                     sync=JobSync(task=task),
                 )
             )

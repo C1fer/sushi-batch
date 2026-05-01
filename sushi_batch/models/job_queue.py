@@ -1,5 +1,5 @@
-from typing import Callable, cast
-from os import path
+from typing import Callable, cast, TypeAlias
+from pathlib import Path
 
 from ..ui.prompts import checklist_dialog
 
@@ -16,15 +16,16 @@ from ..utils import constants
 from ..models.job.audio_sync_job import AudioSyncJob
 from ..models.job.video_sync_job import VideoSyncJob
 
-
+JobQueueContents = list[AudioSyncJob | VideoSyncJob]
+JobFilterFn: TypeAlias = Callable[[AudioSyncJob | VideoSyncJob], bool]
 class JobQueue:
-    def __init__(self, contents: list[AudioSyncJob | VideoSyncJob] | None = None, in_memory: bool = False):
-        self.contents: list[AudioSyncJob | VideoSyncJob] = contents if contents is not None else []
+    def __init__(self, contents: JobQueueContents | None = None, in_memory: bool = False):
+        self.contents: JobQueueContents = contents if contents is not None else []
         self.in_memory: bool = in_memory
         self._persistence: QueuePersistence | None = (
             None
             if in_memory
-            else QueuePersistence(path.join(settings.config.data_path, "queue_data.json"))
+            else QueuePersistence(Path(settings.config.data_path) / "queue_data.json")
         )
 
     def save(self) -> None:
@@ -45,7 +46,7 @@ class JobQueue:
             for dct in self._persistence.load()
         ]
 
-    def _add_sync_jobs(self, jobs_to_add: list[AudioSyncJob | VideoSyncJob], task: Task) -> None:
+    def _add_sync_jobs(self, jobs_to_add: JobQueueContents, task: Task) -> None:
         """Add selected jobs to queue"""
         try:
             if not jobs_to_add:
@@ -60,10 +61,10 @@ class JobQueue:
         except Exception as e:
             cu.print_error(f"Error adding jobs to queue: {e}")
 
-    def add_jobs(self, jobs_to_add: list[AudioSyncJob | VideoSyncJob], task: Task) -> None:
+    def add_jobs(self, jobs_to_add: JobQueueContents, task: Task) -> None:
         return utils.interrupt_signal_handler(self._add_sync_jobs)(jobs_to_add, task)
 
-    def _remove_sync_jobs(self, jobs_to_remove: list[AudioSyncJob | VideoSyncJob]) -> None:
+    def _remove_sync_jobs(self, jobs_to_remove: JobQueueContents) -> None:
         """Remove selected jobs from queue"""
         job_ids_to_remove = {job.id for job in jobs_to_remove}
         try:
@@ -78,10 +79,10 @@ class JobQueue:
         except Exception as e:
             cu.print_error(f"Error removing jobs: {e}")
 
-    def remove_jobs(self, jobs_to_remove: list[AudioSyncJob | VideoSyncJob]) -> None:
+    def remove_jobs(self, jobs_to_remove: JobQueueContents) -> None:
         return utils.interrupt_signal_handler(self._remove_sync_jobs)(jobs_to_remove)
 
-    def clean_generated_files(self, job_list: list[AudioSyncJob | VideoSyncJob], confirm_deletion: bool = True) -> None:
+    def clean_generated_files(self, job_list: JobQueueContents, confirm_deletion: bool = True) -> None:
         """Delete files generated for the specified jobs.
         This includes intermediate subtitle files generated for syncing and resampling.
         """
@@ -108,14 +109,14 @@ class JobQueue:
         else:
             cu.print_error("No completed or failed jobs to remove!")
 
-    def select_jobs(self, prompt_title: str = "Job Selection", prompt_message: str = "", filter_fn: Callable[[AudioSyncJob | VideoSyncJob], bool] | None = None) -> list[AudioSyncJob | VideoSyncJob]:
+    def select_jobs(self, prompt_title: str = "Job Selection", prompt_message: str = "", filter_fn: JobFilterFn | None = None) -> JobQueueContents:
         """Select jobs from queue in a checkbox dialog and return objects.
 
         filter_fn receives each job and should return True when that job should
         be shown/selectable in the dialog.
         """
         options = [   
-            (job.id, f"Job {job.id} - {path.basename(job.src_filepath)} -> {path.basename(job.dst_filepath)} [{job.sync.status.name}]") 
+            (job.id, f"Job {job.id} - {Path(job.src_filepath).name} -> {Path(job.dst_filepath).name} [{job.sync.status.name}]") 
             for job 
             in self.contents
             if (True if filter_fn is None else filter_fn(job))

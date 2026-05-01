@@ -38,7 +38,7 @@ class FileDialog:
             filter=cls._build_filter(filetypes),
             options=QFileDialog.Option.ReadOnly,
         )
-        return selected_files
+        return selected_files if selected_files else []
 
     @classmethod
     def askdirectory(cls, title: str, initial_dir: str = "", parent: QWidget | None = None) -> str:
