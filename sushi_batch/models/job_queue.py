@@ -1,4 +1,4 @@
-from typing import Callable, cast, TypeAlias
+from typing import Callable, cast
 from pathlib import Path
 
 from ..ui.prompts import checklist_dialog
@@ -16,8 +16,9 @@ from ..utils import constants
 from ..models.job.audio_sync_job import AudioSyncJob
 from ..models.job.video_sync_job import VideoSyncJob
 
-JobQueueContents = list[AudioSyncJob | VideoSyncJob]
-JobFilterFn: TypeAlias = Callable[[AudioSyncJob | VideoSyncJob], bool]
+type JobQueueContents = list[AudioSyncJob | VideoSyncJob]
+type JobFilterFn = Callable[[AudioSyncJob | VideoSyncJob], bool]
+
 class JobQueue:
     def __init__(self, contents: JobQueueContents | None = None, in_memory: bool = False):
         self.contents: JobQueueContents = contents if contents is not None else []
@@ -66,7 +67,7 @@ class JobQueue:
 
     def _remove_sync_jobs(self, jobs_to_remove: JobQueueContents) -> None:
         """Remove selected jobs from queue"""
-        job_ids_to_remove = {job.id for job in jobs_to_remove}
+        job_ids_to_remove: set[int] = {job.id for job in jobs_to_remove}
         try:
             self.contents = [
                 job

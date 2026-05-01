@@ -66,7 +66,7 @@ def _handle_main_menu_selection(selected_option: int, settings_obj: Settings) ->
 
     return False
 
-def run_main_menu(version: str, settings_obj: Settings):
+def run_main_menu(version: str, settings_obj: Settings) -> None:
     """Display the main menu and handle user interactions."""
     header: str = text2art("\nSushi Batch")
     while True:

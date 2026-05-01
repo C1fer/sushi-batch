@@ -14,7 +14,7 @@ class QueuePersistence:
         with open(self.file_path, "w", encoding="utf-8") as data_file:
             json.dump([job.to_dct() for job in contents], data_file, indent=4)
 
-    def load(self) :
+    def load(self):
         """Load jobs from disk. Returns empty list when the file is missing."""
         if not path.exists(self.file_path):
             return []

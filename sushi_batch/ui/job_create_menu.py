@@ -10,7 +10,7 @@ from ..utils import constants, file_utils
 from .queue.temp_queue import show_temp_queue
 from .prompts import choice_prompt
 
-FileSelectionMode = Literal["directory", "file-select"]
+type FileSelectionMode = Literal["directory", "file-select"]
 
 VIDEO_SYNC_INFO = """Selected tracks are extracted from reference and target videos. Subtitle is adjusted to sync with the target audio.
 The generated subtitle can later be merged with the target video in the Job Queue."""
@@ -21,7 +21,7 @@ SYNC_MODES_INFO = """
 Directory Mode: Choose source and target folders; matching files are paired automatically by filename.
 File-select Mode: Choose source and target files manually."""
 
-MENU_OPTIONS:list[tuple[int, str]] = [
+MENU_OPTIONS: list[tuple[int, str]] = [
     (1, "Directory Mode"),
     (2, "File-select Mode"),
     (3, "Go Back")

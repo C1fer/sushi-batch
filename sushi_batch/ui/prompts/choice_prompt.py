@@ -1,13 +1,16 @@
+from typing import Sequence
 from prompt_toolkit.shortcuts import choice
-from prompt_toolkit.styles import Style, merge_styles
+from prompt_toolkit.styles import BaseStyle, Style, merge_styles
+from prompt_toolkit.formatted_text.base import AnyFormattedText
 
-from ...utils import constants 
+from ...utils.constants import CustomColor, BOTTOM_TOOLBAR_STATS_STYLES
 
+type ChoiceOptions = Sequence[tuple[int | str, AnyFormattedText]]
 
-DEFAULT_STYLE = Style.from_dict({
-    "frame.border": constants.COLOR_MUTED,
-    "selected-option": f"fg:{constants.COLOR_ACCENT} bold",
-    **constants.BOTTOM_TOOLBAR_STATS_STYLES
+DEFAULT_STYLE: Style = Style.from_dict({
+    "frame.border": CustomColor.MUTED,
+    "selected-option": f"fg:{CustomColor.ACCENT} bold",
+    **BOTTOM_TOOLBAR_STATS_STYLES
 })
 
 def _validate_choice_options(options):
@@ -22,25 +25,39 @@ def _validate_choice_options(options):
     else:
         raise TypeError("Options must be a dict or a list/tuple of (value, label) pairs.")
     
-def get(message="Select an option: ", options=None, nl_before=True, nl_after=True, **kwargs): 
+def get(
+    message: str = "Select an option: ",
+    options: ChoiceOptions | None = None,
+    nl_before: bool = True,
+    nl_after: bool = True,
+    style: BaseStyle | None = None,
+    bottom_toolbar: AnyFormattedText = None,
+    mouse_support: bool = True,
+    show_frame: bool = False,
+) -> int:
     """Use prompt_toolkit to display a choice prompt with the given options."""
-    normalized_options = options if options is not None else kwargs.get("options")
+    normalized_options: ChoiceOptions = options if options is not None else _validate_choice_options(options)
     _validate_choice_options(normalized_options)
 
-    kwargs["options"] = normalized_options
-    kwargs.setdefault("mouse_support", True)
-
-    caller_style = kwargs.pop("style", None)
-    kwargs["style"] = merge_styles([DEFAULT_STYLE, caller_style]) if caller_style else DEFAULT_STYLE
-
-    is_frame_enabled = kwargs.get("show_frame", False)
+    _style: BaseStyle = (
+        merge_styles([DEFAULT_STYLE, style])
+        if style
+        else DEFAULT_STYLE
+    )
 
     if nl_before and not message.strip().startswith("\n"):
         print()
 
-    user_choice = choice(message, **kwargs)
+    user_choice = choice(
+        message,
+        options=normalized_options,
+        mouse_support=mouse_support,
+        style=_style,
+        bottom_toolbar=bottom_toolbar,
+        show_frame=show_frame,
+    )
 
-    if nl_after and not message.strip().endswith("\n") and not is_frame_enabled:
+    if nl_after and not message.strip().endswith("\n") and not show_frame:
         print()
         
     return user_choice

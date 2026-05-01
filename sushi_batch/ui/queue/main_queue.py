@@ -1,4 +1,4 @@
-from typing import TypeAlias, cast
+from typing import cast
 
 from ...external.mkv_merge import MKVMerge
 from ...models import settings as s
@@ -11,7 +11,7 @@ from ..prompts import choice_prompt, confirm_prompt
 from . import queue_manager as qm
 
 
-ToolbarData: TypeAlias = list[tuple[str, str]] # tuple[style, text]
+type ToolbarData = list[tuple[str, str]] # tuple[style, text]
 
 MENU_OPTIONS: qm.QueueMenuItems = [
     (1, "Run Jobs",),

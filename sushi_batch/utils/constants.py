@@ -1,28 +1,29 @@
+from enum import StrEnum
 from ..models.enums import Task
 
-VIDEO_TASKS = (Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL)
-AUDIO_TASKS = (Task.AUDIO_SYNC_DIR, Task.AUDIO_SYNC_FIL)
+VIDEO_TASKS: set[Task] = {Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL}
+AUDIO_TASKS: set[Task] = {Task.AUDIO_SYNC_DIR, Task.AUDIO_SYNC_FIL}
+
+class CustomColor(StrEnum):
+    ACCENT = "#56b6c2"
+    DESTRUCTIVE = "#e06c75"
+    MUTED = "#9aa0a6"
+    MUTED_LIGHTER = "#abb0b6"
+    SUCCESS = "#98c379"
+    TEXT = "#ffffff"
+    BG_DARK = "#1f1f1f"
+    BG_DARKER = "#111111"
+    PENDING = "#f2d574"
+    TOTAL = "#74c7ec"
 
 
-COLOR_ACCENT = "#56b6c2"
-COLOR_DESTRUCTIVE = "#e06c75"
-COLOR_MUTED = "#9aa0a6"
-COLOR_MUTED_LIGHTER = "#abb0b6"
-COLOR_SUCCESS = "#98c379"
-COLOR_TEXT = "#ffffff"
-COLOR_BG_DARK = "#1f1f1f"
-COLOR_BG_DARKER = "#111111"
-COLOR_PENDING = "#f2d574"
-COLOR_TOTAL = "#74c7ec"
-
-
-BOTTOM_TOOLBAR_STATS_SEPARATOR = ("class:bottom-toolbar.sep", " | ")
-BOTTOM_TOOLBAR_STATS_STYLES = {
-    "bottom-toolbar": f"fg:{COLOR_BG_DARK} bg:{COLOR_MUTED_LIGHTER}",
-    "bottom-toolbar.label": f"fg:{COLOR_BG_DARK}",
-    "bottom-toolbar.total": f"bg:{COLOR_TOTAL} bold",
-    "bottom-toolbar.pending": f"bg:{COLOR_PENDING} bold",
-    "bottom-toolbar.completed": f"bg:{COLOR_SUCCESS} bold",
-    "bottom-toolbar.failed": f"bg:{COLOR_DESTRUCTIVE} bold",
-    "bottom-toolbar.sep": f"bg:{COLOR_MUTED}",
+BOTTOM_TOOLBAR_STATS_SEPARATOR: tuple[str, str] = ("class:bottom-toolbar.sep", " | ")
+BOTTOM_TOOLBAR_STATS_STYLES: dict[str, str] = {
+    "bottom-toolbar": f"fg:{CustomColor.BG_DARK} bg:{CustomColor.MUTED_LIGHTER}",
+    "bottom-toolbar.label": f"fg:{CustomColor.BG_DARK}",
+    "bottom-toolbar.total": f"bg:{CustomColor.TOTAL} bold",
+    "bottom-toolbar.pending": f"bg:{CustomColor.PENDING} bold",
+    "bottom-toolbar.completed": f"bg:{CustomColor.SUCCESS} bold",
+    "bottom-toolbar.failed": f"bg:{CustomColor.DESTRUCTIVE} bold",
+    "bottom-toolbar.sep": f"bg:{CustomColor.MUTED}",
 }

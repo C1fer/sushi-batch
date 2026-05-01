@@ -1,4 +1,4 @@
-from typing import Callable, Literal, TypeAlias
+from typing import Callable, Literal
 
 from ...models import settings as s
 from ...models.enums import QueueTheme, Status
@@ -7,9 +7,9 @@ from ...utils import console_utils as cu
 from ..prompts import input_prompt
 from .queue_themes import QUEUE_RENDERERS
 
-QueueStatsKey = Literal["total", "pending", "completed", "failed"]
-MenuItemValidator: TypeAlias = Callable[[dict[str, bool]], bool]
-QueueMenuItems: TypeAlias = list[tuple[int, str] | tuple[int, str, MenuItemValidator]]
+type QueueStatsKey = Literal["total", "pending", "completed", "failed"]
+type MenuItemValidator = Callable[[dict[str, bool]], bool]
+type QueueMenuItems = list[tuple[int, str] | tuple[int, str, MenuItemValidator]]
 
 TO_RUN_SELECTED_PROMPT = "Select which jobs to run:"
 

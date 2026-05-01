@@ -1,29 +1,35 @@
 
 from prompt_toolkit import prompt
-from prompt_toolkit.styles import Style, merge_styles
-from prompt_toolkit.cursor_shapes import CursorShape
+from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
+from prompt_toolkit.styles import BaseStyle, Style, merge_styles
 
-from ...utils import constants
 from ...utils.console_utils import print_error
+from ...utils.constants import BOTTOM_TOOLBAR_STATS_STYLES, CustomColor
 
-DEFAULT_STYLE = { **constants.BOTTOM_TOOLBAR_STATS_STYLES}
+def _get_default_style(destructive: bool = False) -> Style:
+    color: str = CustomColor.DESTRUCTIVE if destructive else CustomColor.ACCENT
+    return Style.from_dict({ 
+        **BOTTOM_TOOLBAR_STATS_STYLES, 
+        "message": f"fg:{color} bold"
+    })
 
-def get(message="Are you sure?", suffix=" (Y/N): ", nl_before=False, nl_after=False, destructive=False, **kwargs):
+def get(
+    message="Are you sure?",
+    suffix: str = " (Y/N): ",
+    nl_before: bool = False,
+    nl_after: bool = False,
+    destructive: bool = False,
+    style: BaseStyle | None = None,
+    bottom_toolbar: AnyFormattedText = None,
+) -> bool:
     """Prompt user for a yes/no confirmation."""
-    kwargs.setdefault("cursor", CursorShape.BLOCK)
-    caller_style = kwargs.pop("style", None)
-
-    _color = constants.COLOR_DESTRUCTIVE if destructive else constants.COLOR_ACCENT
-    DEFAULT_STYLE["message"] = f"fg:{_color} bold"
-
-    kwargs["style"] = (
-        merge_styles([Style.from_dict(DEFAULT_STYLE), caller_style])
-        if caller_style
-        else Style.from_dict(DEFAULT_STYLE)
+    _style: BaseStyle = (
+        merge_styles([_get_default_style(destructive=destructive), style])
+        if style
+        else _get_default_style(destructive=destructive)
     )
-
-    _message = [("class:message", f"> {message}{suffix}")]
-
+    
+    _message: StyleAndTextTuples= [("class:message", f"> {message}{suffix}")]
 
     if nl_before and not message.strip().startswith("\n"):
         print()
@@ -33,7 +39,7 @@ def get(message="Are you sure?", suffix=" (Y/N): ", nl_before=False, nl_after=Fa
             print()
 
     while True:
-        user_input = prompt(_message, **kwargs).upper()
+        user_input: str = prompt(message=_message, style=_style, bottom_toolbar=bottom_toolbar).upper()
         match user_input:
             case "Y":
                 _print_new_line_after()
@@ -42,4 +48,4 @@ def get(message="Are you sure?", suffix=" (Y/N): ", nl_before=False, nl_after=Fa
                 _print_new_line_after()
                 return False
             case _:
-                print_error("Wrong input!\n", False)
+                print_error("Wrong input!", wait=False, nl_after=True)
