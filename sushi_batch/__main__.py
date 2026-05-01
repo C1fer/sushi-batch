@@ -1,26 +1,23 @@
 import sys
 import traceback
-
 from importlib.metadata import version
 
-from .utils import console_utils as cu
-from .models import settings as s
 from .external.ffmpeg import FFmpeg
 from .external.ffprobe import FFprobe
+from .models import settings as s
 from .ui import queue_manager as qm
-
 from .ui.main_menu import run_main_menu
-
+from .utils import console_utils as cu
 from .utils import utils
 
 utils.check_required_packages()
 
 try: 
-    VERSION = version("sushi-batch")
+    VERSION: str = version("sushi-batch")
 except Exception:
-    VERSION = None
+    VERSION: str = ""
 
-def _load_startup_data():
+def _load_startup_data() -> None:
     """Load startup data and allow recovery by resetting the failing state."""
     while True:
         try:
@@ -44,7 +41,7 @@ def _load_startup_data():
             raise
         return
 
-def main():
+def main() -> None:
     required_apps: dict[str, tuple[bool, str]] = {
         "FFmpeg": (FFmpeg.is_installed, "https://ffmpeg.org/download.html"),
         "FFprobe": (FFprobe.is_installed, "https://ffmpeg.org/download.html"),
@@ -56,11 +53,10 @@ def main():
             cu.print_subheader(f"{app_name} can be downloaded from: {download_url}")
             sys.exit(1)
 
-
     try:
         _load_startup_data()
     except Exception as e:
-        init_trace = traceback.format_exc().rstrip()
+        init_trace: str = traceback.format_exc().rstrip()
         cu.print_error(f"---INIT ERROR---\nStartup initialization failed: {type(e).__name__}: {e}\n{init_trace}", False)
         sys.exit(1)
 

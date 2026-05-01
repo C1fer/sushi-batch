@@ -4,18 +4,39 @@ from ..models.job.audio_sync_job import AudioSyncJob
 from ..models.job.base_job import JobSync
 from ..models.job.video_sync_job import JobMediaStreams, VideoSyncJob
 from ..services.stream_service import StreamService
+from ..utils import console_utils as cu
+from ..utils import constants
 
 
 class JobCreationService:
     @staticmethod
-    def _is_video_sync_job_invalid(src_probe_info: ParsedProbeOutput, dst_probe_info: ParsedProbeOutput) -> bool:
+    def validate_files(src_files: list[str], dst_files: list[str], sub_files: list[str], task: Task) -> bool:
+        """Validate selected files / files found in directories fo."""
+        src_len: int = len(src_files)
+        dst_len: int = len(dst_files)
+        sub_len: int = len(sub_files)
+
+        validations: list[tuple[bool, str]] = [
+            (src_len == 0, "No source files found!"),
+            (dst_len == 0, "No sync target files found!"),
+            (src_len != dst_len, f"Source ({src_len}) and sync target ({dst_len}) file counts don't match!"),
+            (task in constants.AUDIO_TASKS and src_len != sub_len, f"Audio ({src_len}) and subtitle ({sub_len}) file counts don't match!"),
+        ]
+
+        for condition, error_msg in validations:
+            if condition:
+                cu.print_error(error_msg)
+                return False
+        return True
+
+    @classmethod
+    def _is_video_sync_job_invalid(cls, src_probe_info: ParsedProbeOutput, dst_probe_info: ParsedProbeOutput) -> bool:
         return any([
             len(src_probe_info["audio"]) == 0,
             len(src_probe_info["subtitle"]) == 0,
             len(dst_probe_info["audio"]) == 0
         ])
             
-
     @classmethod
     def create_video_sync_jobs(cls,src_files: list[str], dst_files: list[str], task: Task) -> list[VideoSyncJob]:
         jobs: list[VideoSyncJob] = []

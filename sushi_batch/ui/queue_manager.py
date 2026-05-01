@@ -1,18 +1,18 @@
+from typing import Literal
+
+from ..external.mkv_merge import MKVMerge
+from ..models import settings as s
+from ..models.enums import Status, Task
 from ..models.job.audio_sync_job import AudioSyncJob
 from ..models.job.video_sync_job import VideoSyncJob
 from ..models.job_queue import JobQueue
-from ..models.enums import Task, Status
-from ..models import settings as s
-
-from ..external.mkv_merge import MKVMerge
-
-from ..utils import utils
-from ..utils import constants
-from ..utils import console_utils as cu
-from .prompts import confirm_prompt, choice_prompt, input_prompt
-from .queue_themes import QUEUE_RENDERERS
 from ..services.queue_execution_service import QueueExecutionService
+from ..utils import console_utils as cu
+from ..utils import utils
+from .prompts import choice_prompt, confirm_prompt, input_prompt
+from .queue_themes import QUEUE_RENDERERS
 
+QueueStatsKey = Literal["total", "pending", "completed", "failed"]
 
 MAIN_QUEUE_OPTIONS= {
     "top": [
@@ -78,20 +78,9 @@ def _show_queue_items(queue: list[AudioSyncJob | VideoSyncJob], current_task: Ta
     renderer = QUEUE_RENDERERS.get(current_theme, lambda q, t: cu.print_error("Invalid queue theme selected."))
     renderer(queue, current_task)
 
-def get_queue_stats(queue: list[AudioSyncJob | VideoSyncJob] | None = None, requested_key: str | None = None) -> dict[str, int] | int:    
-    """Return summary statistics for the job queue, including total jobs, pending, completed, and failed counts."""
-    queue = queue if queue is not None else main_queue.contents
-    key: str | None = requested_key.lower() if requested_key else None
 
-    match key:
-        case "total":
-            return len(queue)
-        case "pending":
-            return sum(1 for job in queue if job.sync.status == Status.PENDING)
-        case "completed":
-            return sum(1 for job in queue if job.sync.status == Status.COMPLETED)
-        case "failed":
-            return sum(1 for job in queue if job.sync.status == Status.FAILED)
+def get_full_queue_stats(queue: list[AudioSyncJob | VideoSyncJob]) -> dict[QueueStatsKey, int]:
+    """Return summary statistics for the job queue, including total jobs, pending, completed, and failed counts."""
     return {
         "total": len(queue),
         "pending": sum(1 for job in queue if job.sync.status == Status.PENDING),
@@ -99,9 +88,13 @@ def get_queue_stats(queue: list[AudioSyncJob | VideoSyncJob] | None = None, requ
         "failed": sum(1 for job in queue if job.sync.status == Status.FAILED),
     }
 
-def get_stats_bar(queue: list[AudioSyncJob | VideoSyncJob] | None = None) -> tuple[list[tuple[str, str]], int]:
+def get_queue_stats_by_key(queue: list[AudioSyncJob | VideoSyncJob], key: QueueStatsKey) -> int:
+    """Return the count of jobs in the queue for the given key."""
+    return sum(1 for job in queue if job.sync.status == key)
+
+def get_stats_bar(queue: list[AudioSyncJob | VideoSyncJob]) -> tuple[list[tuple[str, str]], int]:
     """Generate a formatted status bar with per-field colors."""
-    stats = get_queue_stats(queue)
+    stats = get_full_queue_stats(queue)
     separator_classname = ("class:bottom-toolbar.sep", " | ")
     bar = [
         ("", " Sync Stats  ->    "), 
