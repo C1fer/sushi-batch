@@ -1,17 +1,18 @@
-from ..external.ffmpeg import FFmpeg
+from ..external.ffprobe import FFprobe, ParsedProbeOutput
 from ..models.enums import Task
-from ..models.job.video_sync_job import VideoSyncJob, JobMediaStreams
-from ..services.stream_service import StreamService
-from ..models.job.base_job import JobSync
 from ..models.job.audio_sync_job import AudioSyncJob
+from ..models.job.base_job import JobSync
+from ..models.job.video_sync_job import JobMediaStreams, VideoSyncJob
+from ..services.stream_service import StreamService
+
 
 class JobCreationService:
     @staticmethod
-    def _is_video_sync_job_invalid(src_probe_info: dict, dst_probe_info: dict) -> bool:
+    def _is_video_sync_job_invalid(src_probe_info: ParsedProbeOutput, dst_probe_info: ParsedProbeOutput) -> bool:
         return any([
-            len(src_probe_info.get("audio", [])) == 0,
-            len(src_probe_info.get("subtitle", [])) == 0,
-            len(dst_probe_info.get("audio", [])) == 0
+            len(src_probe_info["audio"]) == 0,
+            len(src_probe_info["subtitle"]) == 0,
+            len(dst_probe_info["audio"]) == 0
         ])
             
 
@@ -19,8 +20,8 @@ class JobCreationService:
     def create_video_sync_jobs(cls,src_files: list[str], dst_files: list[str], task: Task) -> list[VideoSyncJob]:
         jobs: list[VideoSyncJob] = []
         for idx, (src_filepath, dst_filepath) in enumerate(zip(src_files, dst_files), start=1):
-            src_media_info = FFmpeg.get_clean_probe_info(src_filepath)
-            dst_media_info = FFmpeg.get_clean_probe_info(dst_filepath)
+            src_media_info: ParsedProbeOutput = FFprobe.get_parsed_output(src_filepath)
+            dst_media_info: ParsedProbeOutput = FFprobe.get_parsed_output(dst_filepath)
             
             if cls._is_video_sync_job_invalid(src_media_info, dst_media_info):
                 continue
@@ -31,14 +32,14 @@ class JobCreationService:
                     src_filepath=src_filepath,
                     dst_filepath=dst_filepath,
                     src_streams=JobMediaStreams(
-                        video=StreamService.get_video_streams_from_probe(src_media_info.get("video", [])),
-                        audio=StreamService.get_audio_streams_from_probe(src_media_info.get("audio", [])),
-                        subtitle=StreamService.get_sub_streams_from_probe(src_media_info.get("subtitle", [])),
+                        video=StreamService.get_video_streams_from_probe(src_media_info["video"]),
+                        audio=StreamService.get_audio_streams_from_probe(src_media_info["audio"]),
+                        subtitle=StreamService.get_sub_streams_from_probe(src_media_info["subtitle"]),
                     ),
                     dst_streams=JobMediaStreams(
-                        video=StreamService.get_video_streams_from_probe(dst_media_info.get("video", [])),
-                        audio=StreamService.get_audio_streams_from_probe(dst_media_info.get("audio", [])),
-                        subtitle=StreamService.get_sub_streams_from_probe(dst_media_info.get("subtitle", [])),
+                        video=StreamService.get_video_streams_from_probe(dst_media_info["video"]),
+                        audio=StreamService.get_audio_streams_from_probe(dst_media_info["audio"]),
+                        subtitle=StreamService.get_sub_streams_from_probe(dst_media_info["subtitle"]),
                     ),
                     sync=JobSync(task=task),
                 )

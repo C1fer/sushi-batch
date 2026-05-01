@@ -17,13 +17,12 @@ class AudioStream(BaseStream):
 
 @dataclass
 class SubtitleStream(BaseStream):
-    extension: str | None
+    extension: str
     selected: bool = False
-    pass # No additional fields for subtitle streams
 
 @dataclass
-class VideoStream():
+class VideoStream:
     id: int
     width: int
     height: int
-    default: bool = False
+    default: bool

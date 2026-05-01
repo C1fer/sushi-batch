@@ -1,4 +1,7 @@
+from ..external.ffprobe import ProbeTrack
+from ..utils import console_utils as cu
 from ..models.stream import AudioStream, SubtitleStream, VideoStream
+
 
 SUBTITLE_CODEC_MAP: dict[str, str] = {
     "ass": ".ass",
@@ -6,11 +9,10 @@ SUBTITLE_CODEC_MAP: dict[str, str] = {
     "ssa": ".ssa"
 }
 
-
 class StreamService:
     @staticmethod
-    def get_audio_streams_from_probe(probed_tracks) -> list[AudioStream]:
-        """Get audio stream objects from FFprobe output"""
+    def get_audio_streams_from_probe(probed_tracks: list[ProbeTrack]) -> list[AudioStream]:
+        """Creates audio stream objects from FFprobe output"""
         if len(probed_tracks) == 0:
             return []
 
@@ -20,16 +22,16 @@ class StreamService:
             new_stream = AudioStream(
                 id=track.get('index'),
                 codec=track.get('codec_name'),
-                title=track.get('tags', {}).get('title', ''),
-                channel_layout=track.get('channel_layout', ''),
-                lang=track.get('tags', {}).get('language', 'und'),
-                default=track.get('disposition', {}).get('default', 0) == 1,
-                forced=track.get('disposition', {}).get('forced', 0) == 1,
+                title=track.get('tags').get('title') or '',
+                channel_layout=track.get('channel_layout') or '',
+                lang=track.get('tags').get('language') or 'und',
+                default=track.get('disposition').get('default') == 1,
+                forced=track.get('disposition').get('forced') == 1,
                 selected=False,
                 display_label="",
             )
 
-            info = ''.join(filter(None, [
+            info: str = ''.join(filter[str](None, [
                 f", {track.get('sample_rate')} Hz" if track.get('sample_rate') else None,
                 f", {new_stream.channel_layout}" if new_stream.channel_layout else None,
                 f", {track.get('bits_per_raw_sample')} bits" if track.get('bits_per_raw_sample') else None,
@@ -37,7 +39,7 @@ class StreamService:
                 " (default)" if new_stream.default else None
             ]))
 
-            new_stream.display_label = (
+            new_stream.display_label: str = (
                 f"{new_stream.id} - {new_stream.lang}, {new_stream.codec}{info}"
                 if new_stream.title == ""
                 else f"{new_stream.id} - {new_stream.title}, {new_stream.codec}, {new_stream.lang}{info}"
@@ -47,31 +49,38 @@ class StreamService:
         return streams
 
     @staticmethod
-    def get_sub_streams_from_probe(probed_tracks) -> list[SubtitleStream]:
-        """Get subtitle stream objects from FFprobe output"""
+    def get_sub_streams_from_probe(probed_tracks: list[ProbeTrack]) -> list[SubtitleStream]:
+        """Creates subtitle stream objects from FFprobe output"""
         if len(probed_tracks) == 0:
             return []
 
         streams: list[SubtitleStream] = []
         for track in probed_tracks:
+            codec_name: str = track.get('codec_name') or ''
+            extension: str | None = SUBTITLE_CODEC_MAP.get(codec_name, None)
+
+            if not extension:
+                cu.print_warning(f"[FFprobe] Unsupported subtitle codec: {codec_name}. Skipping...", nl_before=False, wait=False)
+                continue
+
             new_stream = SubtitleStream(
                 id=track.get('index'),
-                codec=track.get('codec_name', None),
-                title=track.get('tags', {}).get('title', ''),
-                lang=track.get('tags', {}).get('language', 'und'),
-                default=track.get('disposition', {}).get('default', 0) == 1,
-                forced=track.get('disposition', {}).get('forced', 0) == 1,
+                codec=codec_name,
+                title=track.get('tags').get('title') or '',
+                lang=track.get('tags').get('language') or 'und',
+                default=track.get('disposition').get('default') == 1,
+                forced=track.get('disposition').get('forced') == 1,
                 selected=False,
-                extension=SUBTITLE_CODEC_MAP.get(track.get('codec_name', None), None),
+                extension=extension,
                 display_label="",
             )
             
-            info = ''.join(filter(None, [
+            info: str = ''.join(filter[str](None, [
                 " (forced)" if new_stream.forced else None,
                 " (default)" if new_stream.default else None
             ]))
 
-            new_stream.display_label = (
+            new_stream.display_label: str = (
                 f"{new_stream.id} - {new_stream.lang}, {new_stream.codec}{info}"
                 if new_stream.title == ""
                 else f"{new_stream.id} - {new_stream.title}, {new_stream.codec}, {new_stream.lang}{info}"
@@ -82,16 +91,17 @@ class StreamService:
         return streams
 
     @staticmethod
-    def get_video_streams_from_probe(probed_tracks) -> list[VideoStream]:
-        """Get video stream objects from FFprobe output"""
+    def get_video_streams_from_probe(probed_tracks: list[ProbeTrack]) -> list[VideoStream]:
+        """Creates video stream objects from FFprobe output"""
         if len(probed_tracks) == 0:
             return []
 
         return [
             VideoStream(
-                id=track.get("index"),
-                width=track.get("width"),
-                height=track.get("height"),
+                id=track.get('index'),
+                width=track.get('width') or 0,
+                height=track.get('height') or 0,
+                default=track.get('disposition').get('default') == 1,
             )
             for track in probed_tracks
         ]
