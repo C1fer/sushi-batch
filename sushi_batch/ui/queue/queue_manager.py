@@ -4,12 +4,11 @@ from ...models import settings as s
 from ...models.enums import QueueTheme, Status
 from ...models.job_queue import JobQueue, JobQueueContents
 from ...utils import console_utils as cu
+from ...utils.constants import MenuItem, DynamicMenuItem
 from ..prompts import input_prompt
 from .queue_themes import QUEUE_RENDERERS
 
 type QueueStatsKey = Literal["total", "pending", "completed", "failed"]
-type MenuItemValidator = Callable[[dict[str, bool]], bool]
-type QueueMenuItems = list[tuple[int, str] | tuple[int, str, MenuItemValidator]]
 
 TO_RUN_SELECTED_PROMPT = "Select which jobs to run:"
 
@@ -46,9 +45,9 @@ def get_queue_stats_by_key(queue: JobQueueContents, key: QueueStatsKey) -> int:
     return sum(1 for job in queue if job.sync.status == key)
 
 
-def get_visible_options(options: QueueMenuItems, validations: dict[str, bool]) -> list[tuple[int, str]]:
+def get_visible_options(options: list[MenuItem | DynamicMenuItem], validations: dict[str, bool]) -> list[MenuItem]:
     """Return the visible options from the given options based on the validations."""
-    visible_options: list[tuple[int, str]] = []
+    visible_options: list[MenuItem] = []
     for opt in options:
         match opt:
             case (choice_id, label):

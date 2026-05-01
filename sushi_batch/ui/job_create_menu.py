@@ -6,9 +6,10 @@ from ..models.job.video_sync_job import VideoSyncJob
 from ..models.job_queue import JobQueue, JobQueueContents
 from ..services.job_creation_service import JobCreationService
 from ..utils import console_utils as cu
-from ..utils import constants, file_utils
-from .queue.temp_queue import show_temp_queue
+from ..utils import file_utils
+from ..utils.constants import AUDIO_TASKS, MenuItem
 from .prompts import choice_prompt
+from .queue.temp_queue import show_temp_queue
 
 type FileSelectionMode = Literal["directory", "file-select"]
 
@@ -21,7 +22,7 @@ SYNC_MODES_INFO = """
 Directory Mode: Choose source and target folders; matching files are paired automatically by filename.
 File-select Mode: Choose source and target files manually."""
 
-MENU_OPTIONS: list[tuple[int, str]] = [
+MENU_OPTIONS: list[MenuItem] = [
     (1, "Directory Mode"),
     (2, "File-select Mode"),
     (3, "Go Back")
@@ -39,7 +40,7 @@ def _handle_option_select(task: Task, file_mode: FileSelectionMode) -> bool:
     if JobCreationService.validate_files(src_files, dst_files, sub_files, task):
         jobs: list[AudioSyncJob] | list[VideoSyncJob] = (
             JobCreationService.create_audio_sync_jobs(src_files, dst_files, sub_files, task)
-            if task in constants.AUDIO_TASKS
+            if task in AUDIO_TASKS
             else JobCreationService.create_video_sync_jobs(src_files, dst_files, task)
         )
         temp_queue = JobQueue(contents=cast(JobQueueContents, jobs), in_memory=True)

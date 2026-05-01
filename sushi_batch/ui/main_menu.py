@@ -6,6 +6,7 @@ from ..external.mkv_merge import MKVMerge
 from ..external.sub_resample import SubResampler
 from ..models.settings import Settings
 from ..utils import console_utils as cu
+from ..utils.constants import MenuItem
 from .queue.queue_manager import main_queue, get_queue_stats_by_key
 from .queue.main_queue import show_main_queue
 from .help_menu import show_help_screen
@@ -15,7 +16,7 @@ from .settings_menu import show_settings_menu
 
 DEFAULT_TOOLBAR = " Use arrow/number keys or mouse to select an option. Press Enter to confirm."
 
-MENU_OPTIONS:list[tuple[int, str]] = [
+MENU_OPTIONS: list[MenuItem] = [
     (1, "Create Video Sync Job"),
     (2, "Create Audio Sync Job"),
     (3, "View Job Queue"),
@@ -39,7 +40,7 @@ def _get_status_box(version: str) -> str:
     visible_status: str = re.sub(r"\x1b\[[0-9;]*m", "", status_bar)
     box_width = len(visible_status) + 4
     box_display =  f"{cu.fore.RESET}+{'-' * (box_width - 2)}+"
-    status_box = "\n".join([box_display, f"| {status_bar} |", box_display])
+    status_box: str = "\n".join([box_display, f"| {status_bar} |", box_display])
 
     return status_box
 

@@ -1,7 +1,8 @@
 from prompt_toolkit.shortcuts import checkboxlist_dialog
-from prompt_toolkit.styles import Style
+from prompt_toolkit.styles import BaseStyle, Style, merge_styles
+from prompt_toolkit.formatted_text.base import StyleAndTextTuples
 
-from ...utils.constants import CustomColor
+from ...utils.constants import CustomColor, SelectableOption
 
 DEFAULT_TOOLBAR = "  Arrows: Move | Space/Mouse Click: Select | Tab: Actions | Enter: Confirm  \n\n"
 
@@ -22,27 +23,27 @@ DEFAULT_STYLE: Style = Style.from_dict({
     "instructions": f"fg:{CustomColor.MUTED} bg:{CustomColor.BG_DARKER} bold",
 })
 
-def _validate_choice_options(options):
-    """Validate that options are in the correct format for choice prompt."""
-    if isinstance(options, dict):
-        return list(options.items())
-    elif isinstance(options, (list, tuple)):
-        if all(isinstance(opt, (list, tuple)) and len(opt) == 2 for opt in options):
-            return options
-        else:
-            raise ValueError("Options list must contain (value, label) pairs.")
-    else:
-        raise TypeError("Options must be a dict or a list/tuple of (value, label) pairs.")
-
-def get(title="", message="Select options: ", options=None):
-    _text = [
+def get(
+    title: str = "",
+    message: str = "Select options: ",
+    options: list[SelectableOption] | None = None,
+    style: Style | None = None,
+) -> list[int]:
+    """Prompt user for a checklist selection."""
+    _text: StyleAndTextTuples = [
         ("class:instructions", DEFAULT_TOOLBAR),
         ("class:message", message),
     ]
 
+    _style: BaseStyle = (
+        merge_styles([DEFAULT_STYLE, style])
+        if style
+        else DEFAULT_STYLE
+    )
+
     return checkboxlist_dialog(
         title=title,
         text=_text,
-        values=_validate_choice_options(options),
-        style=DEFAULT_STYLE
+        values=options if options else [],
+        style=_style
 ).run()

@@ -7,13 +7,12 @@ from ...models.job.video_sync_job import VideoSyncJob
 from ...models.job_queue import JobQueueContents
 from ...services.queue_execution_service import QueueExecutionService
 from ...utils import console_utils as cu
+from ...utils.constants import MenuItem, SelectableOption, ToolbarData, DynamicMenuItem
 from ..prompts import choice_prompt, confirm_prompt
 from . import queue_manager as qm
 
 
-type ToolbarData = list[tuple[str, str]] # tuple[style, text]
-
-MENU_OPTIONS: qm.QueueMenuItems = [
+MENU_OPTIONS: list[MenuItem | DynamicMenuItem] = [
     (1, "Run Jobs",),
     (2, "Run Jobs (Include Advanced Sushi Args)", lambda args: args["enable_advanced_sushi_args"]),
     (3, "Remove Jobs"),
@@ -21,7 +20,7 @@ MENU_OPTIONS: qm.QueueMenuItems = [
     (5, "Go Back"),
 ]
 
-MENU_SUB_OPTIONS: dict[str, list[tuple[int, str]]] = {
+MENU_SUB_OPTIONS: dict[str, list[MenuItem]] = {
     "run": [
         (1, "All Pending"),
         (2, "Selected"),
@@ -148,7 +147,7 @@ def show_main_queue() -> None:
             ),
         }
 
-        visible_options: list[tuple[int, str]] = qm.get_visible_options(MENU_OPTIONS, validations)
+        visible_options: list[MenuItem] = qm.get_visible_options(MENU_OPTIONS, validations)
 
         top_lvl_choice: int = choice_prompt.get(options=visible_options, bottom_toolbar=bottom_toolbar)
         match top_lvl_choice:

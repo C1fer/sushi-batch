@@ -1,12 +1,11 @@
 from pathlib import Path
 
-from ..models.stream import AudioStream, SubtitleStream
 from ..models.job.video_sync_job import VideoSyncJob
-
+from ..models.stream import AudioStream, SubtitleStream
 from ..ui.prompts import choice_prompt, confirm_prompt
 from ..utils import console_utils as cu
 from ..utils import utils
-
+from ..utils.constants import SelectableOption
 
 class JobStreamSelectionService:
     @classmethod
@@ -14,13 +13,13 @@ class JobStreamSelectionService:
         """Get user-selected stream from list. Skips selection if only one stream is available."""
         if len(streams) == 1:
             print(prompt)
-            stream_color = cu.fore.YELLOW if is_target else cu.fore.LIGHTBLUE_EX
-            stream_label = f"{stream_color}{streams[0].display_label}"
+            stream_color: cu.ConsoleColor = cu.fore.YELLOW if is_target else cu.fore.LIGHTBLUE_EX
+            stream_label: str = f"{stream_color}{streams[0].display_label}"
             cu.print_warning(f"{cu.fore.LIGHTBLACK_EX}Only 1 stream available. Automatically selected: {stream_label}", wait=False)
             return streams[0].id
 
-        options = [(int(stream.id), stream.display_label) for stream in streams]
-        selected_stream_id = choice_prompt.get(prompt, options)
+        options: list[SelectableOption] = [(int(stream.id), stream.display_label) for stream in streams]
+        selected_stream_id: int = choice_prompt.get(prompt, options)
         return selected_stream_id
 
     @classmethod
@@ -32,9 +31,9 @@ class JobStreamSelectionService:
         print(label)
         print("-" * len(label))
 
-        src_aud_selected = cls._get_stream_choice(job.src_streams.audio, "Select a source audio stream: ")
-        src_sub_selected = cls._get_stream_choice(job.src_streams.subtitle, "Select a source subtitle stream: ")
-        dst_aud_selected = cls._get_stream_choice(job.dst_streams.audio, "Select a target audio stream: ", is_target=True)
+        src_aud_selected: int = cls._get_stream_choice(job.src_streams.audio, "Select a source audio stream: ")
+        src_sub_selected: int = cls._get_stream_choice(job.src_streams.subtitle, "Select a source subtitle stream: ")
+        dst_aud_selected: int = cls._get_stream_choice(job.dst_streams.audio, "Select a target audio stream: ", is_target=True)
         return src_aud_selected, src_sub_selected, dst_aud_selected
 
     @classmethod

@@ -1,5 +1,12 @@
 from enum import StrEnum
+from typing import Callable
+
 from ..models.enums import Task
+
+type ToolbarData = list[tuple[str, str]] # tuple[style, text]
+type SelectableOption = tuple[int, str]
+type MenuItem = tuple[int, str]
+type DynamicMenuItem = tuple[int, str, Callable[[dict[str, bool]], bool]]
 
 VIDEO_TASKS: set[Task] = {Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL}
 AUDIO_TASKS: set[Task] = {Task.AUDIO_SYNC_DIR, Task.AUDIO_SYNC_FIL}
