@@ -5,11 +5,10 @@ from prettytable import PrettyTable
 from ...external.sub_sync import Sushi
 from ...models.settings import Settings, SushiAdvancedArgs
 from ...utils import console_utils as cu
-from ...utils.constants import MenuItem, SelectableOption
+from ...utils.constants import MenuItem, SelectableOption, SushiAdvancedArgKey, SushiAdvancedArgValue
 from ..prompts import choice_prompt, confirm_prompt, input_prompt
 
-type SushiAdvancedArgValue = int | float | None
-type SushiAdvancedArgKey = Literal["window", "max_window", "rewind_thresh", "smooth_radius", "max_ts_duration", "max_ts_distance"]
+
 class AdvancedSushiArgRow(TypedDict):
     label: str
     attr: SushiAdvancedArgKey
@@ -89,9 +88,9 @@ def _update_arg_value(dst: SushiAdvancedArgs, key: SushiAdvancedArgKey, value: S
         case "smooth_radius":
             dst["smooth_radius"] = cast(int | None, value)
         case "max_ts_duration":
-            dst["max_ts_duration"] = cast(float | None, value)
+            dst["max_ts_duration"] = value
         case "max_ts_distance":
-            dst["max_ts_distance"] = cast(float | None, value)
+            dst["max_ts_distance"] = value
 
 
 def _format_value(value: SushiAdvancedArgValue) -> str:

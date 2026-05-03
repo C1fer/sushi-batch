@@ -1,4 +1,5 @@
-import os
+from os import name
+from pathlib import Path
 import subprocess
 import sys
 from importlib.util import find_spec
@@ -14,7 +15,7 @@ def is_app_installed(app_name: str) -> bool:
         return True
     
     # If running on Windows, check if executable is inside working directory 
-    elif os.name == "nt" and os.path.exists(os.path.join(os.getcwd(), f"{app_name}.exe")): 
+    elif name == "nt" and Path(Path.cwd(), f"{app_name}.exe").exists(): 
         return True
     
     return False

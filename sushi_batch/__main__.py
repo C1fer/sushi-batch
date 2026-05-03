@@ -9,6 +9,7 @@ from .ui.queue import queue_manager as qm
 from .ui.main_menu import run_main_menu
 from .utils import console_utils as cu
 from .utils import utils
+from .ui.prompts import confirm_prompt
 
 utils.check_required_packages()
 
@@ -24,7 +25,7 @@ def _load_startup_data() -> None:
             s.config.handle_load()
         except Exception:
             cu.print_error("An error occurred while loading settings.", False)
-            if cu.confirm_action("Restore default settings and restart? (Y/N): "):
+            if confirm_prompt.get("Restore default settings and restart? (Y/N): "):
                 s.config.restore()
                 cu.print_success("Settings restored. Initializing...", wait=True)
                 break
@@ -34,7 +35,7 @@ def _load_startup_data() -> None:
             qm.main_queue.load()
         except Exception:
             cu.print_error("An error occurred while loading the job queue.",False,)
-            if cu.confirm_action("Clear queue data and restart? (Y/N): "):
+            if confirm_prompt.get("Clear queue data and restart? (Y/N): "):
                 qm.main_queue.clear()
                 cu.print_success("Queue data cleared. Initializing...", wait=True)
                 break

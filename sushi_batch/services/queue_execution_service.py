@@ -3,11 +3,11 @@ from ..external.mkv_merge import MKVMerge
 from ..external.opusenc import XiphOpusEncoder
 from ..external.sub_resample import SubResampler
 from ..external.sub_sync import Sushi
-from ..models import settings
+from ..models import settings as s
 from ..models.job.audio_sync_job import AudioSyncJob
 from ..models.job.video_sync_job import VideoSyncJob
-from ..models.job_queue import JobQueue
-from ..models.enums import AudioEncoder, Status
+from ..models.job_queue import JobQueue, JobQueueContents
+from ..models.enums import AudioEncodeCodec, AudioEncoder, Status
 from ..ui.prompts import input_prompt
 from ..utils import console_utils as cu
 from ..utils import utils
@@ -41,7 +41,7 @@ class QueueExecutionService:
                 if job.sync.status == Status.COMPLETED and isinstance(job, VideoSyncJob):
                     completed_video_jobs.append(job)
 
-            can_merge = settings.config.merge_workflow.get("merge_files_after_execution") and bool(completed_video_jobs)
+            can_merge: bool = s.config.merge_workflow["merge_files_after_execution"] and bool(completed_video_jobs)
             if can_merge:
                 if MKVMerge.is_installed:
                     cls.merge_completed_video_jobs(completed_video_jobs, parent_queue=parent_queue, display_confirmation=False)
@@ -68,8 +68,8 @@ class QueueExecutionService:
     @classmethod
     def _encode_audio_before_merge(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_path: str | None = None) -> str | None:
         """Encode audio before merge if configured and needed."""
-        selected_codec = settings.config.merge_workflow.get("encode_codec")
-        selected_encoder = settings.config.merge_workflow.get("encode_codec_settings", {}).get(selected_codec.name, {}).get("encoder")
+        selected_codec: AudioEncodeCodec = s.config.merge_workflow["encode_codec"]
+        selected_encoder: AudioEncoder = s.config.merge_workflow["encode_codec_settings"][selected_codec.name]["encoder"]
        
         log_prefix = f"[Job {job.id} - FFmpeg]" if selected_encoder != AudioEncoder.XIPH_OPUSENC else f"[Job {job.id} - Opusenc]"
 
@@ -96,9 +96,9 @@ class QueueExecutionService:
     def _run_merge(cls, job: VideoSyncJob, do_resample: bool = False, do_encode_audio: bool = False, parent_queue: JobQueue | None = None) -> None:
         """Execute the merging process for a given job. Handles audio encoding and subtitle resampling if needed."""
         with yaspin(text="", color="cyan", timer=True, ellipsis="...") as sp:
-            log_path = ExecutionLogger.set_log_path(job.dst_filepath, "Merge Logs") if settings.config.general.get("save_merge_logs") else None
-            encoded_audio_path = cls._encode_audio_before_merge(job, spinner=sp, log_path=log_path) if do_encode_audio else None
-            use_resampled_sub = cls._resample_before_merge(job, spinner=sp, log_path=log_path) if do_resample else False
+            log_path: str | None = ExecutionLogger.set_log_path(job.dst_filepath, "Merge Logs") if s.config.general["save_merge_logs"] else None
+            encoded_audio_path: str | None = cls._encode_audio_before_merge(job, spinner=sp, log_path=log_path) if do_encode_audio else None
+            use_resampled_sub: bool = cls._resample_before_merge(job, spinner=sp, log_path=log_path) if do_resample else False
             MKVMerge.run(
                 job,
                 use_resampled_sub=use_resampled_sub,
@@ -119,9 +119,9 @@ class QueueExecutionService:
 
         cu.print_subheader("Merging files")
 
-        do_audio_encode = settings.config.merge_workflow.get("encode_lossless_audio_before_merging")
-        do_resample = True
-        if settings.config.merge_workflow.get("resample_subs_on_merge") and not SubResampler.is_installed:
+        do_audio_encode: bool = s.config.merge_workflow["encode_lossless_audio_before_merging"]
+        do_resample: bool = True
+        if s.config.merge_workflow["resample_subs_on_merge"] and not SubResampler.is_installed:
             do_resample = False
             cu.print_error("Aegisub-CLI could not be found. Subtitle resampling will be skipped.")
 
@@ -129,9 +129,9 @@ class QueueExecutionService:
             utils.interrupt_signal_handler(cls._run_merge)(job, do_resample, do_audio_encode, parent_queue)
             print()
 
-        if settings.config.merge_workflow.get("delete_generated_files_after_merge"):
-            successfully_merged_jobs = [job for job in selected_jobs if job.merge.done]
-            if parent_queue:
+        if s.config.merge_workflow["delete_generated_files_after_merge"]:
+            if isinstance(parent_queue, JobQueue):
+                successfully_merged_jobs: JobQueueContents = [job for job in selected_jobs if job.merge.done]
                 parent_queue.clean_generated_files(successfully_merged_jobs, confirm_deletion=False)
 
         if display_confirmation:

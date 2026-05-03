@@ -1,6 +1,6 @@
 from prompt_toolkit.shortcuts import choice
 from prompt_toolkit.styles import BaseStyle, Style, merge_styles
-from prompt_toolkit.formatted_text.base import AnyFormattedText
+from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
 
 from ...utils.constants import CustomColor, BOTTOM_TOOLBAR_STATS_STYLES, SelectableOption
 
@@ -17,7 +17,7 @@ def get(
     nl_before: bool = True,
     nl_after: bool = True,
     style: BaseStyle | None = None,
-    bottom_toolbar: AnyFormattedText = None,
+    bottom_toolbar: AnyFormattedText | StyleAndTextTuples = None,
     mouse_support: bool = True,
     show_frame: bool = False,
 ) -> int:

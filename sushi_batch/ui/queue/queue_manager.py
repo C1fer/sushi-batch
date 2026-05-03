@@ -26,7 +26,7 @@ def show_queue_items(queue: JobQueueContents, is_main_queue: bool) -> None:
     title: str = "Job Queue" if is_main_queue else "Jobs"
     cu.print_header(f"{title}")
     
-    current_theme: QueueTheme = s.config.general.get("queue_theme")
+    current_theme: QueueTheme = s.config.general["queue_theme"]
     renderer: Callable[[JobQueueContents, bool], None] = QUEUE_RENDERERS[current_theme]
     renderer(queue, is_main_queue)
 

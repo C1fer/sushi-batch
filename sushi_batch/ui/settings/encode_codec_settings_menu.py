@@ -1,15 +1,19 @@
-from sushi_batch.models.enums import AudioEncoder
 from copy import deepcopy
 from typing import TypedDict, cast
 
 from prettytable import PrettyTable
 
-from sushi_batch.utils.constants import MenuItem, SelectableOption
-
 from ...external.opusenc import XiphOpusEncoder
-from ...models.enums import AudioChannelLayout, AudioEncodeCodec
-from ...models.settings import DEFAULT_ENCODE_CODEC_SETTINGS, Settings, OpusEncodeProfile, AACEncodeProfile, EAC3EncodeProfile
+from ...models.enums import AudioChannelLayout, AudioEncodeCodec, AudioEncoder
+from ...models.settings import (
+    DEFAULT_ENCODE_CODEC_SETTINGS,
+    AACEncodeProfile,
+    EAC3EncodeProfile,
+    OpusEncodeProfile,
+    Settings,
+)
 from ...utils import console_utils as cu
+from ...utils.constants import MenuItem, SelectableOption
 from ..prompts import choice_prompt, confirm_prompt, input_prompt
 
 type CodecOptionValue = str | AudioEncoder

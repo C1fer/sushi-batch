@@ -10,7 +10,7 @@ from ..ui.prompts import confirm_prompt
 from ..services.job_stream_selection_service import JobStreamSelectionService
 from ..persistence.queue_persistence import QueuePersistence
 
-from . import settings
+from . import settings as s
 from .enums import Status, Task
 from ..utils import constants
 from ..models.job.audio_sync_job import AudioSyncJob
@@ -26,7 +26,7 @@ class JobQueue:
         self._persistence: QueuePersistence | None = (
             None
             if in_memory
-            else QueuePersistence(Path(settings.config.data_path) / "queue_data.json")
+            else QueuePersistence(Path(s.config.data_path) / "queue_data.json")
         )
 
     def save(self) -> None:
@@ -42,7 +42,7 @@ class JobQueue:
             return
         self.contents = [
             AudioSyncJob.from_dct(dct)
-            if dct.get("sync").get("task") in (Task.AUDIO_SYNC_DIR.name, Task.AUDIO_SYNC_FIL.name)
+            if dct["sync"]["task"] in (Task.AUDIO_SYNC_DIR.name, Task.AUDIO_SYNC_FIL.name)
             else VideoSyncJob.from_dct(dct)
             for dct in self._persistence.load()
         ]
@@ -98,7 +98,7 @@ class JobQueue:
 
     def clear_completed_and_failed_jobs(self) -> None:
         """ Clear completed and failed jobs from queue """
-        jobs_to_remove = [
+        jobs_to_remove: JobQueueContents = [
             job
             for job in self.contents
             if job.sync.status != Status.PENDING
@@ -116,19 +116,19 @@ class JobQueue:
         filter_fn receives each job and should return True when that job should
         be shown/selectable in the dialog.
         """
-        options = [   
+        options: list[tuple[int, str]] = [   
             (job.id, f"Job {job.id} - {Path(job.src_filepath).name} -> {Path(job.dst_filepath).name} [{job.sync.status.name}]") 
             for job 
             in self.contents
             if (True if filter_fn is None else filter_fn(job))
         ]
 
-        choice = checklist_dialog.get(title=prompt_title, message=prompt_message, options=options)   
+        choice: list[int] = checklist_dialog.get(title=prompt_title, message=prompt_message, options=options)   
         if not choice:
             cu.print_error("No jobs selected!")
             return []
 
-        selected_display = '\n'.join(j[1] for j in options if j[0] in choice)
+        selected_display: str = '\n'.join(j[1] for j in options if j[0] in choice)
         cu.print_warning(f"{cu.fore.LIGHTYELLOW_EX}Selected \n{cu.fore.LIGHTBLUE_EX}{selected_display}\n", wait=False)
 
         return [

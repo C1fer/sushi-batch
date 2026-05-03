@@ -66,7 +66,7 @@ def _handle_queue_without_running_multiple(temp_queue: JobQueue, task: Task) -> 
 
 def _show_temp_queue(temp_queue: JobQueue, task: Task) -> bool:
     """Handle options for the temporary job queue created after file selection."""
-    validations: dict[str, bool] = { "enable_advanced_sushi_args": bool(s.config.sync_workflow.get("enable_sushi_advanced_args")) }
+    validations: dict[str, bool] = { "enable_advanced_sushi_args": bool(s.config.sync_workflow["enable_sushi_advanced_args"]) }
     visible_options: list[MenuItem] = cu.get_visible_options(TEMP_QUEUE_TOP_OPTIONS, validations)
 
     while True:

@@ -1,4 +1,3 @@
-from sushi_batch.models.stream import AudioStream
 import subprocess
 
 from yaspin.core import Yaspin
@@ -7,6 +6,7 @@ from ..external.execution_logger import ExecutionLogger
 from ..models import settings as s
 from ..models.enums import AudioChannelLayout, AudioEncodeCodec, AudioEncoder
 from ..models.job.video_sync_job import VideoSyncJob
+from ..models.stream import AudioStream
 from ..utils import console_utils as cu
 from ..utils import utils
 
@@ -59,7 +59,7 @@ class FFmpeg:
 
     @classmethod
     def _try_save_log_content(cls, log_path: str | None, content: str, section_name: str | None = None, is_internal: bool = False):
-        if s.config.general.get("save_merge_logs") and log_path:
+        if s.config.general["save_merge_logs"] and log_path:
             _section_name: str = section_name or cls.log_section_name
             ExecutionLogger.save_log_output(log_path, content, section_name= _section_name, is_internal=is_internal)
 
@@ -123,7 +123,7 @@ class FFmpeg:
     def encode_lossless_audio(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_prefix="[FFmpeg]", is_fallback: bool = False, log_path: str | None = None) -> str | None:
         """Encodes audio with the selected codec option and saves to *_encode.<ext>."""
         try:
-            settings_codec: AudioEncodeCodec = s.config.merge_workflow["encode_codec    "]
+            settings_codec: AudioEncodeCodec = s.config.merge_workflow["encode_codec"]
             selected_encoder: AudioEncoder = s.config.merge_workflow["encode_codec_settings"][settings_codec.name]["encoder"]
 
             if is_fallback:

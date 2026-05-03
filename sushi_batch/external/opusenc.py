@@ -27,10 +27,10 @@ class XiphOpusEncoder:
     def encode(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_prefix="[Opusenc]", log_path: str | None = None) -> str | None:
         """Encodes audio with opusenc using the codec settings. Pipes decoded audio from FFmpeg to opusenc and saves to *_encode.opus."""
         try:
-            layout_bitrate = s.config.merge_workflow["encode_codec_settings"][AudioEncodeCodec.OPUS.name]["bitrates"].get(AudioChannelLayout.STEREO.name, None)
+            layout_bitrate: str = s.config.merge_workflow["encode_codec_settings"][AudioEncodeCodec.OPUS.name]["bitrates"][AudioChannelLayout.STEREO.name]
             output_path = f"{job.dst_filepath}_encode.opus"
             
-            encode_args =  [
+            encode_args: list[str] =  [
                 "opusenc",
                 "--bitrate", layout_bitrate.replace("k", ""),
                 "--vbr",
@@ -38,7 +38,7 @@ class XiphOpusEncoder:
                 output_path
             ]
 
-            bitrate_display = layout_bitrate.replace('k', ' kbps')
+            bitrate_display: str = layout_bitrate.replace('k', ' kbps')
             out_info = f"Opus ({bitrate_display})"
 
             if spinner:
@@ -66,13 +66,15 @@ class XiphOpusEncoder:
                 errors="replace",
             )
 
-            ffmpeg_log = ffmpeg_pipe_process.stderr.read()
+            ffmpeg_log: str = ffmpeg_pipe_process.stderr.read() if ffmpeg_pipe_process.stderr else ""
             if ffmpeg_log:
                 ffmpeg_log += "\n"
 
             # Close pipes when opusenc exits
-            ffmpeg_pipe_process.stdout.close()  
-            ffmpeg_pipe_process.stderr.close()
+            if ffmpeg_pipe_process.stdout:
+                ffmpeg_pipe_process.stdout.close()
+            if ffmpeg_pipe_process.stderr:
+                ffmpeg_pipe_process.stderr.close()
 
             _, opusenc_stderr = encode_process.communicate()
 

@@ -17,7 +17,7 @@ class SubResampler:
 
     @classmethod
     def _try_save_log_content(cls, log_path, content, section_name = None, is_internal=False):
-        if settings.config.general.get("save_merge_logs") and log_path:
+        if settings.config.general["save_merge_logs"] and log_path:
             _section_name = section_name or cls.log_section_name
             ExecutionLogger.save_log_output(log_path, content, section_name= _section_name, is_internal=is_internal)
 

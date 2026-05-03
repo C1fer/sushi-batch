@@ -1,6 +1,5 @@
 import json
 from copy import deepcopy
-from os import makedirs
 from pathlib import Path
 from typing import TypedDict
 
@@ -174,7 +173,7 @@ class Settings():
         if Path(self.file_path).exists():
             self._load()
         else:
-            makedirs(self.data_path, exist_ok=True)
+            Path(self.data_path).mkdir(parents=True, exist_ok=True)
             self._save()
 
     def handle_save(self) -> None:

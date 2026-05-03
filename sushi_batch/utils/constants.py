@@ -1,12 +1,14 @@
 from enum import StrEnum
-from typing import Callable
+from typing import Callable, Literal
 
 from ..models.enums import Task
 
-type ToolbarData = list[tuple[str, str]] # tuple[style, text]
 type SelectableOption = tuple[int, str]
 type MenuItem = tuple[int, str]
 type DynamicMenuItem = tuple[int, str, Callable[[dict[str, bool]], bool]]
+
+type SushiAdvancedArgValue = int | float | None
+type SushiAdvancedArgKey = Literal["window", "max_window", "rewind_thresh", "smooth_radius", "max_ts_duration", "max_ts_distance"]
 
 VIDEO_TASKS: set[Task] = {Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL}
 AUDIO_TASKS: set[Task] = {Task.AUDIO_SYNC_DIR, Task.AUDIO_SYNC_FIL}

@@ -1,21 +1,21 @@
 from copy import deepcopy
 from json import JSONDecoder, JSONEncoder
 
+from ...models.enums import AudioEncodeCodec, AudioEncoder, QueueTheme
 from ..utils import pop_many
-from ...models.enums import AudioEncoder, QueueTheme, AudioEncodeCodec
 
 
 class SettingsEncoder(JSONEncoder):
-    def default(self, obj):
+    def default(self, o):
         from ...models.settings import Settings
-        if isinstance(obj, Settings):
-            dct = deepcopy(obj.__dict__)
-            dct["general"]["queue_theme"] = obj.general.get("queue_theme").name
-            dct["merge_workflow"]["encode_codec"] = obj.merge_workflow.get("encode_codec").name
+        if isinstance(o, Settings):
+            dct = deepcopy(o.__dict__)
+            dct["general"]["queue_theme"] = o.general.get("queue_theme").name
+            dct["merge_workflow"]["encode_codec"] = o.merge_workflow.get("encode_codec").name
             for _, codec_settings in dct["merge_workflow"]["encode_codec_settings"].items():
                 codec_settings["encoder"] = codec_settings.get("encoder").name
             return dct
-        return super().default(obj)    
+        return super().default(o)    
 
 class SettingsDecoder(JSONDecoder):
     def __init__(self, **kwargs):
