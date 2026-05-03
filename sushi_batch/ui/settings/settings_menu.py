@@ -1,37 +1,40 @@
+from typing import NotRequired, TypedDict
+
 from prettytable import PrettyTable
 
-from .prompts import choice_prompt, confirm_prompt, input_prompt
-from .sushi_advanced_args_menu import configure_advanced_sushi_args
-from.encode_codec_settings_menu import configure_audio_encode_settings
+from ...models.enums import AudioEncodeCodec, QueueTheme, Section
+from ...models.settings import Settings
+from ...utils import console_utils as cu
+from ...utils import file_utils as fu
+from ...utils.constants import DynamicMenuItem, MenuItem, SelectableOption
+from ..prompts import choice_prompt, confirm_prompt, input_prompt
+from ..settings.encode_codec_settings_menu import configure_audio_encode_settings
+from ..settings.sushi_advanced_args_menu import configure_advanced_sushi_args
 
-from ..models.settings import Settings
+GO_BACK_OPTION_LABEL: str = "Go Back"
 
-from ..utils import console_utils as cu
-from ..utils import file_utils as fu
-from ..models.enums import AudioEncodeCodec, Section, QueueTheme
+type OptionValue = bool | QueueTheme | AudioEncodeCodec | str | None
+class SettingsRow(TypedDict):
+    section: Section
+    label: str
+    attr: str
+    value: OptionValue
+    description: str
+    show: bool
+    divider: NotRequired[bool]
 
-GO_BACK_OPTION_LABEL = "Go Back"
 
-MENU_OPTIONS = [
+MENU_OPTIONS: list[MenuItem | DynamicMenuItem] = [
     (1, "Change a Setting"),
-    (2, "Configure Advanced Sushi Arguments", lambda o: o.sync_workflow.get("enable_sushi_advanced_args")),
-    (3, "Configure Audio Encode Settings", lambda o: o.merge_workflow.get("encode_lossless_audio_before_merging")),
+    (2, "Configure Advanced Sushi Arguments", lambda validations: validations.get("enable_advanced_sushi_args")),
+    (3, "Configure Audio Encode Settings", lambda validations: validations.get("encode_lossless_audio_before_merging")),
     (4, "Restore Default Settings"),
     (5, "Clear Logs"),
     (6, "View Settings Help"),
     (7, "Return to Main Menu")
 ]
 
-
-def _get_menu_options(settings_obj):
-    """Return top-level settings menu options with visibility rules applied."""
-    return [
-        option[:2]
-        for option in MENU_OPTIONS
-        if len(option) == 2 or (len(option) == 3 and option[2](settings_obj))
-    ]
-
-SECTION_SUB_OPTIONS = [
+SECTION_SUB_OPTIONS: list[MenuItem] = [
     (1, Section.GEN.value),
     (2, Section.SYNC.value),
     (3, Section.MERGE_WRK.value),
@@ -41,7 +44,8 @@ SECTION_SUB_OPTIONS = [
     (7, GO_BACK_OPTION_LABEL)
 ]
 
-def _get_formatted_value(value):
+
+def _get_formatted_value(value: OptionValue) -> str:
     """Return formatted value for table display"""
     match value:
         case True:
@@ -55,9 +59,9 @@ def _get_formatted_value(value):
             _value = value if value else "Not set"
             return f"{_color}{_value}{cu.style_reset}"
         
-def _get_settings_rows(obj):
+def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
     """Return the settings rows used by the table and selection flow."""
-    rows = [
+    rows: list[SettingsRow] = [
         # General Section
         {
             "section": Section.GEN,
@@ -147,7 +151,7 @@ def _get_settings_rows(obj):
             "show": True,
         },
 
-        # Merge - Source File Section
+        # Merge: Source File Section
         {
             "section": Section.MERGE_SRC,
             "label": "Copy attachments",
@@ -182,7 +186,7 @@ def _get_settings_rows(obj):
             "show": True,
         },
 
-        # Merge - Sync Target File Section
+        # Merge: Sync Target File Section
         {
             "section": Section.MERGE_DST,
             "label": "Copy only selected sync audio track",
@@ -233,7 +237,7 @@ def _get_settings_rows(obj):
             "show": True,
         },
 
-        # Merge - Synced Subtitle Section
+        # Merge: Synced Subtitle Section
         {
             "section": Section.MERGE_SUB,
             "label": "Set default flag",
@@ -268,9 +272,9 @@ def _get_settings_rows(obj):
         },
     ]
 
-    return list(filter(None, rows))
+    return [row for row in rows if row.get("show")]
 
-def _render_settings_table(rows):
+def _render_settings_table(rows: list[SettingsRow]) -> PrettyTable:
     """Create and return settings table"""
     tb = PrettyTable(["Section", "Name", "Value"])
     
@@ -286,106 +290,100 @@ def _render_settings_table(rows):
     
     return tb
 
-def _select_queue_theme():
+def _select_queue_theme() -> QueueTheme | None:
     """Display queue theme options and update setting based on user selection"""
-    options = [(idx, theme.value) for idx, theme in enumerate(QueueTheme, 1)]
+    options: list[SelectableOption] = [(idx, theme.value) for idx, theme in enumerate(QueueTheme, 1)]
     options.append((len(options) + 1, GO_BACK_OPTION_LABEL))
 
-    choice_idx = choice_prompt.get(options=options, nl_before=False, nl_after=False)
+    choice_idx: int = choice_prompt.get(options=options, nl_before=False, nl_after=False)
     if choice_idx == len(options):
         return None
 
     return next(theme for theme in QueueTheme if theme.value == options[choice_idx - 1][1])
 
-def _select_audio_codec():
+def _select_audio_codec() -> AudioEncodeCodec | None:
     """Display audio codec options and update setting based on user selection"""
-    options = [(idx, codec.value) for idx, codec in enumerate(AudioEncodeCodec, 1)]
+    options: list[SelectableOption] = [(idx, codec.value) for idx, codec in enumerate(AudioEncodeCodec, 1)]
     options.append((len(options) + 1, GO_BACK_OPTION_LABEL))
 
-    choice_idx = choice_prompt.get(options=options, nl_before=False, nl_after=False)
+    choice_idx: int = choice_prompt.get(options=options, nl_before=False, nl_after=False)
     if choice_idx == len(options):
         return None
 
     return next(codec for codec in AudioEncodeCodec if codec.value == options[choice_idx - 1][1])
 
-def _update_value(obj, option):
+def _update_value(obj: Settings, option: str) -> None:
     """Update value for selected option (handles both direct attributes and nested dict options)"""
-    path = option.split(".")
-    if len(path) == 1:
-        curr_val = getattr(obj, option)
-    else:
-        parent_attr, dict_key = path[0], path[1]
-        parent = getattr(obj, parent_attr)
-        curr_val = parent.get(dict_key)
+    attr_path: list[str] = option.split(".")
+    parent_attr_key: str = attr_path[0]
+    option_key: str = attr_path[1]
+    parent: dict[str, OptionValue] = getattr(obj, parent_attr_key)
     
-    new_val = None
+    curr_val: OptionValue = parent.get(option_key)
+    new_val: OptionValue = None
     print(f"Current value: {_get_formatted_value(curr_val)}\n")
     
     match curr_val:
         case QueueTheme():
-            new_val = _select_queue_theme()
+            new_val: QueueTheme | None = _select_queue_theme()
         case AudioEncodeCodec():
-            new_val = _select_audio_codec()
+            new_val: AudioEncodeCodec | None = _select_audio_codec()
         case bool():
-            prompt = "Disable" if curr_val else "Enable"
+            prompt: str = "Disable" if curr_val else "Enable"
             if confirm_prompt.get(f"{prompt} option?"):
-                new_val = not curr_val  
+                new_val: bool = not curr_val  
         case str():
-            user_input = input_prompt.get(allow_empty=True)
+            user_input: str = input_prompt.get(allow_empty=True)
             if confirm_prompt.get():
-                new_val = user_input
+                new_val: str = user_input
                 
     if new_val is not None and new_val != curr_val:
-        if len(path) == 1:
-            setattr(obj, option, new_val)
-        else:
-            parent_attr, dict_key = path[0], path[1]
-            parent = getattr(obj, parent_attr)
-            parent[dict_key] = new_val
+        parent[option_key] = new_val
         obj.handle_save()
 
-def _handle_option_choice(section_options):
+def _handle_option_choice(section_options: list[SelectableOption]) -> int | None:
     """Handle user choice for setting inside a section"""
-    go_back_id = len(section_options) + 1
-    options = section_options + [(go_back_id, GO_BACK_OPTION_LABEL)]
+    go_back_id: int = len(section_options) + 1
+    options: list[SelectableOption] = section_options + [(go_back_id, GO_BACK_OPTION_LABEL)]
 
-    selected_option_id = choice_prompt.get("Select setting to modify: ", options)
+    selected_option_id: int = choice_prompt.get("Select setting to modify: ", options)
     if selected_option_id == go_back_id:
         return None # Go Back option selected at option level
 
     return next(idx for idx, _ in options if idx == selected_option_id)
 
-def _select_setting_to_update(rows):
+def _select_setting_to_update(rows: list[SettingsRow]) -> str | None:
     """Prompt user to select a setting to update and return the corresponding attribute name"""
     while True:
-        selected_section_idx = choice_prompt.get("Select section: ", options=SECTION_SUB_OPTIONS, nl_after=False)
+        selected_section_idx: int = choice_prompt.get("Select section: ", options=SECTION_SUB_OPTIONS, nl_after=False)
         
-        section_val = SECTION_SUB_OPTIONS[selected_section_idx - 1][1]
+        section_val: str = SECTION_SUB_OPTIONS[selected_section_idx - 1][1]
         if section_val == GO_BACK_OPTION_LABEL:
             return None # Go Back option selected at section level
 
-        section_rows = [
+        section_options: list[SelectableOption] = [
             (idx, row["label"])
             for idx, row in enumerate(rows, 1)
             if row["section"].value == section_val
         ]
         
-        selected_option = _handle_option_choice(section_rows)
+        selected_option: int | None = _handle_option_choice(section_options)
         if selected_option:
            return rows[selected_option - 1]["attr"] # Return attribute name for selected setting
 
-def _view_settings_help(visible_rows):
+def _view_settings_help(visible_rows: list[SettingsRow]) -> None:
+    """Display help text for each section and setting"""
     cu.clear_screen()
     cu.print_header("Settings Help", nl_after=True)
     
-    settings_by_section = {
+    settings_by_section: dict[Section, list[SettingsRow]] = {
         section: [row for row in visible_rows if row["section"] == section]
         for section in Section
     }
 
     for section, settings in settings_by_section.items():
         section_title = f" {section.value} "
-        section_divider = "=" * max(8, 56 - len(section_title))
+        section_divider:str = "=" * max(8, 56 - len(section_title))
         print(f"{cu.Fore.LIGHTMAGENTA_EX}{section_divider}{section_title}{section_divider}{cu.style_reset}")
         for setting in settings:
             cu.print_help_text(setting["label"], setting["description"])
@@ -393,30 +391,31 @@ def _view_settings_help(visible_rows):
     input_prompt.get("Press Enter to close...  ", allow_empty=True, nl_before=True)
     
 
-def show_settings_menu(settings_obj):
+def show_settings_menu(settings_obj: Settings) -> None:
     """Display and handle options in new menu"""
-    if not isinstance(settings_obj, Settings):
-        cu.print_error("Invalid settings object provided.", False)
-        return
-
     while True:
         cu.clear_screen()
         cu.print_header("App Settings\n")
-        visible_rows = _get_settings_rows(settings_obj)
-        tbl = _render_settings_table(visible_rows)
+        visible_rows: list[SettingsRow] = _get_settings_rows(settings_obj)
+        tbl: PrettyTable = _render_settings_table(visible_rows)
         print(tbl)
 
-        menu_options = _get_menu_options(settings_obj)
-        choice = choice_prompt.get(options=menu_options, nl_after=False)
+        validations: dict[str, bool] = {
+            "enable_advanced_sushi_args": bool(settings_obj.sync_workflow.get("enable_sushi_advanced_args")),
+            "encode_lossless_audio_before_merging": bool(settings_obj.merge_workflow.get("encode_lossless_audio_before_merging")),
+        }
+
+        menu_options: list[MenuItem] = cu.get_visible_options(MENU_OPTIONS, validations)
+        choice: int = choice_prompt.get(options=menu_options, nl_after=False)
         match choice:
             case 1:
-                selected = _select_setting_to_update(visible_rows)
+                selected: str | None = _select_setting_to_update(visible_rows)
                 if selected:
                     _update_value(settings_obj, selected)
             case 2:
                 configure_advanced_sushi_args(settings_obj)
             case 3:
-                current_codec = settings_obj.merge_workflow.get("encode_codec")
+                current_codec: AudioEncodeCodec = settings_obj.merge_workflow.get("encode_codec")
                 configure_audio_encode_settings(settings_obj, current_codec)
             case 4:
                 if confirm_prompt.get(nl_before=True, destructive=True):

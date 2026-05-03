@@ -1,11 +1,25 @@
+from typing import Literal, TypedDict, cast
+
 from prettytable import PrettyTable
 
-from .prompts import choice_prompt, confirm_prompt, input_prompt
+from ...external.sub_sync import Sushi
+from ...models.settings import Settings, SushiAdvancedArgs
+from ...utils import console_utils as cu
+from ...utils.constants import MenuItem, SelectableOption
+from ..prompts import choice_prompt, confirm_prompt, input_prompt
 
-from ..utils import console_utils as cu
-from ..external.sub_sync import Sushi
+type SushiAdvancedArgValue = int | float | None
+type SushiAdvancedArgKey = Literal["window", "max_window", "rewind_thresh", "smooth_radius", "max_ts_duration", "max_ts_distance"]
+class AdvancedSushiArgRow(TypedDict):
+    label: str
+    attr: SushiAdvancedArgKey
+    type: type[SushiAdvancedArgValue]
+    allow_negative: bool
+    default: SushiAdvancedArgValue
+    description: str | tuple[str, ...]
 
-ADVANCED_SUSHI_ARG_FIELDS = [
+
+ADVANCED_SUSHI_ARG_FIELDS: list[AdvancedSushiArgRow] = [
     {
         "label": "Window (--window)",
         "attr": "window",
@@ -56,7 +70,7 @@ ADVANCED_SUSHI_ARG_FIELDS = [
     }
 ]
 
-MENU_OPTIONS = [
+MENU_OPTIONS: list[MenuItem] = [
     (1, "Set Argument Value"),
     (2, "Reset All to Default"),
     (3, "View Arguments Help"),
@@ -64,17 +78,32 @@ MENU_OPTIONS = [
 ]
 
 
-def _format_value(value):
-    is_set = value not in (None, "")
-    normalized_value = value if is_set else "Default"
-    color = cu.Fore.GREEN if is_set else cu.Fore.LIGHTBLACK_EX
+def _update_arg_value(dst: SushiAdvancedArgs, key: SushiAdvancedArgKey, value: SushiAdvancedArgValue) -> None:
+    match key:
+        case "window":
+            dst["window"] = cast(int | None, value)
+        case "max_window":
+            dst["max_window"] = cast(int | None, value)
+        case "rewind_thresh":
+            dst["rewind_thresh"] = cast(int | None, value)
+        case "smooth_radius":
+            dst["smooth_radius"] = cast(int | None, value)
+        case "max_ts_duration":
+            dst["max_ts_duration"] = cast(float | None, value)
+        case "max_ts_distance":
+            dst["max_ts_distance"] = cast(float | None, value)
+
+
+def _format_value(value: SushiAdvancedArgValue) -> str:
+    is_set: bool = value not in (None, "")
+    normalized_value: SushiAdvancedArgValue | Literal["Default"] = value if is_set else "Default"
+    color: cu.ConsoleColor = cu.Fore.GREEN if is_set else cu.Fore.LIGHTBLACK_EX
     return f"{color}{normalized_value}{cu.style_reset}"
 
-
-def _render_advanced_sushi_table(settings_obj):
+def _render_advanced_sushi_table(settings_obj: Settings) -> PrettyTable:
     table = PrettyTable(["Argument", "Current Value", "Default Value"])
     for field in ADVANCED_SUSHI_ARG_FIELDS:
-        current_value = settings_obj.sync_workflow.get("sushi_advanced_args", {}).get(field["attr"], None)
+        current_value: SushiAdvancedArgValue = settings_obj.sync_workflow["sushi_advanced_args"][field["attr"]]
         table.add_row([
             field["label"],
             _format_value(current_value),
@@ -82,95 +111,91 @@ def _render_advanced_sushi_table(settings_obj):
         ])
     return table
 
-
-def _parse_advanced_input(raw_value, field):
-    value_type = field["type"]
-    if value_type is str:
-        return raw_value.strip() or None
-
+def _parse_advanced_input(raw_value: str, field: AdvancedSushiArgRow) -> tuple[SushiAdvancedArgValue | None, str]:
+    value_type: type[SushiAdvancedArgValue] = field["type"]
+    
     try: 
-        parsed_value = value_type(raw_value)
+        parsed_value: SushiAdvancedArgValue = value_type(raw_value)
     except ValueError:
         return None, f"Invalid value. Expected a {value_type.__name__}."
 
-    if not field.get("allow_negative", True) and parsed_value < 0:
+    if not field.get("allow_negative", True) and isinstance(parsed_value, int | float) and parsed_value < 0:
         return None, "Value cannot be negative."
 
-    return parsed_value
+    return parsed_value, ""
 
+def _edit_advanced_sushi_arg(settings_obj: Settings, field: AdvancedSushiArgRow) -> None:
+    key: SushiAdvancedArgKey = field["attr"]
+    current_value: SushiAdvancedArgValue = settings_obj.sync_workflow["sushi_advanced_args"][key]
+    default_value: SushiAdvancedArgValue = field["default"]
 
-def _edit_advanced_sushi_arg(settings_obj, field):
-    attr = field["attr"]
-    current_value = settings_obj.sync_workflow.get("sushi_advanced_args", {}).get(attr, None)
-    default_value = field["default"]
-
-   
     print(f"Current value: {_format_value(current_value)}")
     print(f"Sushi default: {_format_value(default_value)}")
 
-    typed_label = field["type"].__name__
-    prompt_message = f"Enter {typed_label} value (leave empty for default): "
+    type_label: str = field["type"].__name__
+    prompt_message = f"Enter {type_label} value (leave empty for default): "
+    sushi_args: SushiAdvancedArgs = settings_obj.sync_workflow["sushi_advanced_args"]
 
     while True:
-        user_input = input_prompt.get(message=prompt_message, allow_empty=True, nl_before=True)
+        user_input: str = input_prompt.get(message=prompt_message, allow_empty=True, nl_before=True)
 
         if user_input == "":
             if current_value is None:
                 cu.print_warning("Already using default value. No changes made.", wait=True)
                 return
-            settings_obj.sync_workflow["sushi_advanced_args"][attr] = None
+            _update_arg_value(sushi_args, key, None)
             settings_obj.handle_save()
             return
 
-        parsed = _parse_advanced_input(user_input, field)
-        if isinstance(parsed, tuple):
-            _, error = parsed
+        parsed_new, error = _parse_advanced_input(user_input, field)
+
+        if error:
             cu.print_error(error, wait=False)
             continue
-
-        if parsed == default_value:
-            cu.print_warning("Entered value is the same as the current value. No changes made.", wait=True)
+        if parsed_new is None:
+            continue
+        if parsed_new == default_value:
+            cu.print_warning("Input value is the same as the current value. No changes made.", wait=True)
             return
 
-        settings_obj.sync_workflow["sushi_advanced_args"][attr] = parsed
+        _update_arg_value(sushi_args, key, parsed_new)
         settings_obj.handle_save()
         return
     
-def _select_arg_to_edit():
-    options = [(idx, field["label"]) for idx, field in enumerate(ADVANCED_SUSHI_ARG_FIELDS, 1)]
+def _select_arg_to_edit() -> AdvancedSushiArgRow | None:
+    options: list[SelectableOption] = [(idx, field["label"]) for idx, field in enumerate(ADVANCED_SUSHI_ARG_FIELDS, 1)]
     options.append((len(options) + 1, "Go Back"))
 
-    selected = choice_prompt.get("Select argument to edit: ", options=options)
+    selected: int = choice_prompt.get("Select argument to edit: ", options=options)
     if selected == len(options):
         return None
 
     return ADVANCED_SUSHI_ARG_FIELDS[selected - 1]
 
-def _view_advanced_arg_help():
+def _view_advanced_arg_help() -> None:
     cu.print_header("Help")
     for field in ADVANCED_SUSHI_ARG_FIELDS:
         cu.print_help_text(field['label'], field["description"])
     input_prompt.get("Press Enter to close...  ", allow_empty=True, nl_before=True)
 
-
-def _reset_all_values(settings_obj):
+def _reset_all_values(settings_obj: Settings) -> None:
     if confirm_prompt.get("Reset all advanced arguments to default?",destructive=True):
-        for field in settings_obj.sync_workflow.get("sushi_advanced_args", {}).keys():
-            settings_obj.sync_workflow["sushi_advanced_args"][field] = None
+        for field in ADVANCED_SUSHI_ARG_FIELDS:
+            _update_arg_value(settings_obj.sync_workflow["sushi_advanced_args"], field["attr"], None)
         settings_obj.handle_save()
         cu.print_success("All advanced arguments have been reset to default values.", wait=True)
 
 
-def configure_advanced_sushi_args(settings_obj):
+def configure_advanced_sushi_args(settings_obj: Settings) -> None:
     while True:
         cu.clear_screen()
         cu.print_header("Advanced Sushi Arguments\n")
         print(_render_advanced_sushi_table(settings_obj))
 
-        selected = choice_prompt.get(options=MENU_OPTIONS)
+        selected: int = choice_prompt.get(options=MENU_OPTIONS)
         match selected:
             case 1:
-                field = _select_arg_to_edit()
+                field: AdvancedSushiArgRow | None = _select_arg_to_edit()
                 if field:
                     _edit_advanced_sushi_arg(settings_obj, field)
             case 2:

@@ -7,7 +7,7 @@ from ...models.job.video_sync_job import VideoSyncJob
 from ...models.job_queue import JobQueueContents
 from ...services.queue_execution_service import QueueExecutionService
 from ...utils import console_utils as cu
-from ...utils.constants import MenuItem, SelectableOption, ToolbarData, DynamicMenuItem
+from ...utils.constants import MenuItem, ToolbarData, DynamicMenuItem
 from ..prompts import choice_prompt, confirm_prompt
 from . import queue_manager as qm
 
@@ -147,7 +147,7 @@ def show_main_queue() -> None:
             ),
         }
 
-        visible_options: list[MenuItem] = qm.get_visible_options(MENU_OPTIONS, validations)
+        visible_options: list[MenuItem] = cu.get_visible_options(MENU_OPTIONS, validations)
 
         top_lvl_choice: int = choice_prompt.get(options=visible_options, bottom_toolbar=bottom_toolbar)
         match top_lvl_choice:

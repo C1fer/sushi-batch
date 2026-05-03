@@ -3,7 +3,8 @@ from ...models.enums import Task
 from ...models.job_queue import JobQueue, JobQueueContents
 from ...services.queue_execution_service import QueueExecutionService
 from ...utils import utils
-from ...utils.constants import DynamicMenuItem, MenuItem, SelectableOption
+from ...utils.constants import DynamicMenuItem, MenuItem
+from ...utils import console_utils as cu
 from ..prompts import choice_prompt, confirm_prompt
 from . import queue_manager as qm
 
@@ -66,7 +67,7 @@ def _handle_queue_without_running_multiple(temp_queue: JobQueue, task: Task) -> 
 def _show_temp_queue(temp_queue: JobQueue, task: Task) -> bool:
     """Handle options for the temporary job queue created after file selection."""
     validations: dict[str, bool] = { "enable_advanced_sushi_args": bool(s.config.sync_workflow.get("enable_sushi_advanced_args")) }
-    visible_options: list[MenuItem] = qm.get_visible_options(TEMP_QUEUE_TOP_OPTIONS, validations)
+    visible_options: list[MenuItem] = cu.get_visible_options(TEMP_QUEUE_TOP_OPTIONS, validations)
 
     while True:
         qm.show_queue_items(temp_queue.contents, is_main_queue=False)

@@ -4,6 +4,8 @@ from time import sleep
 from colorama import Fore, Style, init
 from yaspin.core import Yaspin
 
+from .constants import DynamicMenuItem, MenuItem
+
 type ConsoleColor = int
 
 # Store Fore and Style attributes to enable direct access from other modules
@@ -73,3 +75,15 @@ def print_help_text(subheader: str, description: str | tuple[str, ...]) -> None:
     else:
         print(description)
 
+
+def get_visible_options(options: list[MenuItem | DynamicMenuItem], validations: dict[str, bool]) -> list[MenuItem]:
+    """Return the visible options from the given options based on the validations."""
+    visible_options: list[MenuItem] = []
+    for opt in options:
+        match opt:
+            case (choice_id, label):
+                visible_options.append((choice_id, label))
+            case (choice_id, label, is_visible_fn):
+                if is_visible_fn(validations):
+                    visible_options.append((choice_id, label))
+    return visible_options

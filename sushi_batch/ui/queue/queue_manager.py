@@ -4,7 +4,6 @@ from ...models import settings as s
 from ...models.enums import QueueTheme, Status
 from ...models.job_queue import JobQueue, JobQueueContents
 from ...utils import console_utils as cu
-from ...utils.constants import MenuItem, DynamicMenuItem
 from ..prompts import input_prompt
 from .queue_themes import QUEUE_RENDERERS
 
@@ -28,7 +27,7 @@ def show_queue_items(queue: JobQueueContents, is_main_queue: bool) -> None:
     cu.print_header(f"{title}")
     
     current_theme: QueueTheme = s.config.general.get("queue_theme")
-    renderer: Callable[[JobQueueContents, bool], None] = QUEUE_RENDERERS.get(current_theme)
+    renderer: Callable[[JobQueueContents, bool], None] = QUEUE_RENDERERS[current_theme]
     renderer(queue, is_main_queue)
 
 def get_full_queue_stats(queue: JobQueueContents) -> dict[QueueStatsKey, int]:
@@ -45,15 +44,4 @@ def get_queue_stats_by_key(queue: JobQueueContents, key: QueueStatsKey) -> int:
     return sum(1 for job in queue if job.sync.status == key)
 
 
-def get_visible_options(options: list[MenuItem | DynamicMenuItem], validations: dict[str, bool]) -> list[MenuItem]:
-    """Return the visible options from the given options based on the validations."""
-    visible_options: list[MenuItem] = []
-    for opt in options:
-        match opt:
-            case (choice_id, label):
-                visible_options.append((choice_id, label))
-            case (choice_id, label, is_visible_fn):
-                if is_visible_fn(validations):
-                    visible_options.append((choice_id, label))
-    return visible_options
 

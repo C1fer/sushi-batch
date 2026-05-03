@@ -16,7 +16,7 @@ class Sushi:
     avg_shift_flag = "Total average shift:"
     warning_flag = "Warning:"
     max_safe_avg_shift = 5  # Defines a threshold for what is considered a "safe" average shift in seconds
-    advanced_args_mapping = {
+    advanced_args_mapping: dict[str, tuple[str, int | float]] = {
         "window": ("--window", 10 ),
         "max_window": ("--max-window", 30),
         "rewind_thresh": ("--rewind-thresh", 5),

@@ -12,7 +12,7 @@ from .queue.main_queue import show_main_queue
 from .help_menu import show_help_screen
 from .job_create_menu import show_job_create_menu
 from .prompts import choice_prompt
-from .settings_menu import show_settings_menu
+from ..ui.settings.settings_menu import show_settings_menu
 
 DEFAULT_TOOLBAR = " Use arrow/number keys or mouse to select an option. Press Enter to confirm."
 
