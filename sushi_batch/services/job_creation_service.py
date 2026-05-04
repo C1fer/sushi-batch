@@ -54,14 +54,14 @@ class JobCreationService:
                     src_filepath=str(Path(src_filepath)) if task == Task.VIDEO_SYNC_FIL else src_filepath, # Path is already normalized for directory search,
                     dst_filepath=str(Path(dst_filepath)) if task == Task.VIDEO_SYNC_FIL else dst_filepath,
                     src_streams=JobMediaStreams(
-                        video=StreamService.get_video_streams_from_probe(src_media_info["video"]),
+                        video=[], # Not needed 
                         audio=StreamService.get_audio_streams_from_probe(src_media_info["audio"]),
                         subtitle=StreamService.get_sub_streams_from_probe(src_media_info["subtitle"]),
                     ),
                     dst_streams=JobMediaStreams(
                         video=StreamService.get_video_streams_from_probe(dst_media_info["video"]),
                         audio=StreamService.get_audio_streams_from_probe(dst_media_info["audio"]),
-                        subtitle=StreamService.get_sub_streams_from_probe(dst_media_info["subtitle"]),
+                        subtitle=[], # Not needed
                     ),
                     sync=JobSync(task=task),
                 )
