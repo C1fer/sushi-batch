@@ -1,14 +1,13 @@
+from ..utils import console_utils as cu
 from .prompts import input_prompt
 
-from ..utils import console_utils as cu
 
-
-def show_help_screen():
+def show_help_screen() -> None:
     """Display app usage and navigation help."""
     cu.clear_screen()
     cu.print_header("Help\n")
 
-    help_lines = [
+    help_lines: list[str] = [
         f"{cu.fore.YELLOW}Overview{cu.style_reset}",
         "This tool allows for batch processing of subtitle sync jobs, among other features.",
 

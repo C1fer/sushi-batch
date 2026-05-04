@@ -1,24 +1,28 @@
-import os
+from os import name
+from pathlib import Path
 import subprocess
 import sys
 from importlib.util import find_spec
+from typing import Any, Callable
 
 from ..ui.prompts import confirm_prompt
 from . import console_utils as cu
 
 
-def is_app_installed(app_name):
+def is_app_installed(app_name: str) -> bool:
+    """Check if an application is installed by checking if the executable is in the PATH or in the working directory."""
     if is_app_env_var(app_name):
         return True
     
     # If running on Windows, check if executable is inside working directory 
-    elif os.name == "nt" and os.path.exists(os.path.join(os.getcwd(), f"{app_name}.exe")): 
+    elif name == "nt" and Path(Path.cwd(), f"{app_name}.exe").exists(): 
         return True
     
     return False
 
 
-def is_app_env_var(app):
+def is_app_env_var(app: str) -> bool:
+    """Check if an application is installed by checking if the executable is in the PATH or in the working directory."""
     try:
         subprocess.run(app, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError:
@@ -27,18 +31,16 @@ def is_app_env_var(app):
         return True
     
 
-def check_required_packages():
-    _PACKAGES = ["art", "colorama", "sushi", "prettytable", "yaspin", "prompt_toolkit"]
-
-    for pkg in _PACKAGES:
-        if find_spec(pkg) is None:
-            print(
-                f"\033[91mPackage {pkg} is not installed. Install all dependencies before running the tool\033[00m"
-            )
+def check_required_packages() -> None:
+    """Check if all required packages are installed."""
+    packages: list[str] = ["art", "colorama", "sushi", "prettytable", "yaspin", "prompt_toolkit"]
+    for pkg in packages:
+        if not find_spec(pkg):
+            print(f"\033[91mPackage {pkg} is not installed. Install all dependencies before running the tool\033[00m")
             sys.exit(1)
 
 
-def _confirm_abort_after_interrupt(message = "Are you sure you want to cancel this operation?"):
+def _confirm_abort_after_interrupt(message: str = "Are you sure you want to cancel this operation?") -> bool:
     """Ask whether to cancel after Ctrl+C; keep prompting if interrupted again."""
     while True:
         try:
@@ -50,9 +52,9 @@ def _confirm_abort_after_interrupt(message = "Are you sure you want to cancel th
                 wait=False,
             )
 
-def interrupt_signal_handler(func):
+def interrupt_signal_handler(func: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator to handle KeyboardInterrupt gracefully in interactive functions."""
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
             return func(*args, **kwargs)
         except KeyboardInterrupt:
@@ -65,6 +67,6 @@ def interrupt_signal_handler(func):
     return wrapper
 
 
-def pop_many(dct, *keys):
+def pop_many(dct: dict[str, Any], *keys: str) -> None:
     for key in keys:
         dct.pop(key, None)

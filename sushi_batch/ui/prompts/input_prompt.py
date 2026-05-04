@@ -1,35 +1,43 @@
-
 from prompt_toolkit import prompt
-from prompt_toolkit.styles import Style, merge_styles 
+from prompt_toolkit.formatted_text.base import AnyFormattedText, StyleAndTextTuples
+from prompt_toolkit.styles import BaseStyle, Style, merge_styles
 
-from ...utils import constants
 from ...utils.console_utils import print_error
+from ...utils.constants import CustomColor
 
-
-def _get_default_style(success=False):
+def _get_default_style(success: bool = False) -> Style:
     """Return the default prompt style, with optional success message color."""
-    message_color = constants.COLOR_SUCCESS if success else constants.COLOR_ACCENT
+    message_color: str = CustomColor.SUCCESS if success else CustomColor.ACCENT
     return Style.from_dict({
         "message": message_color,
-        "bottom-toolbar": f"fg:{constants.COLOR_BG_DARK} bg:{constants.COLOR_MUTED_LIGHTER}"
+        "bottom-toolbar": f"fg:{CustomColor.BG_DARK} bg:{CustomColor.MUTED_LIGHTER}"
     })
 
 
-def get(message="New value: ", allow_empty=False, nl_before=False, success=False, **kwargs):
+def get(
+    message: str = "New value: ",
+    allow_empty: bool = False,
+    nl_before: bool = False,
+    success: bool = False,
+    style: BaseStyle | None = None,
+    bottom_toolbar: AnyFormattedText = None,
+) -> str:
     """Prompt user for input."""
-    caller_style = kwargs.pop("style", None)
-    default_style = _get_default_style(success=success)
-    kwargs["style"] = merge_styles([default_style, caller_style]) if caller_style else default_style
+    _style: BaseStyle = (
+        merge_styles([_get_default_style(success=success), style])
+        if style
+        else _get_default_style(success=success)
+    )
 
-    _message = [("class:message", f"> {message}")]
+    _message: StyleAndTextTuples = [("class:message", f"> {message}")]
 
     if nl_before and not message.strip().startswith("\n"):
         print()  
         
     while True:
-        user_input = prompt(_message, **kwargs)
+        user_input: str = prompt(message=_message, style=_style, bottom_toolbar=bottom_toolbar)
         
         if not allow_empty and (user_input.isspace() or not user_input):
-            print_error("Input cannot be empty!\n", False)
+            print_error("Input cannot be empty!", wait=False, nl_after=True)
         else:            
             return user_input

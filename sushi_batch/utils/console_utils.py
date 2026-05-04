@@ -2,14 +2,18 @@ import os
 from time import sleep
 
 from colorama import Fore, Style, init
+from yaspin.core import Yaspin
+
+from .constants import DynamicMenuItem, MenuItem
+
+type ConsoleColor = int
 
 # Store Fore and Style attributes to enable direct access from other modules
 init(autoreset=True)
 fore = Fore
-style_reset = Style.RESET_ALL
+style_reset: ConsoleColor = Style.RESET_ALL
 
-
-def _print_colored(message, color, nl_before=False, nl_after=False):
+def _print_colored(message: str, color: ConsoleColor, nl_before: bool = False, nl_after: bool = False) -> None:
     """Small helper to print a colored message, optionally prefixed by a newline."""
     _to_print = f"{color}{message}{style_reset}"
     if nl_before:
@@ -19,86 +23,67 @@ def _print_colored(message, color, nl_before=False, nl_after=False):
     print(_to_print)
 
 
-def print_header(message, nl_before=False, nl_after=False):
+def print_header(message: str, nl_before: bool = False, nl_after: bool = False) -> None:
     _print_colored(message, fore.CYAN, nl_before=nl_before, nl_after=nl_after)
 
 
-def print_subheader(message, nl_before=True):
-    _print_colored(message, fore.YELLOW, nl_before=nl_before)
+def print_subheader(message: str, nl_before: bool = True, nl_after: bool = False) -> None:
+    _print_colored(message, fore.YELLOW, nl_before=nl_before, nl_after=nl_after)
 
 
-def print_error(message, wait=True, nl_before=False):
-    _print_colored(message, fore.LIGHTRED_EX)
+def print_error(message: str, wait: bool = True, nl_before: bool = False, nl_after: bool = False) -> None:
+    _print_colored(message, fore.LIGHTRED_EX, nl_before=nl_before, nl_after=nl_after)
     if wait:
         sleep(1)
 
-def print_warning(message, wait=True, nl_before=False):
-    _print_colored(message, fore.LIGHTYELLOW_EX, nl_before=nl_before)
+def print_warning(message: str, wait: bool = True, nl_before: bool = False, nl_after: bool = False) -> None:
+    _print_colored(message, fore.LIGHTYELLOW_EX, nl_before=nl_before, nl_after=nl_after)
     if wait:
         sleep(1)
 
 
-def print_success(message, wait=True, nl_before=True):
-    _print_colored(message, fore.LIGHTGREEN_EX, nl_before=nl_before)
+def print_success(message: str, wait: bool = True, nl_before: bool = True, nl_after: bool = False) -> None:
+    _print_colored(message, fore.LIGHTGREEN_EX, nl_before=nl_before, nl_after=nl_after)
     if wait:
         sleep(1)
 
-def get_formatted_install_status(tool_name, is_installed, installed_label="Installed", not_found_label="Not Found"):
-    status = installed_label if is_installed else not_found_label
-    color = fore.LIGHTGREEN_EX if is_installed else fore.LIGHTRED_EX
+def get_formatted_install_status(tool_name: str, is_installed: bool, installed_label: str="Installed", not_found_label: str="Not Found") -> str:
+    """Get a formatted string indicating the installation status of an external application."""
+    status: str = installed_label if is_installed else not_found_label
+    color: int = fore.LIGHTGREEN_EX if is_installed else fore.LIGHTRED_EX
     return f"{fore.LIGHTBLACK_EX}{tool_name}: {color}{status}{style_reset}"
 
-def clear_screen():
+def clear_screen() -> None:
     os.system("cls" if os.name == "nt" else "clear")
 
-
-
-def show_menu_options(options):
-    print()
-    for key, val in options.items():
-        print(f"{key}) {val}")
-
-
-def confirm_action(prompt="Are you sure? (Y/N): "):
-    """Prompt user for a yes/no confirmation."""
-    while True:
-        confirm = input(f"{fore.CYAN}{prompt}").upper()
-        match confirm:
-            case "Y":
-                return True
-            case "N":
-                return False
-            case _:
-                print_error("Wrong input!\n", False)
-
-
-def get_choice(start, end, prompt="Select an option: "):
-    """Prompt user to select an option within a specified range."""
-    while True:
-        try:
-            choice = int(input(f"\n{fore.LIGHTBLACK_EX}{prompt}"))
-        except ValueError:
-            print_error("Invalid choice! Please select a valid option.", False)
-        else:
-            if choice in range(start, end + 1):
-                print()
-                return choice
-            else:
-                print_error("Invalid choice! Please select a valid option.", False)
-
-def try_print_spinner_message(message, spinner=None):
+def try_print_spinner_message(message: str, spinner: Yaspin | None = None) -> None:
+    """Try to print a message to the spinner if it is provided, otherwise print the message to the console."""
     try:
-        if spinner:
+        if isinstance(spinner, Yaspin):
             spinner.write(message)
         else:
             print(message)
     except Exception:
         print(message)
 
-def print_help_text(subheader, description):
-    print_subheader(subheader)
+def print_help_text(subheader: str, description: str | tuple[str, ...]) -> None:
+    """Print help text with a subheader and description."""
+    print_subheader(subheader, nl_after=True)
     if isinstance(description, tuple):
         for text in description:
             print(text)
     else:
         print(description)
+
+
+def get_visible_options(options: list[MenuItem | DynamicMenuItem], validations: dict[str, bool]) -> list[MenuItem]:
+    """Return the visible options from the given options based on the validations."""
+    visible_options: list[MenuItem] = []
+    for opt in options:
+        match opt:
+            case (choice_id, label):
+                visible_options.append((choice_id, label))
+            case (choice_id, label, is_visible_fn):
+                if is_visible_fn(validations):
+                    visible_options.append((choice_id, label))
+    return visible_options
