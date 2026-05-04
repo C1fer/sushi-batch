@@ -37,4 +37,5 @@ class ExecutionLogger:
                 
                 log_file.write(_header + _section_header + _internal_log_indicator + content + "\n\n")
         except Exception as e:
-            print(f"Error saving log file at {log_path}: {e}")
+            print(f"An error occurred while saving log file at {log_path}: {e}")
+            

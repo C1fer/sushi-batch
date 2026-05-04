@@ -10,10 +10,10 @@ class SettingsEncoder(JSONEncoder):
         from ...models.settings import Settings
         if isinstance(o, Settings):
             dct = deepcopy(o.__dict__)
-            dct["general"]["queue_theme"] = o.general.get("queue_theme").name
-            dct["merge_workflow"]["encode_codec"] = o.merge_workflow.get("encode_codec").name
+            dct["general"]["queue_theme"] = o.general["queue_theme"].name
+            dct["merge_workflow"]["encode_codec"] = o.merge_workflow["encode_codec"].name
             for _, codec_settings in dct["merge_workflow"]["encode_codec_settings"].items():
-                codec_settings["encoder"] = codec_settings.get("encoder").name
+                codec_settings["encoder"] = codec_settings["encoder"].name
             return dct
         return super().default(o)    
 

@@ -14,13 +14,13 @@ from ..models.job.video_sync_job import VideoSyncJob
 
 
 class XiphOpusEncoder:
-    is_available = utils.is_app_installed("opusenc")
-    log_section_name = "Audio Encode (Opusenc)"
+    is_available: bool = utils.is_app_installed("opusenc")
+    log_section_name: str = "Audio Encode (Opusenc)"
 
     @classmethod
-    def _try_save_log_content(cls, log_path, content, section_name = None, is_internal=False):
-        if s.config.general.get("save_merge_logs") and log_path:
-            _section_name = section_name or cls.log_section_name
+    def _try_save_log_content(cls, content: str, log_path: str | None = None, section_name: str | None = None, is_internal: bool = False) -> None:
+        if s.config.general["save_merge_logs"] and log_path:
+            _section_name: str = section_name or cls.log_section_name
             ExecutionLogger.save_log_output(log_path, content, section_name= _section_name, is_internal=is_internal)
     
     @classmethod
@@ -28,7 +28,7 @@ class XiphOpusEncoder:
         """Encodes audio with opusenc using the codec settings. Pipes decoded audio from FFmpeg to opusenc and saves to *_encode.opus."""
         try:
             layout_bitrate: str = s.config.merge_workflow["encode_codec_settings"][AudioEncodeCodec.OPUS.name]["bitrates"][AudioChannelLayout.STEREO.name]
-            output_path = f"{job.dst_filepath}_encode.opus"
+            output_path: str = f"{job.dst_filepath}_encode.opus"
             
             encode_args: list[str] =  [
                 "opusenc",
@@ -80,7 +80,7 @@ class XiphOpusEncoder:
 
             opusenc_log = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(encode_args))}\n\n{opusenc_stderr}"
 
-            cls._try_save_log_content(log_path, opusenc_log)
+            cls._try_save_log_content(content=opusenc_log, log_path=log_path, section_name=cls.log_section_name)
 
             if encode_process.returncode != 0:
                 return None
@@ -93,4 +93,6 @@ class XiphOpusEncoder:
             job.merge.audio_encode_bitrate = bitrate_display
             return output_path
         except Exception as e:
-            cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} Error encoding with opusenc: {e}", spinner)
+            _message: str = f"An error occurred while encoding audio track: {e}"
+            cls._try_save_log_content(content=_message, log_path=log_path, section_name=cls.log_section_name)
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)

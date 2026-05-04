@@ -99,8 +99,8 @@ class StreamService:
         return [
             VideoStream(
                 id=track.get('index'),
-                width=track.get('width') or 0,
-                height=track.get('height') or 0,
+                width=track.get('width') or -1,
+                height=track.get('height') or -1,
                 default=track.get('disposition').get('default') == 1,
             )
             for track in probed_tracks

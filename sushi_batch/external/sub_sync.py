@@ -46,7 +46,7 @@ class Sushi:
         
         base_args.extend(track_args) 
 
-        if s.config.sync_workflow.get("use_high_quality_resample"):
+        if s.config.sync_workflow["use_high_quality_resample"]:
             base_args.extend(["--sample-rate", "24000"])
 
         if use_advanced_args:

@@ -20,6 +20,7 @@ def get(
     bottom_toolbar: AnyFormattedText | StyleAndTextTuples = None,
     mouse_support: bool = True,
     show_frame: bool = False,
+    default_option: int | None = None,
 ) -> int:
     """Use prompt_toolkit to display a choice prompt with the given options."""
     normalized_options: list[SelectableOption] = options if options is not None else []
@@ -40,6 +41,7 @@ def get(
         style=_style,
         bottom_toolbar=bottom_toolbar,
         show_frame=show_frame,
+        default=default_option,
     )
 
     if nl_after and not message.strip().endswith("\n") and not show_frame:

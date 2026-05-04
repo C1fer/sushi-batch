@@ -206,7 +206,7 @@ def _get_current_value(settings_obj: Settings, codec: AudioEncodeCodec, attr: st
 def _generate_settings_table(settings_obj: Settings, visible_rows: list[CodecSettingsRow], codec: AudioEncodeCodec) -> PrettyTable:
     table = PrettyTable(["Option", "Current Value", "Default Value"])
     for field in visible_rows:
-        current_value = _get_current_value(settings_obj, codec, field["attr"])
+        current_value: CodecOptionValue | None = _get_current_value(settings_obj, codec, field["attr"])
         is_default: bool = current_value == field["default"]
 
         table.add_row([
@@ -234,7 +234,7 @@ def _update_selection(settings_obj: Settings, field: CodecSettingsRow, codec: Au
         if value == current_value:
             default_option = idx
             
-    selected: int = choice_prompt.get(_prompt, options=_options, bottom_toolbar=warning_bottom_bar)
+    selected: int = choice_prompt.get(_prompt, options=_options, default_option=default_option, bottom_toolbar=warning_bottom_bar)
     if selected == len(_options):
         return
     

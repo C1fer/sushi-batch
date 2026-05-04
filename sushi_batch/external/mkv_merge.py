@@ -13,7 +13,13 @@ from .execution_logger import ExecutionLogger
 
 class MKVMerge:
     is_installed: bool = utils.is_app_installed("mkvmerge")
-    log_section_name = "File Merge (MKVMerge)"
+    log_section_name: str = "File Merge (MKVMerge)"
+
+    @classmethod
+    def _try_save_log_content(cls, content: str, log_path: str | None = None, section_name: str | None = None, is_internal: bool = False) -> None:
+        if s.config.general["save_merge_logs"]:
+            _section_name: str = section_name or cls.log_section_name
+            ExecutionLogger.save_log_output(log_path, content, section_name =_section_name, is_internal=is_internal)
     
     @classmethod
     def _get_out_filepath(cls, dst_file_path: str) -> str:
@@ -22,11 +28,11 @@ class MKVMerge:
         
         output_dir: Path = dst_path.parent / "Merged Files"
         output_dir.mkdir(parents=True, exist_ok=True)
-        output_filepath: Path = output_dir / dst_path.stem
+        output_filepath: Path = output_dir / f"{dst_path.stem}{dst_path.suffix}"
         
         counter: int = 1
         while output_filepath.exists():
-            output_filepath = output_dir / f"{dst_path.stem} ({counter}){dst_path.suffix}"
+            output_filepath: Path = output_dir / f"{dst_path.stem} ({counter}){dst_path.suffix}"
             counter += 1
 
         return str(output_filepath)
@@ -34,15 +40,15 @@ class MKVMerge:
     @classmethod
     def _add_source_file_args(cls, args, job: VideoSyncJob) -> None:
         """Add source file specific arguments."""
-        args.extend(filter[str | None](lambda v: v is not None,
+        args.extend(filter(lambda v: v is not None,
             [
                 "--no-audio",
                 "--no-video",
                 "--no-subtitles",
-                "--no-attachments" if not s.config.merge_src_file.get("copy_attachments") else None,
-                "--no-chapters" if not s.config.merge_src_file.get("copy_chapters") else None,
-                "--no-global-tags" if not s.config.merge_src_file.get("copy_global_tags") else None,
-                "--no-track-tags" if not s.config.merge_src_file.get("copy_track_tags") else None,
+                "--no-attachments" if not s.config.merge_src_file["copy_attachments"] else None,
+                "--no-chapters" if not s.config.merge_src_file["copy_chapters"] else None,
+                "--no-global-tags" if not s.config.merge_src_file["copy_global_tags"] else None,
+                "--no-track-tags" if not s.config.merge_src_file["copy_track_tags"] else None,
                 job.src_filepath
             ]
         ))
@@ -52,7 +58,7 @@ class MKVMerge:
         """Add destination file specific arguments."""
         audio_track_arg: list[str] = []
         selected_audio_stream: AudioStream = job.dst_streams.get_selected_audio_stream()
-        if s.config.merge_dst_file.get("copy_only_selected_sync_audio_track"):
+        if s.config.merge_dst_file["copy_only_selected_sync_audio_track"]:
             if encoded_audio_path:
                 _track_lang: str = selected_audio_stream.lang if selected_audio_stream.lang else "und"
                 audio_track_arg: list[str] = [
@@ -66,14 +72,14 @@ class MKVMerge:
             elif selected_audio_stream.id is not None:
                 audio_track_arg: list[str] = ["--audio-tracks", str(selected_audio_stream.id)]
         
-        args.extend(filter[str | None](lambda v: v is not None,
+        args.extend(filter(lambda v: v is not None,
             [
                 *audio_track_arg,
-                "--no-attachments" if not s.config.merge_dst_file.get("copy_attachments") else None,
-                "--no-chapters" if not s.config.merge_dst_file.get("copy_chapters") else None,
-                "--no-global-tags" if not s.config.merge_dst_file.get("copy_global_tags") else None,
-                "--no-subtitles" if not s.config.merge_dst_file.get("copy_subtitle_tracks") else None,
-                "--no-track-tags" if not s.config.merge_dst_file.get("copy_track_tags") else None,
+                "--no-attachments" if not s.config.merge_dst_file["copy_attachments"] else None,
+                "--no-chapters" if not s.config.merge_dst_file["copy_chapters"] else None,
+                "--no-global-tags" if not s.config.merge_dst_file["copy_global_tags"] else None,
+                "--no-subtitles" if not s.config.merge_dst_file["copy_subtitle_tracks"] else None,
+                "--no-track-tags" if not s.config.merge_dst_file["copy_track_tags"] else None,
                 job.dst_filepath
             ]
         ))
@@ -98,9 +104,9 @@ class MKVMerge:
             "--language", f"0:{job.src_streams.get_selected_subtitle_stream().lang}",
             "--track-name", f"0:{trackname}",
             "--default-track-flag",
-            "0:0" if not s.config.merge_synced_sub_file.get("default_flag") else "0:1",
+            "0:0" if not s.config.merge_synced_sub_file["default_flag"] else "0:1",
             "--forced-display-flag",
-            "0:0" if not s.config.merge_synced_sub_file.get("forced_flag") else "0:1",
+            "0:0" if not s.config.merge_synced_sub_file["forced_flag"] else "0:1",
             f"{job.dst_filepath}{sub_suffix}"
         ])
 
@@ -152,9 +158,9 @@ class MKVMerge:
 
             stdout, _ = mkv_merge.communicate()
 
-            if s.config.general.get("save_merge_logs") and log_path:
-                args_log = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(args))}\n\n"
-                ExecutionLogger.save_log_output(log_path, args_log + stdout, section_name=cls.log_section_name)
+            if log_path:
+                args_log: str = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(args))}\n\n" + stdout
+                cls._try_save_log_content(content=args_log + stdout, log_path=log_path, section_name=cls.log_section_name)
 
             match (mkv_merge.returncode):
                 case 0:
@@ -169,7 +175,7 @@ class MKVMerge:
                     job.merge.merged_filepath = output_file
                     job.merge.done = True
                     job.merge.has_warnings = True
-                    if not s.config.general.get("save_merge_logs"):
+                    if not s.config.general["save_merge_logs"]:
                         cls._show_warnings(stdout, log_prefix, spinner)
                 case 2:
                     lines: list[str] = stdout.splitlines()
@@ -178,4 +184,6 @@ class MKVMerge:
                         spinner.fail("❌")
                         spinner.write(f"{cu.fore.LIGHTRED_EX}{error[0]}\n")
         except Exception as e:
-            cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} Error generating merged file: {e}", spinner)
+            _message: str = f"Error generating merged file: {e}"
+            cls._try_save_log_content(content=_message, log_path=log_path, section_name=cls.log_section_name)
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)

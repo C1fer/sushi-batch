@@ -165,7 +165,9 @@ class FFmpeg:
             job.merge.audio_encode_encoder = selected_encoder.name
             return output_path
         except Exception as e:
-            cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} An error occurred during audio encoding: {e}", spinner)
+            _message: str = f"An error occurred while encoding audio track: {e}"
+            cls._try_save_log_content(content=_message, log_path=log_path, section_name=cls.log_section_name)
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)
             return None
         
     @classmethod

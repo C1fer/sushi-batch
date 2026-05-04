@@ -25,3 +25,4 @@ class QueuePersistence:
 
         with self.file_path.open("r", encoding="utf-8") as data_file:
             return json.load(data_file)
+

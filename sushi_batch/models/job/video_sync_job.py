@@ -1,8 +1,7 @@
-from typing import Literal
 from dataclasses import dataclass
 
+from ..stream import AudioStream, SubtitleStream, VideoStream
 from .base_job import BaseJob, JobSync
-from ..stream import VideoStream, AudioStream, SubtitleStream
 
 
 @dataclass
@@ -45,24 +44,18 @@ class JobMediaStreams:
         )
     
     def get_selected_audio_stream(self) -> AudioStream:
-        return next(stream for stream in self.audio if stream.default)
+        return next(stream for stream in self.audio if stream.selected)
     
     def get_selected_subtitle_stream(self) -> SubtitleStream:
-        return next(stream for stream in self.subtitle if stream.default)
+        return next(stream for stream in self.subtitle if stream.selected)
 
     def set_selected_audio_stream_by_id(self, stream_id: int) -> None:
-        stream = next(stream for stream in self.audio if stream.id == stream_id)
-        if stream:
-            stream.selected = True
-        else:
-            raise ValueError(f"Stream with ID {stream_id} not found")
+        stream: AudioStream = next(stream for stream in self.audio if stream.id == stream_id)
+        stream.selected = True
 
     def set_selected_subtitle_stream_by_id(self, stream_id: int) -> None:
-        stream = next(stream for stream in self.subtitle if stream.id == stream_id)
-        if stream:
-            stream.selected = True
-        else:
-            raise ValueError(f"Stream with ID {stream_id} not found")
+        stream: SubtitleStream = next(stream for stream in self.subtitle if stream.id == stream_id)
+        stream.selected = True
 
 
 class VideoSyncJob(BaseJob):

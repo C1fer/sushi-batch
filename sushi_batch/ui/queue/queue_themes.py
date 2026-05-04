@@ -100,14 +100,14 @@ def _show_card_theme(queued_jobs: JobQueueContents, is_main_queue: bool = True) 
                 "children": [
                     ("Audio Track", f"{cu.fore.LIGHTMAGENTA_EX}{job.src_streams.get_selected_audio_stream().display_label}"),
                     ("Sub Track", f"{cu.fore.LIGHTCYAN_EX}{job.src_streams.get_selected_subtitle_stream().display_label}"),
-                ] if isinstance(job, VideoSyncJob) else [],
+                ] if isinstance(job, VideoSyncJob) and is_main_queue else [],
             },
             {
                 "label": "Sync Target",
                 "value": f"{cu.fore.YELLOW}{job.dst_filepath}",
                 "children": [
                     ("Audio Track", f"{cu.fore.LIGHTMAGENTA_EX}{job.dst_streams.get_selected_audio_stream().display_label}"),
-                ] if isinstance(job, VideoSyncJob) else [],
+                ] if isinstance(job, VideoSyncJob) and is_main_queue else [],
             },
         ]
 
@@ -131,7 +131,7 @@ def _show_card_theme(queued_jobs: JobQueueContents, is_main_queue: bool = True) 
                         ("Sync Warning", SYNC_COMPLETED_WARNING) if job.sync.has_warnings else None,
                         ("Shift Warning", SYNC_EXCEED_WARNING) if job.sync.status == Status.COMPLETED and job.sync.result and _avg_shift_exceeds_threshold(job.sync.result) else None,
                         ("Error", f"{detail_color}{job.sync.result}") if job.sync.status == Status.FAILED else None,
-                    ],
+                    ] if is_main_queue else [],
                 }
             )
 
@@ -146,7 +146,7 @@ def _show_card_theme(queued_jobs: JobQueueContents, is_main_queue: bool = True) 
                             ("Warning", MERGE_WARNING_MESSAGE) if job.merge.has_warnings else None,
                             ("Resampled", f"{cu.fore.GREEN}Yes") if job.merge.resample_done else None,
                             ("Encoded Audio", f"{cu.fore.GREEN}Yes {_get_encode_info_display(job)}") if job.merge.audio_encode_done else None, 
-                        ] if job.merge.done and job.merge.merged_filepath else [],
+                        ] if job.merge.done and job.merge.merged_filepath and is_main_queue else [],
                     }
                 )
         
@@ -180,14 +180,16 @@ def _show_yaml_like_theme(queued_jobs: JobQueueContents, is_main_queue: bool = T
             print(f"{cu.fore.LIGHTBLACK_EX}  subtitle_file: {cu.fore.LIGHTCYAN_EX}{job.sub_filepath}")
 
 
-        if isinstance(job, VideoSyncJob):
-            print(f"{cu.fore.LIGHTBLACK_EX}  tracks:")
-            print(f"{cu.fore.LIGHTBLACK_EX}    source_audio: {cu.fore.LIGHTMAGENTA_EX}{job.src_streams.get_selected_audio_stream().display_label}")
-            print(f"{cu.fore.LIGHTBLACK_EX}    source_subtitle: {cu.fore.LIGHTCYAN_EX}{job.src_streams.get_selected_subtitle_stream().display_label}")
-            print(f"{cu.fore.LIGHTBLACK_EX}    sync_target_audio: {cu.fore.LIGHTMAGENTA_EX}{job.dst_streams.get_selected_audio_stream().display_label}")
+    
 
         if is_main_queue:
+            if isinstance(job, VideoSyncJob):
+                print(f"{cu.fore.LIGHTBLACK_EX}  tracks:")
+                print(f"{cu.fore.LIGHTBLACK_EX}    source_audio: {cu.fore.LIGHTMAGENTA_EX}{job.src_streams.get_selected_audio_stream().display_label}")
+                print(f"{cu.fore.LIGHTBLACK_EX}    source_subtitle: {cu.fore.LIGHTCYAN_EX}{job.src_streams.get_selected_subtitle_stream().display_label}")
+                print(f"{cu.fore.LIGHTBLACK_EX}    sync_target_audio: {cu.fore.LIGHTMAGENTA_EX}{job.dst_streams.get_selected_audio_stream().display_label}")
             print(f"{cu.fore.LIGHTBLACK_EX}  sync_status: {status_color}{status_label.lower()}")
+            
             if job.sync.status == Status.FAILED:
                 print(f"{cu.fore.LIGHTBLACK_EX}  error: {detail_color}{job.sync.result}")
             elif job.sync.status == Status.COMPLETED:

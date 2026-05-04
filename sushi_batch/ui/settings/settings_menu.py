@@ -67,7 +67,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.GEN,
             "label": "Queue Theme",
             "attr": "general.queue_theme",
-            "value": obj.general.get("queue_theme"),
+            "value": obj.general["queue_theme"],
             "description": "Controls how queued jobs are displayed in the terminal queue view.",
             "show": True,
         },
@@ -75,7 +75,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.GEN,
             "label": "Save Sushi sync logs",
             "attr": "general.save_sushi_logs",
-            "value": obj.general.get("save_sushi_logs"),
+            "value": obj.general["save_sushi_logs"],
             "description": "Saves logs for each subtitle sync operation.",
             "show": True,
         },
@@ -83,7 +83,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.GEN,
             "label": "Save Merge logs",
             "attr": "general.save_merge_logs",
-            "value": obj.general.get("save_merge_logs"),
+            "value": obj.general["save_merge_logs"],
             "divider": True,
             "description": "Saves logs for each merge operation.",
             "show": True,
@@ -94,7 +94,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.SYNC,
             "label": "Use high quality resampling (better sync accuracy)",
             "attr": "sync_workflow.use_high_quality_resample",
-            "value": obj.sync_workflow.get("use_high_quality_resample"),
+            "value": obj.sync_workflow["use_high_quality_resample"],
             "description": "Uses a higher quality audio resampling method that can improve sync accuracy.",
             "show": True,
         },
@@ -102,7 +102,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.SYNC,
             "label": "Allow advanced Sushi arguments",
             "attr": "sync_workflow.enable_sushi_advanced_args",
-            "value": obj.sync_workflow.get("enable_sushi_advanced_args"),
+            "value": obj.sync_workflow["enable_sushi_advanced_args"],
             "divider": True,
             "description": "Enables custom Sushi argument overrides for advanced synchronization tuning.",
             "show": True,
@@ -113,7 +113,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_WRK,
             "label": "Merge automatically on sync completion",
             "attr": "merge_workflow.merge_files_after_execution",
-            "value": obj.merge_workflow.get("merge_files_after_execution"),
+            "value": obj.merge_workflow["merge_files_after_execution"],
             "description": "Automatically starts file merge after a sync job finishes successfully.",
             "show": True,
         },
@@ -121,7 +121,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_WRK,
             "label": "Encode lossless sync target audio track before merge",
             "attr": "merge_workflow.encode_lossless_audio_before_merging",
-            "value": obj.merge_workflow.get("encode_lossless_audio_before_merging"),
+            "value": obj.merge_workflow["encode_lossless_audio_before_merging"],
             "description": "Encodes the selected sync audio track from the sync target file to a configured lossy codec before merging.",
             "show": True,
         },
@@ -129,15 +129,15 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_WRK,
             "label": "Audio Encode Codec",
             "attr": "merge_workflow.encode_codec",
-            "value": obj.merge_workflow.get("encode_codec"),
+            "value": obj.merge_workflow["encode_codec"],
             "description": "Selects which lossy audio codec to use when pre-merge audio encoding is enabled.",
-            "show": obj.merge_workflow.get("encode_lossless_audio_before_merging"),
+            "show": obj.merge_workflow["encode_lossless_audio_before_merging"],
         },
         {
             "section": Section.MERGE_WRK,
             "label": "Resample synced sub before merge",
             "attr": "merge_workflow.resample_subs_on_merge",
-            "value": obj.merge_workflow.get("resample_subs_on_merge"),
+            "value": obj.merge_workflow["resample_subs_on_merge"],
             "description": "Resamples the synced subtitle to match target video resolution before merging.",
             "show": True,
         },
@@ -145,7 +145,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_WRK,
             "label": "Delete generated audio/subtitle files after merge",
             "attr": "merge_workflow.delete_generated_files_after_merge",
-            "value": obj.merge_workflow.get("delete_generated_files_after_merge"),
+            "value": obj.merge_workflow["delete_generated_files_after_merge"],
             "divider": True,
             "description": "Removes temporary generated subtitle/audio files after merge completes.",
             "show": True,
@@ -156,7 +156,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_SRC,
             "label": "Copy attachments",
             "attr": "merge_src_file.copy_attachments",
-            "value": obj.merge_src_file.get("copy_attachments"),
+            "value": obj.merge_src_file["copy_attachments"],
             "description": "Copies attachments from the source file into the merged output.",
             "show": True,
         },
@@ -164,7 +164,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_SRC,
             "label": "Copy chapters",
             "attr": "merge_src_file.copy_chapters",
-            "value": obj.merge_src_file.get("copy_chapters"),
+            "value": obj.merge_src_file["copy_chapters"],
             "description": "Copies chapter entries from the source file into the merged output.",
             "show": True,
         },
@@ -172,7 +172,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_SRC,
             "label": "Copy global tags",
             "attr": "merge_src_file.copy_global_tags",
-            "value": obj.merge_src_file.get("copy_global_tags"),
+            "value": obj.merge_src_file["copy_global_tags"],
             "description": "Copies container-level tags from the source file into the merged output.",
             "show": True,
         },
@@ -180,7 +180,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_SRC,
             "label": "Copy track tags",
             "attr": "merge_src_file.copy_track_tags",
-            "value": obj.merge_src_file.get("copy_track_tags"),
+            "value": obj.merge_src_file["copy_track_tags"],
             "divider": True,
             "description": "Copies per-track metadata tags from the source file into the merged output.",
             "show": True,
@@ -191,7 +191,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_DST,
             "label": "Copy only selected sync audio track",
             "attr": "merge_dst_file.copy_only_selected_sync_audio_track",
-            "value": obj.merge_dst_file.get("copy_only_selected_sync_audio_track"),
+            "value": obj.merge_dst_file["copy_only_selected_sync_audio_track"],
             "description": "Copies only the selected sync audio track from the target file into the merged output.",
             "show": True,
         },
@@ -199,7 +199,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_DST,
             "label": "Copy attachments",
             "attr": "merge_dst_file.copy_attachments",
-            "value": obj.merge_dst_file.get("copy_attachments"),
+            "value": obj.merge_dst_file["copy_attachments"],
             "description": "Copies attachments from the target file into the merged output.",
             "show": True,
         },
@@ -207,7 +207,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_DST,
             "label": "Copy chapters",
             "attr": "merge_dst_file.copy_chapters",
-            "value": obj.merge_dst_file.get("copy_chapters"),
+            "value": obj.merge_dst_file["copy_chapters"],
             "description": "Copies chapter entries from the target file into the merged output.",
             "show": True,
         },
@@ -215,7 +215,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_DST,
             "label": "Copy subtitles",
             "attr": "merge_dst_file.copy_subtitle_tracks",
-            "value": obj.merge_dst_file.get("copy_subtitle_tracks"),
+            "value": obj.merge_dst_file["copy_subtitle_tracks"],
             "description": "Copies subtitle tracks from the target file in addition to the synced subtitle.",
             "show": True,
         },
@@ -223,7 +223,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_DST,
             "label": "Copy global tags",
             "attr": "merge_dst_file.copy_global_tags",
-            "value": obj.merge_dst_file.get("copy_global_tags"),
+            "value": obj.merge_dst_file["copy_global_tags"],
             "description": "Copies container-level tags from the target file into the merged output.",
             "show": True,
         },
@@ -231,7 +231,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_DST,
             "label": "Copy track tags",
             "attr": "merge_dst_file.copy_track_tags",
-            "value": obj.merge_dst_file.get("copy_track_tags"),
+            "value": obj.merge_dst_file["copy_track_tags"],
             "divider": True,
             "description": "Copies per-track metadata tags from the target file into the merged output.",
             "show": True,
@@ -242,7 +242,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_SUB,
             "label": "Set default flag",
             "attr": "merge_synced_sub_file.default_flag",
-            "value": obj.merge_synced_sub_file.get("default_flag"),
+            "value": obj.merge_synced_sub_file["default_flag"],
             "description": "Sets the merged synced subtitle track as default in the output file.",
             "show": True,
         },
@@ -250,7 +250,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_SUB,
             "label": "Set forced flag",
             "attr": "merge_synced_sub_file.forced_flag",
-            "value": obj.merge_synced_sub_file.get("forced_flag"),
+            "value": obj.merge_synced_sub_file["forced_flag"],
             "description": "Marks the merged synced subtitle track as forced in the output file.",
             "show": True,
         },
@@ -258,7 +258,7 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_SUB,
             "label": "Use custom track name",
             "attr": "merge_synced_sub_file.custom_trackname",
-            "value": obj.merge_synced_sub_file.get("custom_trackname"),
+            "value": obj.merge_synced_sub_file["custom_trackname"],
             "description": "Enables a custom name for the merged synced subtitle track.",
             "show": True,
         },
@@ -266,20 +266,20 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
             "section": Section.MERGE_SUB,
             "label": "Default track name",
             "attr": "merge_synced_sub_file.trackname",
-            "value": obj.merge_synced_sub_file.get("trackname"),
+            "value": obj.merge_synced_sub_file["trackname"],
             "description": "Sets the subtitle track name used when custom track naming is enabled.",
-            "show": obj.merge_synced_sub_file.get("custom_trackname"),
+            "show": obj.merge_synced_sub_file["custom_trackname"],
         },
     ]
 
-    return [row for row in rows if row.get("show")]
+    return [row for row in rows if row["show"]]
 
 def _render_settings_table(rows: list[SettingsRow]) -> PrettyTable:
     """Create and return settings table"""
     tb = PrettyTable(["Section", "Name", "Value"])
     
     for row in rows:
-        if not row.get("show"):
+        if not row["show"]:
             continue
 
         tb.add_row(
@@ -360,16 +360,17 @@ def _select_setting_to_update(rows: list[SettingsRow]) -> str | None:
         section_val: str = SECTION_SUB_OPTIONS[selected_section_idx - 1][1]
         if section_val == GO_BACK_OPTION_LABEL:
             return None # Go Back option selected at section level
-
-        section_options: list[SelectableOption] = [
-            (idx, row["label"])
-            for idx, row in enumerate(rows, 1)
-            if row["section"].value == section_val
-        ]
+        
+        option_idx: int = 1
+        section_options: list[SelectableOption] = []
+        for row in rows:
+            if row["section"].value == section_val:
+                section_options.append((option_idx, row["label"]))
+                option_idx += 1
         
         selected_option: int | None = _handle_option_choice(section_options)
         if selected_option:
-           return rows[selected_option - 1]["attr"] # Return attribute name for selected setting
+            return next(row["attr"] for row in rows if row["label"] == section_options[selected_option - 1][1])
 
 def _view_settings_help(visible_rows: list[SettingsRow]) -> None:
     """Display help text for each section and setting"""
@@ -401,8 +402,8 @@ def show_settings_menu(settings_obj: Settings) -> None:
         print(tbl)
 
         validations: dict[str, bool] = {
-            "enable_advanced_sushi_args": bool(settings_obj.sync_workflow.get("enable_sushi_advanced_args")),
-            "encode_lossless_audio_before_merging": bool(settings_obj.merge_workflow.get("encode_lossless_audio_before_merging")),
+            "enable_advanced_sushi_args": bool(settings_obj.sync_workflow["enable_sushi_advanced_args"]),
+            "encode_lossless_audio_before_merging": bool(settings_obj.merge_workflow["encode_lossless_audio_before_merging"]),
         }
 
         menu_options: list[MenuItem] = cu.get_visible_options(MENU_OPTIONS, validations)
@@ -415,7 +416,7 @@ def show_settings_menu(settings_obj: Settings) -> None:
             case 2:
                 configure_advanced_sushi_args(settings_obj)
             case 3:
-                current_codec: AudioEncodeCodec = settings_obj.merge_workflow.get("encode_codec")
+                current_codec: AudioEncodeCodec = settings_obj.merge_workflow["encode_codec"]
                 configure_audio_encode_settings(settings_obj, current_codec)
             case 4:
                 if confirm_prompt.get(nl_before=True, destructive=True):
