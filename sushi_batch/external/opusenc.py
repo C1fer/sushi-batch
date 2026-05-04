@@ -2,15 +2,14 @@ import subprocess
 
 from yaspin.core import Yaspin
 
-from .ffmpeg import FFmpeg
-
-from ..utils import utils
-from ..utils import console_utils as cu
 from ..external.execution_logger import ExecutionLogger
-
-from ..models.enums import AudioEncodeCodec, AudioChannelLayout, AudioEncoder
 from ..models import settings as s
+from ..models.enums import AudioChannelLayout, AudioEncodeCodec, AudioEncoder
 from ..models.job.video_sync_job import VideoSyncJob
+from ..models.stream import AudioStream
+from ..utils import console_utils as cu
+from ..utils import utils
+from .ffmpeg import FFmpeg
 
 
 class XiphOpusEncoder:
@@ -24,11 +23,19 @@ class XiphOpusEncoder:
             ExecutionLogger.save_log_output(log_path, content, section_name= _section_name, is_internal=is_internal)
     
     @classmethod
-    def encode(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_prefix="[Opusenc]", log_path: str | None = None) -> str | None:
+    def encode(
+        cls,
+        job: VideoSyncJob,
+        stream: AudioStream,
+        spinner: Yaspin | None = None,
+        log_prefix="[Opusenc]",
+        log_path: str | None = None,
+    ) -> str | None:
         """Encodes audio with opusenc using the codec settings. Pipes decoded audio from FFmpeg to opusenc and saves to *_encode.opus."""
+        track_info: str = f"ID {stream.id}: {stream.title}" if not stream.title.isspace() else f"ID {stream.id}"
         try:
             layout_bitrate: str = s.config.merge_workflow["encode_codec_settings"][AudioEncodeCodec.OPUS.name]["bitrates"][AudioChannelLayout.STEREO.name]
-            output_path: str = f"{job.dst_filepath}_encode.opus"
+            output_path: str = f"{job.dst_filepath}_track{stream.id}_encode.opus"
             
             encode_args: list[str] =  [
                 "opusenc",
@@ -41,10 +48,11 @@ class XiphOpusEncoder:
             bitrate_display: str = layout_bitrate.replace('k', ' kbps')
             out_info = f"Opus ({bitrate_display})"
 
+            displayed_message: str = f"Encoding audio track {track_info} to {out_info}"
             if spinner:
-                spinner.text = f"{log_prefix} Encoding audio track to {out_info}"
+                spinner.text = f"{log_prefix} {displayed_message}"
             else:
-                cu.print_warning(f"{log_prefix} Encoding audio track to {out_info}", nl_before=False, wait=False)
+                cu.print_warning(f"{log_prefix} {displayed_message}", nl_before=False, wait=False)
             
             # Pipe decoded audio streams from FFmpeg to opusenc
             ffmpeg_pipe_process = subprocess.Popen(
@@ -85,14 +93,15 @@ class XiphOpusEncoder:
             if encode_process.returncode != 0:
                 return None
             
-            cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Audio track successfully encoded to {out_info}.", spinner)
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Track {track_info} successfully encoded to {out_info}.", spinner)
 
+            stream.encoded = True
             job.merge.audio_encode_done = True
             job.merge.audio_encode_codec = AudioEncodeCodec.OPUS.name
             job.merge.audio_encode_encoder = AudioEncoder.XIPH_OPUSENC.name
             job.merge.audio_encode_bitrate = bitrate_display
             return output_path
         except Exception as e:
-            _message: str = f"An error occurred while encoding audio track: {e}"
+            _message: str = f"An error occurred while encoding audio track {track_info}: {e}"
             cls._try_save_log_content(content=_message, log_path=log_path, section_name=cls.log_section_name)
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)

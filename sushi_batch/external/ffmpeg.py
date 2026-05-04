@@ -58,25 +58,37 @@ class FFmpeg:
     log_section_name = "Audio Encode (FFmpeg)"
 
     @classmethod
-    def _try_save_log_content(cls, log_path: str | None, content: str, section_name: str | None = None, is_internal: bool = False):
+    def _try_save_log_content(
+        cls,
+        log_path: str | None,
+        content: str,
+        section_name: str | None = None,
+        is_internal: bool = False,
+    ):
         if s.config.general["save_merge_logs"] and log_path:
             _section_name: str = section_name or cls.log_section_name
             ExecutionLogger.save_log_output(log_path, content, section_name= _section_name, is_internal=is_internal)
 
     @classmethod
-    def _get_codec_params(cls, job: VideoSyncJob, settings_codec: AudioEncodeCodec, settings_encoder: AudioEncoder) -> tuple[list[str], str]:
+    def _get_codec_params(
+        cls,
+        stream: AudioStream,
+        settings_codec: AudioEncodeCodec,
+        settings_encoder: AudioEncoder,
+        log_prefix: str,
+    ) -> tuple[list[str], str]:
         ffmpeg_codec_params: dict[str, str] = LOSSY_AUDIO_CODEC_PARAMS.get(settings_codec, {})
         if not ffmpeg_codec_params:
             raise ValueError(f"Unsupported audio codec selected for encoding: {settings_codec.name}")
 
-        track_layout: str = job.dst_streams.get_selected_audio_stream().channel_layout
+        track_layout: str = stream.channel_layout
         layout_enum: AudioChannelLayout | None = PROBE_CHANNEL_LAYOUT_MAP.get(track_layout, None)
         if not layout_enum:
-            cu.print_warning(f"[Job {job.id} - FFmpeg] Unknown or unsupported channel layout '{track_layout}'. Defaulting to stereo.", nl_before=False, wait=False)
+            cu.print_warning(f"{log_prefix} Unknown or unsupported channel layout '{track_layout}'. Defaulting to stereo.", nl_before=False, wait=False)
             layout_enum = AudioChannelLayout.STEREO
 
         selected_bitrate: str | None = s.config.merge_workflow["encode_codec_settings"][settings_codec.name]["bitrates"].get(layout_enum.name)
-        encoder_lib = ENCODER_LIB_MAP.get(settings_encoder)
+        encoder_lib: str | None = ENCODER_LIB_MAP.get(settings_encoder)
         if not encoder_lib:
             raise ValueError(f"No FFmpeg library mapping for encoder: {settings_encoder.name}")
         if not selected_bitrate:
@@ -90,15 +102,22 @@ class FFmpeg:
         return args, selected_bitrate
     
     @classmethod
-    def _get_audio_encode_args(cls, job: VideoSyncJob, settings_codec: AudioEncodeCodec, settings_encoder: AudioEncoder) -> tuple[list[str], str, str]:
+    def _get_audio_encode_args(
+        cls,
+        input_filepath: str,
+        stream: AudioStream,
+        settings_codec: AudioEncodeCodec,
+        settings_encoder: AudioEncoder,
+        log_prefix: str,
+    ) -> tuple[list[str], str, str]:
         """Constructs ffmpeg arguments for encoding audio with the selected codec."""
-        output_path: str = f"{job.dst_filepath}_encode.{settings_codec.name.lower()}"
-        codec_params, selected_bitrate = cls._get_codec_params(job, settings_codec, settings_encoder)
+        output_path: str = f"{input_filepath}_track{stream.id}_encode.{settings_codec.name.lower()}"
+        codec_params, selected_bitrate = cls._get_codec_params(stream, settings_codec, settings_encoder, log_prefix)
         
         args: list[str] = [
             'ffmpeg',
-            '-i', job.dst_filepath,
-            '-map', f'0:{job.dst_streams.get_selected_audio_stream().id}',
+            '-i', input_filepath,
+            '-map', f'0:{stream.id}',
             *codec_params,
             '-y',  # Overwrite output file if it exists
             output_path
@@ -120,8 +139,17 @@ class FFmpeg:
             return content
     
     @classmethod
-    def encode_lossless_audio(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_prefix="[FFmpeg]", is_fallback: bool = False, log_path: str | None = None) -> str | None:
+    def encode_lossless_audio(
+        cls,
+        job: VideoSyncJob,
+        stream: AudioStream,
+        spinner: Yaspin | None = None,
+        log_prefix="[FFmpeg]",
+        is_fallback: bool = False,
+        log_path: str | None = None,
+    ) -> str | None:
         """Encodes audio with the selected codec option and saves to *_encode.<ext>."""
+        track_info: str = f"ID {stream.id}: {stream.title}" if not stream.title.isspace() else f"ID {stream.id}"
         try:
             settings_codec: AudioEncodeCodec = s.config.merge_workflow["encode_codec"]
             selected_encoder: AudioEncoder = s.config.merge_workflow["encode_codec_settings"][settings_codec.name]["encoder"]
@@ -131,15 +159,22 @@ class FFmpeg:
                 if not selected_encoder:
                     raise ValueError(f"No fallback encoder found for {settings_codec.name}")
 
-            args, output_path, selected_bitrate = cls._get_audio_encode_args(job, settings_codec, selected_encoder)
+            args, output_path, selected_bitrate = cls._get_audio_encode_args(
+                job.dst_filepath,
+                stream,
+                settings_codec,
+                selected_encoder,
+                log_prefix,
+            )
 
             bitrate_display: str = selected_bitrate.replace('k', ' kbps')
             out_info = f"{settings_codec.value} ({bitrate_display})"
-
+            
+            displayed_message: str = f"Encoding audio track {track_info} to {out_info}"
             if spinner:
-                spinner.text = f"{log_prefix} Encoding audio track to {out_info}"
+                spinner.text = f"{log_prefix} {displayed_message}"
             else:
-                cu.print_warning(f"{log_prefix} Encoding audio track to {out_info}", nl_before=False, wait=False)
+                cu.print_warning(f"{log_prefix} {displayed_message}", nl_before=False, wait=False)
            
             ffmpeg_encode = subprocess.Popen(
                 args,
@@ -157,40 +192,46 @@ class FFmpeg:
             if ffmpeg_encode.returncode != 0:
                 return None
 
-            cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Audio track successfully encoded to {out_info}.", spinner)
-
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Track {track_info} successfully encoded to {out_info}.", spinner)
+           
+            stream.encoded = True
             job.merge.audio_encode_done = True
             job.merge.audio_encode_codec = settings_codec.name
             job.merge.audio_encode_bitrate = bitrate_display
             job.merge.audio_encode_encoder = selected_encoder.name
+           
             return output_path
         except Exception as e:
-            _message: str = f"An error occurred while encoding audio track: {e}"
+            _message: str = f"An error occurred while encoding audio track {track_info}: {e}"
             cls._try_save_log_content(content=_message, log_path=log_path, section_name=cls.log_section_name)
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)
             return None
         
     @classmethod
-    def is_audio_encode_needed(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_prefix="[FFmpeg]", log_path: str | None = None) -> bool:
+    def is_audio_encode_needed(
+        cls,
+        stream: AudioStream,
+        spinner: Yaspin | None = None,
+        log_prefix="[FFmpeg]",
+        log_path: str | None = None,
+    ) -> bool:
         """Determines if audio encoding is needed based on the selected codec and source audio format."""
         try:
-            selected_stream: AudioStream = job.dst_streams.get_selected_audio_stream()
-
-            if not selected_stream.codec:
-                _message = "Destination audio codec is unknown. Skipping encode."
+            if not stream.codec:
+                _message = f"Destination audio codec is unknown. Skipping encode for track {stream.display_label}."
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} {_message}", spinner)
                 cls._try_save_log_content(log_path, _message, is_internal=True)
                 return False
 
-            if selected_stream.codec in LOSSY_AUDIO_CODEC_PARAMS.keys():
-                _message = f"Encoding not needed. Audio is already in a lossy codec ({selected_stream.codec})."
+            if stream.codec in LOSSY_AUDIO_CODEC_PARAMS.keys():
+                _message = f"Encoding not needed. Audio is already in a lossy codec ({stream.display_label}: {stream.codec})."
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTBLACK_EX}{log_prefix} {_message}", spinner)
                 cls._try_save_log_content(log_path, _message, is_internal=True)
                 return False
 
-            return selected_stream.codec in LOSSLESS_AUDIO_CODECS
+            return stream.codec in LOSSLESS_AUDIO_CODECS
         except Exception as e:
-            _message = f"An error occurred while determining if audio encode is needed: {e}"
+            _message = f"An error occurred while determining if audio encode is needed for track {stream.display_label}: {e}"
             cls._try_save_log_content(log_path, _message, is_internal=True)
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)
             return False
@@ -205,5 +246,5 @@ class FFmpeg:
             '-i', job.dst_filepath,
             '-map', f'0:{job.dst_streams.get_selected_audio_stream().id}',
             "-f", "wav",  # Output format for piping (uncompressed PCM)
-            "-"
+            "-" # Pipe to stdout
         ]

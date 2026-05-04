@@ -1,8 +1,9 @@
-from typing import NotRequired, TypedDict
+from enum import Enum
+from typing import Iterable, NotRequired, TypedDict
 
 from prettytable import PrettyTable
 
-from ...models.enums import AudioEncodeCodec, QueueTheme, Section
+from ...models.enums import AudioEncodeCodec, QueueTheme, Section, TracksToEncode
 from ...models.settings import Settings
 from ...utils import console_utils as cu
 from ...utils import file_utils as fu
@@ -13,7 +14,7 @@ from ..settings.sushi_advanced_args_menu import configure_advanced_sushi_args
 
 GO_BACK_OPTION_LABEL: str = "Go Back"
 
-type OptionValue = bool | QueueTheme | AudioEncodeCodec | str | None
+type OptionValue = bool | QueueTheme | AudioEncodeCodec | TracksToEncode | str | None
 class SettingsRow(TypedDict):
     section: Section
     label: str
@@ -52,7 +53,7 @@ def _get_formatted_value(value: OptionValue) -> str:
             return f"{cu.Fore.GREEN}Enabled{cu.style_reset}"
         case False:
             return f"{cu.Fore.RED}Disabled{cu.style_reset}"
-        case QueueTheme() | AudioEncodeCodec():
+        case QueueTheme() | AudioEncodeCodec() | TracksToEncode():
             return f"{cu.Fore.MAGENTA}{value.value}{cu.style_reset}"
         case _:
             _color = cu.Fore.YELLOW if value else cu.Fore.LIGHTBLACK_EX
@@ -127,10 +128,18 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
         },
         {
             "section": Section.MERGE_WRK,
+            "label": "Tracks to encode before merging",
+            "attr": "merge_workflow.tracks_to_encode_before_merging",
+            "value": obj.merge_workflow["tracks_to_encode_before_merging"],
+            "description": "Selects which audio tracks to encode before merging when pre-merge audio encoding is enabled.",
+            "show":bool(obj.merge_workflow["encode_lossless_audio_before_merging"] and not obj.merge_dst_file["copy_only_selected_sync_audio_track"]),
+        },
+        {
+            "section": Section.MERGE_WRK,
             "label": "Audio Encode Codec",
             "attr": "merge_workflow.encode_codec",
             "value": obj.merge_workflow["encode_codec"],
-            "description": "Selects which lossy audio codec to use when pre-merge audio encoding is enabled.",
+            "description": "Selects which lossy audio codec to use for encoding when pre-merge audio encoding is enabled.",
             "show": obj.merge_workflow["encode_lossless_audio_before_merging"],
         },
         {
@@ -290,27 +299,16 @@ def _render_settings_table(rows: list[SettingsRow]) -> PrettyTable:
     
     return tb
 
-def _select_queue_theme() -> QueueTheme | None:
-    """Display queue theme options and update setting based on user selection"""
-    options: list[SelectableOption] = [(idx, theme.value) for idx, theme in enumerate(QueueTheme, 1)]
+def _select_from_enum[T:Enum](enum: Iterable[T]) -> T | None:
+    """Display options for an enum and return the selected item"""
+    options: list[SelectableOption] = [(idx, item.value) for idx, item in enumerate(enum, 1)]
     options.append((len(options) + 1, GO_BACK_OPTION_LABEL))
 
     choice_idx: int = choice_prompt.get(options=options, nl_before=False, nl_after=False)
-    if choice_idx == len(options):
+    if choice_idx == len(options): # Go Back option selected
         return None
 
-    return next(theme for theme in QueueTheme if theme.value == options[choice_idx - 1][1])
-
-def _select_audio_codec() -> AudioEncodeCodec | None:
-    """Display audio codec options and update setting based on user selection"""
-    options: list[SelectableOption] = [(idx, codec.value) for idx, codec in enumerate(AudioEncodeCodec, 1)]
-    options.append((len(options) + 1, GO_BACK_OPTION_LABEL))
-
-    choice_idx: int = choice_prompt.get(options=options, nl_before=False, nl_after=False)
-    if choice_idx == len(options):
-        return None
-
-    return next(codec for codec in AudioEncodeCodec if codec.value == options[choice_idx - 1][1])
+    return next(item for item in enum if item.value == options[choice_idx - 1][1])
 
 def _update_value(obj: Settings, option: str) -> None:
     """Update value for selected option (handles both direct attributes and nested dict options)"""
@@ -325,9 +323,11 @@ def _update_value(obj: Settings, option: str) -> None:
     
     match curr_val:
         case QueueTheme():
-            new_val: QueueTheme | None = _select_queue_theme()
+            new_val: QueueTheme | None = _select_from_enum(QueueTheme)
         case AudioEncodeCodec():
-            new_val: AudioEncodeCodec | None = _select_audio_codec()
+            new_val: AudioEncodeCodec | None = _select_from_enum(AudioEncodeCodec)
+        case TracksToEncode():
+            new_val: TracksToEncode | None = _select_from_enum(TracksToEncode)
         case bool():
             prompt: str = "Disable" if curr_val else "Enable"
             if confirm_prompt.get(f"{prompt} option?"):

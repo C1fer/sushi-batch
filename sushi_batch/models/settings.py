@@ -5,7 +5,7 @@ from typing import TypedDict
 
 from ..utils import console_utils as cu
 from ..utils.json.settings_json import SettingsDecoder, SettingsEncoder
-from .enums import AudioChannelLayout, AudioEncodeCodec, AudioEncoder, QueueTheme
+from .enums import AudioChannelLayout, AudioEncodeCodec, AudioEncoder, QueueTheme, TracksToEncode
 
 class BaseEncodeCodecProfile(TypedDict):
     encoder: AudioEncoder
@@ -36,6 +36,7 @@ class SyncWorkflowSettings(TypedDict):
 class MergeWorkflowSettings(TypedDict):
     merge_files_after_execution: bool
     encode_lossless_audio_before_merging: bool
+    tracks_to_encode_before_merging: TracksToEncode
     encode_codec: AudioEncodeCodec
     encode_codec_settings: EncodeCodecSettings
     resample_subs_on_merge: bool
@@ -119,6 +120,7 @@ class Settings():
         self.merge_workflow: MergeWorkflowSettings = {
             "merge_files_after_execution": True,
             "encode_lossless_audio_before_merging": False,
+            "tracks_to_encode_before_merging": TracksToEncode.SYNC_TARGET_ONLY,
             "encode_codec": AudioEncodeCodec.OPUS,
             "encode_codec_settings": deepcopy(DEFAULT_ENCODE_CODEC_SETTINGS),
             "resample_subs_on_merge": False,
@@ -151,7 +153,7 @@ class Settings():
     def _save(self) -> None:
         """Save settings to JSON file"""
         try: 
-            converted_json = json.dumps(self, indent=4, cls=SettingsEncoder)
+            converted_json: str = json.dumps(self, indent=4, cls=SettingsEncoder)
             with open(self.file_path, "w", encoding="utf-8") as settings_file:
                 settings_file.write(converted_json)
         except Exception as e:

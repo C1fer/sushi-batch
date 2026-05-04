@@ -1,3 +1,4 @@
+from sushi_batch.models.stream import AudioStream
 from ..external.ffmpeg import FFmpeg
 from ..external.mkv_merge import MKVMerge
 from ..external.opusenc import XiphOpusEncoder
@@ -7,7 +8,7 @@ from ..models import settings as s
 from ..models.job.audio_sync_job import AudioSyncJob
 from ..models.job.video_sync_job import VideoSyncJob
 from ..models.job_queue import JobQueue, JobQueueContents
-from ..models.enums import AudioEncodeCodec, AudioEncoder, Status
+from ..models.enums import AudioEncodeCodec, AudioEncoder, Status, TracksToEncode
 from ..ui.prompts import input_prompt
 from ..utils import console_utils as cu
 from ..utils import utils
@@ -66,43 +67,68 @@ class QueueExecutionService:
         return True
 
     @classmethod
-    def _encode_audio_before_merge(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_path: str | None = None) -> str | None:
-        """Encode audio before merge if configured and needed."""
+    def _encode_audio_before_merge(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_path: str | None = None) -> list[tuple[int, str]]:
+        """Encode audio before merge if configured and needed. Returns encoded audio paths."""
         selected_codec: AudioEncodeCodec = s.config.merge_workflow["encode_codec"]
         selected_encoder: AudioEncoder = s.config.merge_workflow["encode_codec_settings"][selected_codec.name]["encoder"]
-       
-        log_prefix = f"[Job {job.id} - FFmpeg]" if selected_encoder != AudioEncoder.XIPH_OPUSENC else f"[Job {job.id} - Opusenc]"
 
-        if not FFmpeg.is_audio_encode_needed(job, spinner=spinner, log_prefix=log_prefix, log_path=log_path):
-            return None
+        log_prefix: str = (
+            f"[Job {job.id} - FFmpeg]"
+            if selected_encoder != AudioEncoder.XIPH_OPUSENC
+            else f"[Job {job.id} - Opusenc]"
+        )
 
-        match selected_encoder:
-            case AudioEncoder.XIPH_OPUSENC:
-                if XiphOpusEncoder.is_available:
-                    output_path = XiphOpusEncoder.encode(job, spinner=spinner, log_prefix=log_prefix, log_path=log_path)
-                else:
-                    cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} Could not find opusenc. Encoding with FFmpeg instead.", spinner)
-                    log_prefix = f"[Job {job.id} - FFmpeg]"
-                    output_path = FFmpeg.encode_lossless_audio(job, spinner=spinner, log_prefix=log_prefix, is_fallback=True, log_path=log_path)
-            case _:
-                output_path = FFmpeg.encode_lossless_audio(job, spinner=spinner, log_prefix=log_prefix, log_path=log_path)
+        stream_list: list[AudioStream] = (
+            job.dst_streams.audio
+            if s.config.merge_workflow["tracks_to_encode_before_merging"] == TracksToEncode.ALL
+            else [job.dst_streams.get_selected_audio_stream()]
+        )
 
-        if not output_path:
-            cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Audio track could not be encoded. Merging original audio track instead.", spinner)
-            return None
-        return output_path
+        tracks_to_encode: list[AudioStream] = [
+            stream
+            for stream in stream_list
+            if not stream.encoded
+            and FFmpeg.is_audio_encode_needed(stream, spinner=spinner, log_prefix=log_prefix, log_path=log_path)
+        ]
+        if not tracks_to_encode:
+            return []
+
+        encoded_streams: list[tuple[int, str]] = []
+        use_fallback: bool = False
+        for stream in tracks_to_encode:
+            match selected_encoder:
+                case AudioEncoder.XIPH_OPUSENC if not use_fallback:
+                    if XiphOpusEncoder.is_available:
+                        output_path: str | None = XiphOpusEncoder.encode(job, stream, spinner=spinner, log_prefix=log_prefix, log_path=log_path)
+                    else:
+                        cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} Could not find opusenc. Encoding with FFmpeg instead.", spinner)
+                        use_fallback = True
+                        log_prefix = f"[Job {job.id} - FFmpeg]"
+                        output_path: str | None = FFmpeg.encode_lossless_audio(job, stream, spinner=spinner, log_prefix=log_prefix, is_fallback=use_fallback, log_path=log_path)
+                case _:
+                    output_path: str | None = FFmpeg.encode_lossless_audio(job, stream, spinner=spinner, log_prefix=log_prefix, is_fallback=use_fallback, log_path=log_path)
+
+            if not output_path:
+                cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Audio track could not be encoded. Merging original audio track instead.", spinner)
+                continue
+            encoded_streams.append((stream.id, output_path))
+        return encoded_streams
 
     @classmethod
     def _run_merge(cls, job: VideoSyncJob, do_resample: bool = False, do_encode_audio: bool = False, parent_queue: JobQueue | None = None) -> None:
         """Execute the merging process for a given job. Handles audio encoding and subtitle resampling if needed."""
         with yaspin(text="", color="cyan", timer=True, ellipsis="...") as sp:
-            log_path: str | None = ExecutionLogger.set_log_path(job.dst_filepath, "Merge Logs") if s.config.general["save_merge_logs"] else None
-            encoded_audio_path: str | None = cls._encode_audio_before_merge(job, spinner=sp, log_path=log_path) if do_encode_audio else None
+            log_path: str | None = (
+                ExecutionLogger.set_log_path(job.dst_filepath, "Merge Logs")
+                if s.config.general["save_merge_logs"]
+                else None
+            )
+            encoded_audio_streams: list[tuple[int, str]] = cls._encode_audio_before_merge(job, spinner=sp, log_path=log_path) if do_encode_audio else []
             use_resampled_sub: bool = cls._resample_before_merge(job, spinner=sp, log_path=log_path) if do_resample else False
             MKVMerge.run(
                 job,
                 use_resampled_sub=use_resampled_sub,
-                encoded_audio_path=encoded_audio_path,
+                encoded_audio_streams=encoded_audio_streams,
                 spinner=sp,
                 log_prefix=f"[Job {job.id} - MKVMerge]",
                 log_path=log_path,
