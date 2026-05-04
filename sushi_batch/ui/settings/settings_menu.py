@@ -198,10 +198,10 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
         # Merge: Sync Target File Section
         {
             "section": Section.MERGE_DST,
-            "label": "Copy only selected sync audio track",
+            "label": "Only include track used for sync",
             "attr": "merge_dst_file.copy_only_selected_sync_audio_track",
             "value": obj.merge_dst_file["copy_only_selected_sync_audio_track"],
-            "description": "Copies only the selected sync audio track from the target file into the merged output.",
+            "description": "Exclude all audio tracks from the target file except the one used for sync",
             "show": True,
         },
         {
