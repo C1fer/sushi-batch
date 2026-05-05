@@ -64,6 +64,7 @@ class FFmpeg:
             _section_name: str = section_name or cls.log_section_name
             ExecutionLogger.save_log_output(log_path, content, section_name= _section_name, is_internal=is_internal)
 
+    
     @classmethod
     def _get_codec_params(
         cls,
@@ -116,7 +117,7 @@ class FFmpeg:
         log_prefix: str,
     ) -> tuple[list[str], str, str]:
         """Constructs ffmpeg arguments for encoding audio with the selected codec."""
-        output_path: str = f"{input_filepath}_track{stream.id}_encode.{settings_codec.name.lower()}"
+        output_path: str = f"{input_filepath}_track{stream.id}_encode.mka"
         codec_params, selected_bitrate = cls._get_codec_params(stream, settings_codec, settings_encoder, log_prefix)
         
         args: list[str] = [
@@ -225,7 +226,7 @@ class FFmpeg:
         """Determines if audio encoding is needed based on the selected codec and source audio format."""
         try:
             if stream.encoded and stream.encode_path and Path(stream.encode_path).is_file():
-                _message = f"Encoding not needed. Audio track {stream.display_label} is already encoded at {stream.encode_path}."
+                _message = f"Audio track {stream.display_label} is already encoded at {stream.encode_path}."
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTBLACK_EX}{log_prefix} {_message}", spinner)
                 cls._try_save_log_content(log_path, _message, is_internal=True)
                 return False
