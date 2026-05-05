@@ -71,6 +71,7 @@ class QueueExecutionService:
         """Encode audio before merge if configured and needed. Returns encoded audio paths."""
         selected_codec: AudioEncodeCodec = s.config.merge_workflow["encode_codec"]
         selected_encoder: AudioEncoder = s.config.merge_workflow["encode_codec_settings"][selected_codec.name]["encoder"]
+        is_new_encoder_for_job: bool = job.merge.audio_encode_encoder != selected_encoder.name
 
         log_prefix: str = (
             f"[Job {job.id} - FFmpeg]"
@@ -87,7 +88,7 @@ class QueueExecutionService:
         tracks_to_encode: list[AudioStream] = [
             stream
             for stream in stream_list
-            if  FFmpeg.is_audio_encode_needed(stream, spinner=spinner, log_prefix=log_prefix, log_path=log_path)
+            if FFmpeg.is_audio_encode_needed(stream, spinner=spinner, log_prefix=log_prefix, log_path=log_path, is_new_encoder_for_job=is_new_encoder_for_job)
         ]
         if not tracks_to_encode:
             return

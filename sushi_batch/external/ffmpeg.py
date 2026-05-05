@@ -246,10 +246,11 @@ class FFmpeg:
         spinner: Yaspin | None = None,
         log_prefix="[FFmpeg]",
         log_path: str | None = None,
+        is_new_encoder_for_job: bool = False,
     ) -> bool:
         """Determines if audio encoding is needed based on the selected codec and source audio format."""
         try:
-            if stream.encoded and stream.encode_path and Path(stream.encode_path).is_file():
+            if stream.encoded and stream.encode_path and Path(stream.encode_path).is_file() and not is_new_encoder_for_job:
                 _message = f"Audio track {stream.display_label} is already encoded at {stream.encode_path}."
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTBLACK_EX}{log_prefix} {_message}", spinner)
                 cls._try_save_log_content(log_path, _message, is_internal=True)
