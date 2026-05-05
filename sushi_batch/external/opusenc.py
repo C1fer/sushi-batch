@@ -1,5 +1,5 @@
-from io import TextIOWrapper
 import subprocess
+from io import TextIOWrapper
 
 from yaspin.core import Yaspin
 
@@ -28,7 +28,6 @@ class XiphOpusEncoder:
     ) -> str | None:
         """Encodes audio with opusenc using the codec settings. Pipes decoded audio from FFmpeg to opusenc and saves to *_encode.opus."""
         log_fd: TextIOWrapper | int = subprocess.DEVNULL
-        track_info: str = f"ID {stream.id}: {stream.title} ({stream.channel_layout})" if not stream.title else f"ID {stream.id} ({stream.channel_layout})"
         try:
             layout_enum: AudioChannelLayout | None = next((layout for layout in FFPROBE_CHANNEL_LAYOUT_MAP.keys() if stream.channel_layout in FFPROBE_CHANNEL_LAYOUT_MAP[layout]), None)
             if not layout_enum:
@@ -48,7 +47,7 @@ class XiphOpusEncoder:
             bitrate_display: str = layout_bitrate.replace('k', ' kbps')
             out_info = f"Opus ({bitrate_display})"
 
-            displayed_message: str = f"Encoding audio track {track_info} to {out_info}"
+            displayed_message: str = f"Encoding audio track {stream.short_display_label} to {out_info}"
             if spinner:
                 spinner.text = f"{log_prefix} {displayed_message}"
             else:
@@ -98,10 +97,10 @@ class XiphOpusEncoder:
             job.merge.audio_encode_codec = AudioEncodeCodec.OPUS.name
             job.merge.audio_encode_encoder = AudioEncoder.XIPH_OPUSENC.name
             
-            cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Track {track_info} successfully encoded to {out_info}.", spinner)
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Track {stream.short_display_label} successfully encoded to {out_info}.", spinner)
             return output_path
         except Exception as e:
-            _message: str = f"An error occurred while encoding audio track {track_info}: {e}"
+            _message: str = f"An error occurred while encoding audio track {stream.short_display_label}: {e}"
             if isinstance(log_fd, TextIOWrapper):
                 ExecutionLogger.save_log_output_to_fd(log_fd, _message, section_name=cls.log_section_name)
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)

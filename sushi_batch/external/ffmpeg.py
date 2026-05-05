@@ -175,7 +175,6 @@ class FFmpeg:
         log_version_info: bool = True,
     ) -> str | None:
         """Encodes audio with the selected codec option and saves to *_encode.<ext>."""
-        track_info: str = f"ID {stream.id}: {stream.title} ({stream.channel_layout})" if not stream.title else f"ID {stream.id} ({stream.channel_layout})"
         try:
             settings_codec: AudioEncodeCodec = s.config.merge_workflow["encode_codec"]
             selected_encoder: AudioEncoder = s.config.merge_workflow["encode_codec_settings"][settings_codec.name]["encoder"]
@@ -196,7 +195,7 @@ class FFmpeg:
             bitrate_display: str = selected_bitrate.replace('k', ' kbps')
             out_info = f"{settings_codec.value} ({bitrate_display})"
             
-            displayed_message: str = f"Encoding audio track {track_info} to {out_info}"
+            displayed_message: str = f"Encoding audio track {stream.short_display_label} to {out_info}"
             if spinner:
                 spinner.text = f"{log_prefix} {displayed_message}"
             else:
@@ -229,10 +228,10 @@ class FFmpeg:
             job.merge.audio_encode_codec = settings_codec.name
             job.merge.audio_encode_encoder = selected_encoder.name
            
-            cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Track {track_info} successfully encoded to {out_info}.", spinner)
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Track {stream.short_display_label} successfully encoded to {out_info}.", spinner)
             return output_path
         except Exception as e:
-            _message: str = f"An error occurred while encoding audio track {track_info}: {e}"
+            _message: str = f"An error occurred while encoding audio track {stream.short_display_label}: {e}"
             cls._try_save_log_content(content=_message, log_path=job.merge.log_path, section_name=cls.log_section_name)
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)
             return None
@@ -249,26 +248,26 @@ class FFmpeg:
         """Determines if audio encoding is needed based on the selected codec and source audio format."""
         try:
             if stream.encoded and stream.encode_path and Path(stream.encode_path).is_file() and not is_new_encoder_for_job:
-                _message = f"Audio track {stream.display_label} is already encoded at {stream.encode_path}."
+                _message = f"Track {stream.short_display_label} is already encoded at {stream.encode_path}."
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTBLACK_EX}{log_prefix} {_message}", spinner)
                 cls._try_save_log_content(log_path, _message, is_internal=True)
                 return False
 
             if not stream.codec:
-                _message = f"Destination audio codec is unknown. Skipping encode for track {stream.display_label}."
+                _message = f"Destination audio codec is unknown. Skipping encode for track {stream.short_display_label}."
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} {_message}", spinner)
                 cls._try_save_log_content(log_path, _message, is_internal=True)
                 return False
 
             if stream.codec in LOSSY_AUDIO_CODEC_PARAMS.keys():
-                _message = f"Encoding not needed. Audio is already in a lossy codec ({stream.display_label}: {stream.codec})."
+                _message = f"Encoding not needed. Track is already in a lossy codec ({stream.short_display_label}: {stream.codec})."
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTBLACK_EX}{log_prefix} {_message}", spinner)
                 cls._try_save_log_content(log_path, _message, is_internal=True)
                 return False
 
             return stream.codec in LOSSLESS_AUDIO_CODECS
         except Exception as e:
-            _message = f"An error occurred while determining if audio encode is needed for track {stream.display_label}: {e}"
+            _message = f"An error occurred while determining if encode is needed for track {stream.short_display_label}: {e}"
             cls._try_save_log_content(log_path, _message, is_internal=True)
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)
             return False

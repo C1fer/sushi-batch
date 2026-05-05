@@ -40,9 +40,9 @@ class StreamService:
             ]))
 
             new_stream.display_label: str = (
-                f"{new_stream.id} - {new_stream.lang}, {new_stream.codec}{info}"
+                f"ID {new_stream.id}: {new_stream.lang}, {new_stream.codec}{info}"
                 if new_stream.title == ""
-                else f"{new_stream.id} - {new_stream.title}, {new_stream.codec}, {new_stream.lang}{info}"
+                else f"ID {new_stream.id}: {new_stream.title}, {new_stream.codec}, {new_stream.lang}{info}"
             )
             streams.append(new_stream)
 
@@ -81,9 +81,9 @@ class StreamService:
             ]))
 
             new_stream.display_label: str = (
-                f"{new_stream.id} - {new_stream.lang}, {new_stream.codec}{info}"
+                f"ID {new_stream.id}: {new_stream.lang}, {new_stream.codec}{info}"
                 if new_stream.title == ""
-                else f"{new_stream.id} - {new_stream.title}, {new_stream.codec}, {new_stream.lang}{info}"
+                else f"ID {new_stream.id}: {new_stream.title}, {new_stream.codec}, {new_stream.lang}{info}"
             )
 
             streams.append(new_stream)

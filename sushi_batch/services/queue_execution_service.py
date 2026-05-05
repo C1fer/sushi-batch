@@ -113,7 +113,7 @@ class QueueExecutionService:
             if output_path:
                 parent_queue.save()
             else:
-                cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Audio track could not be encoded. Merging original audio track instead.", spinner)
+                cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Track {stream.short_display_label} could not be encoded. Merging original audio track instead.", spinner)
                 continue
           
 
