@@ -67,7 +67,7 @@ class QueueExecutionService:
         return True
 
     @classmethod
-    def _encode_audio_before_merge(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_path: str | None = None) -> None:
+    def _encode_audio_before_merge(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_path: str | None = None, parent_queue: JobQueue | None = None) -> None:
         """Encode audio before merge if configured and needed. Returns encoded audio paths."""
         selected_codec: AudioEncodeCodec = s.config.merge_workflow["encode_codec"]
         selected_encoder: AudioEncoder = s.config.merge_workflow["encode_codec_settings"][selected_codec.name]["encoder"]
@@ -93,6 +93,7 @@ class QueueExecutionService:
             return
 
         use_fallback: bool = False
+        log_ffmpeg_version_info: bool = True
         for stream in tracks_to_encode:
             match selected_encoder:
                 case AudioEncoder.XIPH_OPUSENC if not use_fallback:
@@ -102,13 +103,17 @@ class QueueExecutionService:
                         cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} Could not find opusenc. Encoding with FFmpeg instead.", spinner)
                         use_fallback = True
                         log_prefix = f"[Job {job.id} - FFmpeg]"
-                        output_path: str | None = FFmpeg.encode_lossless_audio(job, stream, spinner=spinner, log_prefix=log_prefix, is_fallback=use_fallback, log_path=log_path)
+                        output_path: str | None = FFmpeg.encode_lossless_audio(job, stream, spinner=spinner, log_prefix=log_prefix, is_fallback=use_fallback, log_path=log_path, log_version_info=log_ffmpeg_version_info)
+                        log_ffmpeg_version_info = False
                 case _:
-                    output_path: str | None = FFmpeg.encode_lossless_audio(job, stream, spinner=spinner, log_prefix=log_prefix, is_fallback=use_fallback, log_path=log_path)
-
+                    output_path: str | None = FFmpeg.encode_lossless_audio(job, stream, spinner=spinner, log_prefix=log_prefix, is_fallback=use_fallback, log_path=log_path, log_version_info=log_ffmpeg_version_info)
+                    log_ffmpeg_version_info = False
+            
             if not output_path:
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Audio track could not be encoded. Merging original audio track instead.", spinner)
                 continue
+            if parent_queue:
+                parent_queue.save()
 
     @classmethod
     def _run_merge(cls, job: VideoSyncJob, do_resample: bool = False, do_encode_audio: bool = False, parent_queue: JobQueue | None = None) -> None:
@@ -119,7 +124,7 @@ class QueueExecutionService:
                 if s.config.general["save_merge_logs"]
                 else None
             )
-            cls._encode_audio_before_merge(job, spinner=sp, log_path=log_path) if do_encode_audio else []
+            cls._encode_audio_before_merge(job, spinner=sp, log_path=log_path, parent_queue=parent_queue) if do_encode_audio else []
             use_resampled_sub: bool = cls._resample_before_merge(job, spinner=sp, log_path=log_path) if do_resample else False
             MKVMerge.run(
                 job,

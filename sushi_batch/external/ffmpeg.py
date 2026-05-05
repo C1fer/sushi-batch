@@ -50,6 +50,7 @@ FALLBACK_ENCODERS: dict[AudioEncoder, AudioEncoder] = { AudioEncoder.XIPH_OPUSEN
 class FFmpeg:
     is_installed: bool = utils.is_app_installed("ffmpeg")
     log_section_name = "Audio Encode (FFmpeg)"
+    version_info: str = ""
 
     @classmethod
     def _try_save_log_content(
@@ -130,7 +131,8 @@ class FFmpeg:
         codec_params, selected_bitrate = cls._get_codec_params(stream, settings_codec, settings_encoder, log_prefix)
         
         args: list[str] = [
-            'ffmpeg',
+            'ffmpeg', 
+            '-hide_banner',
             '-i', input_filepath,
             '-map', f'0:{stream.id}',
             *codec_params,
@@ -140,19 +142,28 @@ class FFmpeg:
         return args, output_path, selected_bitrate
 
     @classmethod
-    def get_clean_audio_encode_log(cls, content: str) -> str:
-        """Returns the clean audio encode log by removing input metadata"""
+    def set_version_info(cls) -> None:
+        """Sets the version information of the ffmpeg executable."""
         try:
-            version_info: list[str] = content.split("Input #0")
-            if len(version_info) < 2:
-                return content
-            output_info: list[str] = version_info[1].split("Press [q] to stop, [?] for help")
-            if len(output_info) < 2:
-                return content
-            return version_info[0] + output_info[1]
+            version_info: subprocess.CompletedProcess[str] = subprocess.run(["ffmpeg", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace")
+            if version_info.returncode != 0:
+                return
+            cls.version_info = version_info.stdout.split("\nExiting with exit code")[0]
         except Exception:
-            return content
-    
+            cls.version_info = ""
+
+    @classmethod
+    def get_clean_audio_encode_log(cls, content: str, version_info: str | None) -> str:
+        """Returns the clean audio encode log by removing input metadata and adding version information"""
+        try:
+            _version_info: str = version_info or ""
+            output_info: list[str] = content.split("Press [q] to stop, [?] for help")
+            if len(output_info) < 2:
+                return _version_info + content
+            return _version_info + output_info[-1]
+        except Exception:
+            return _version_info + content
+
     @classmethod
     def encode_lossless_audio(
         cls,
@@ -162,6 +173,7 @@ class FFmpeg:
         log_prefix="[FFmpeg]",
         is_fallback: bool = False,
         log_path: str | None = None,
+        log_version_info: bool = True,
     ) -> str | None:
         """Encodes audio with the selected codec option and saves to *_encode.<ext>."""
         track_info: str = f"ID {stream.id}: {stream.title} ({stream.channel_layout})" if not stream.title.isspace() else f"ID {stream.id} ({stream.channel_layout})"
@@ -190,6 +202,9 @@ class FFmpeg:
                 spinner.text = f"{log_prefix} {displayed_message}"
             else:
                 cu.print_warning(f"{log_prefix} {displayed_message}", nl_before=False, wait=False)
+
+            if log_version_info and cls.version_info == "": # Only set version info if it hasn't been set yet
+                cls.set_version_info()
            
             ffmpeg_encode = subprocess.Popen(
                 args,
@@ -200,9 +215,9 @@ class FFmpeg:
             )
             _, stderr = ffmpeg_encode.communicate()
 
-            # ffmpeg_log: str = cls.get_clean_audio_encode_log(stderr)
+            ffmpeg_log: str = cls.get_clean_audio_encode_log(stderr, cls.version_info if log_version_info else None)
             args_log = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(args))}\n\n"
-            cls._try_save_log_content(log_path, args_log + stderr)
+            cls._try_save_log_content(log_path, args_log + ffmpeg_log)
 
             if ffmpeg_encode.returncode != 0:
                 return None
