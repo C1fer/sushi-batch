@@ -1,4 +1,4 @@
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 from prompt_toolkit import Application
 from prompt_toolkit.application import get_app
@@ -9,12 +9,13 @@ from prompt_toolkit.keys import Keys
 from prompt_toolkit.layout import HSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.layout import Layout
+from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseModifier
 from prompt_toolkit.styles import BaseStyle, Style, merge_styles
 from prompt_toolkit.widgets import Button, Dialog, HorizontalLine, Label, RadioList
 
 from ..utils.constants import CustomColor
 
-DEFAULT_TOOLBAR = "  Up/Down: Navigate | Left/Right / Ctrl+Up/Down: Reorder | Tab: Change Focus | Enter: Confirm  \n\n"
+DEFAULT_TOOLBAR = "  Up/Down / Click: Select | Left/Right / Ctrl+Up/Down / Ctrl+Wheel: Reorder | Tab: Change Focus | Enter: Confirm  \n\n"
 
 DEFAULT_STYLE: Style = Style.from_dict({
     "dialog": f"bg:{CustomColor.BG_DARK}",
@@ -56,6 +57,31 @@ def _move_item(radio: RadioList[Any], app: Application[Any], delta: int) -> None
     values[curr_pos], values[new_pos] = values[new_pos], values[curr_pos]
     radio._selected_index = new_pos
     app.invalidate()
+
+
+def _attach_ctrl_wheel_reorder(radio: RadioList[Any]) -> None:
+    """Ctrl+scroll over a column reorders rows in that column (same as keyboard)."""
+    control: FormattedTextControl = radio.control
+    prev_mouse = control.mouse_handler
+
+    def mouse_handler(mouse_event: MouseEvent) ->object:
+        if (
+            mouse_event.event_type
+            in (MouseEventType.SCROLL_UP, MouseEventType.SCROLL_DOWN)
+            and MouseModifier.CONTROL in mouse_event.modifiers
+        ):
+            app: Application[Any] = get_app()
+            delta: int = (
+                -1
+                if mouse_event.event_type == MouseEventType.SCROLL_UP
+                else 1
+            )
+            _move_item(radio, app, delta)
+            return None
+        return prev_mouse(mouse_event)
+
+    control.mouse_handler: Callable[[MouseEvent], object] = mouse_handler
+
 
 kb = KeyBindings()
 
@@ -124,6 +150,11 @@ def _get_dialog(src_files: list[str], dst_files: list[str], sub_files: list[str]
     radio_sub: RadioList[Any] | None = _create_radio_section(sub_files) if sub_files else None
     _reordered_radios = (radio_src, radio_dst, radio_sub)
 
+    _attach_ctrl_wheel_reorder(radio_src)
+    _attach_ctrl_wheel_reorder(radio_dst)
+    if radio_sub:
+        _attach_ctrl_wheel_reorder(radio_sub)
+
     _style: BaseStyle = merge_styles([DEFAULT_STYLE])
 
     item_container = HSplit(
@@ -155,6 +186,7 @@ def _get_dialog(src_files: list[str], dst_files: list[str], sub_files: list[str]
         full_screen=True,
         key_bindings=kb,
         style=_style,
+        mouse_support=True,
     )
 
 def show_file_pairings_review_dialog(src_files: list[str], dst_files: list[str], sub_files: list[str]) -> tuple[list[str], list[str], list[str]] | None:
