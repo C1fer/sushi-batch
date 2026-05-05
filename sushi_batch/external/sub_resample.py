@@ -36,7 +36,7 @@ class SubResampler:
         ]
 
     @classmethod
-    def run(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_prefix="[Sub Resampler]", log_path: str | None = None) -> bool:
+    def run(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_prefix="[Sub Resampler]") -> bool:
         try: 
             args: list[str] = cls._get_args(job)
 
@@ -56,7 +56,7 @@ class SubResampler:
             args_log = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(args))}\n\n"
 
             stdout, _ = aegisub_resample.communicate()
-            cls._try_save_log_content(content=args_log + stdout, log_path=log_path, section_name=cls.log_section_name)
+            cls._try_save_log_content(content=args_log + stdout, log_path=job.merge.log_path, section_name=cls.log_section_name)
                
             if aegisub_resample.returncode == 0:
                 job.merge.resample_done = True
@@ -66,7 +66,7 @@ class SubResampler:
             
         except Exception as e:
             _message: str = f"Error resampling subtitle file: {e}"
-            cls._try_save_log_content(content=_message, log_path=log_path, section_name=cls.log_section_name)
+            cls._try_save_log_content(content=_message, log_path=job.merge.log_path, section_name=cls.log_section_name)
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)
             return False
         
@@ -94,13 +94,13 @@ class SubResampler:
         return playres_x, playres_y
 
     @classmethod
-    def is_resample_needed(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_prefix="[Sub Resampler]", log_path: str | None = None) -> bool:
+    def is_resample_needed(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_prefix="[Sub Resampler]") -> bool:
         """Determines if subtitle resampling is needed based on script and video resolution"""        
         try:
             selected_stream: SubtitleStream = job.src_streams.get_selected_subtitle_stream()
             if selected_stream.extension not in cls.whitelisted_resample_extensions:
                 _message = f"Subtitle format {selected_stream.extension} is not supported for resampling. Skipping resample."
-                cls._try_save_log_content(content=_message, log_path=log_path, is_internal=True)
+                cls._try_save_log_content(content=_message, log_path=job.merge.log_path, is_internal=True)
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)
                 return False
 
@@ -109,20 +109,20 @@ class SubResampler:
             video_resolution: tuple[int, int] = (dst_video_stream.width, dst_video_stream.height)
             if -1 in video_resolution:
                 _message = "Sync target video resolution is unknown. Cannot determine if subtitle resampling is needed."
-                cls._try_save_log_content(content=_message, log_path=log_path, is_internal=True)
+                cls._try_save_log_content(content=_message, log_path=job.merge.log_path, is_internal=True)
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)
                 return False
             
             script_resolution: tuple[int | None, int | None] = cls._get_script_resolution(f"{job.dst_filepath}.sushi{selected_stream.extension}")
             if None in script_resolution:
                 _message = "Script resolution could not be determined from subtitle file. Cannot determine if resampling is needed."
-                cls._try_save_log_content(content=_message, log_path=log_path, is_internal=True)
+                cls._try_save_log_content(content=_message, log_path=job.merge.log_path, is_internal=True)
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)
                 return False
             
             if video_resolution == script_resolution:
                 _message = "Resampling not needed. Script resolution matches video resolution."
-                cls._try_save_log_content(content=_message, log_path=log_path, is_internal=True)
+                cls._try_save_log_content(content=_message, log_path=job.merge.log_path, is_internal=True)
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTBLACK_EX}{log_prefix} {_message}", spinner)
                 return False
 
@@ -130,6 +130,6 @@ class SubResampler:
             return True
         except Exception as e:
             _message = f"An error occurred while determining if subtitle resampling is needed: {e}"
-            cls._try_save_log_content(content=_message, log_path=log_path, is_internal=True)
+            cls._try_save_log_content(content=_message, log_path=job.merge.log_path, is_internal=True)
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)
             return False

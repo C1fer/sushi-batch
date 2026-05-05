@@ -30,7 +30,6 @@ class XiphOpusEncoder:
         stream: AudioStream,
         spinner: Yaspin | None = None,
         log_prefix="[Opusenc]",
-        log_path: str | None = None,
     ) -> str | None:
         """Encodes audio with opusenc using the codec settings. Pipes decoded audio from FFmpeg to opusenc and saves to *_encode.opus."""
         track_info: str = f"ID {stream.id}: {stream.title} ({stream.channel_layout})" if not stream.title.isspace() else f"ID {stream.id} ({stream.channel_layout})"
@@ -60,9 +59,12 @@ class XiphOpusEncoder:
             else:
                 cu.print_warning(f"{log_prefix} {displayed_message}", nl_before=False, wait=False)
             
+            pipe_args: list[str] = FFmpeg.get_pcm_pipe_args(job.dst_filepath, stream.id)
             # Pipe decoded audio streams from FFmpeg to opusenc
+            
+            
             ffmpeg_pipe_process = subprocess.Popen(
-                FFmpeg.get_pcm_pipe_args(job), 
+                pipe_args, 
                 stdout=subprocess.PIPE, 
                 stderr=subprocess.PIPE,
                 text=True,
@@ -80,10 +82,9 @@ class XiphOpusEncoder:
                 errors="replace",
             )
 
-            ffmpeg_log: str = ffmpeg_pipe_process.stderr.read() if ffmpeg_pipe_process.stderr else ""
-            if ffmpeg_log:
-                ffmpeg_log += "\n"
-
+            ffmpeg_pipe_log: str = ffmpeg_pipe_process.stderr.read() if ffmpeg_pipe_process.stderr else ""
+            ffmpeg_log: str = f"{ExecutionLogger.internal_log_indicator}Piping stream to opusenc with arguments: {(' '.join(pipe_args))}{ffmpeg_pipe_log}\n\n"
+            
             # Close pipes when opusenc exits
             if ffmpeg_pipe_process.stdout:
                 ffmpeg_pipe_process.stdout.close()
@@ -94,7 +95,7 @@ class XiphOpusEncoder:
 
             opusenc_log = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(encode_args))}\n\n{opusenc_stderr}"
 
-            cls._try_save_log_content(content=opusenc_log, log_path=log_path, section_name=cls.log_section_name)
+            cls._try_save_log_content(content=ffmpeg_log + opusenc_log, log_path=job.merge.log_path, section_name=cls.log_section_name)
 
             if encode_process.returncode != 0:
                 return None
@@ -111,5 +112,5 @@ class XiphOpusEncoder:
             return output_path
         except Exception as e:
             _message: str = f"An error occurred while encoding audio track {track_info}: {e}"
-            cls._try_save_log_content(content=_message, log_path=log_path, section_name=cls.log_section_name)
+            cls._try_save_log_content(content=_message, log_path=job.merge.log_path, section_name=cls.log_section_name)
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)

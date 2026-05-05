@@ -11,10 +11,10 @@ class ExecutionLogger:
     @staticmethod
     def set_log_path(src_file: str, dir_name: str) -> str:
         """Create a log file path to write into a specified directory. Return the path to the log file."""
+        current_datetime: str = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
         output_dirpath: Path = Path(settings.config.data_path) / dir_name
         output_dirpath.mkdir(parents=True, exist_ok=True)
         name: str = Path(src_file).stem
-        current_datetime: str = datetime.now().strftime("%Y-%m-%d - %H.%M.%S")
 
         return str(output_dirpath / f"{current_datetime} - {name}.log")
 

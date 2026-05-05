@@ -104,8 +104,8 @@ class Sushi:
                 _, stderr = sushi.communicate()
 
                 if s.config.general["save_sushi_logs"]:
-                    log_path: str = ExecutionLogger.set_log_path(job.src_filepath, "Sushi Logs")
-                    ExecutionLogger.save_log_output(log_path, stderr)
+                    job.sync.log_path = ExecutionLogger.set_log_path(job.src_filepath, "Sushi Logs")
+                    ExecutionLogger.save_log_output(job.sync.log_path, stderr)
 
                 lines: list[str] = stderr.strip().splitlines()
 

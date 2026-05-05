@@ -172,7 +172,6 @@ class FFmpeg:
         spinner: Yaspin | None = None,
         log_prefix="[FFmpeg]",
         is_fallback: bool = False,
-        log_path: str | None = None,
         log_version_info: bool = True,
     ) -> str | None:
         """Encodes audio with the selected codec option and saves to *_encode.<ext>."""
@@ -217,7 +216,7 @@ class FFmpeg:
 
             ffmpeg_log: str = cls.get_clean_audio_encode_log(stderr, cls.version_info if log_version_info else None)
             args_log = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(args))}\n\n"
-            cls._try_save_log_content(log_path, args_log + ffmpeg_log)
+            cls._try_save_log_content(job.merge.log_path, args_log + ffmpeg_log)
 
             if ffmpeg_encode.returncode != 0:
                 return None
@@ -235,7 +234,7 @@ class FFmpeg:
             return output_path
         except Exception as e:
             _message: str = f"An error occurred while encoding audio track {track_info}: {e}"
-            cls._try_save_log_content(content=_message, log_path=log_path, section_name=cls.log_section_name)
+            cls._try_save_log_content(content=_message, log_path=job.merge.log_path, section_name=cls.log_section_name)
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)
             return None
         
