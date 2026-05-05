@@ -30,7 +30,7 @@ def _run_and_queue_all(temp_queue: JobQueue, task: Task, use_advanced_sushi_args
     current_queue_length: int = len(qm.main_queue.contents)
     qm.main_queue.add_jobs(temp_queue.contents, task)
     to_run: JobQueueContents = qm.main_queue.contents[current_queue_length:] # Run the new jobs that were added to the main queue
-    QueueExecutionService.run_jobs(to_run, use_advanced_sushi_args=use_advanced_sushi_args, parent_queue=qm.main_queue)
+    QueueExecutionService.run_jobs(to_run, parent_queue=qm.main_queue, use_advanced_sushi_args=use_advanced_sushi_args)
     return True
 
 def _queue_without_running_all(temp_queue: JobQueue, task: Task) -> bool:
@@ -47,7 +47,7 @@ def _handle_run_and_queue_multiple(temp_queue: JobQueue, task: Task, use_advance
             selected_jobs: JobQueueContents = temp_queue.select_jobs(prompt_message=qm.TO_RUN_SELECTED_PROMPT)
             if selected_jobs and confirm_prompt.get("Run selected jobs and add to main queue?", nl_after=True):
                 qm.main_queue.add_jobs(selected_jobs, task)
-                QueueExecutionService.run_jobs(selected_jobs, use_advanced_sushi_args=use_advanced_sushi_args)
+                QueueExecutionService.run_jobs(selected_jobs, parent_queue=qm.main_queue, use_advanced_sushi_args=use_advanced_sushi_args)
                 return True
     return False
 

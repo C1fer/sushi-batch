@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from yaspin import yaspin
 from yaspin.core import Yaspin
 
@@ -22,15 +20,14 @@ from ..utils import utils
 
 class QueueExecutionService:
     @classmethod
-    def _run_sub_sync(cls, job: AudioSyncJob | VideoSyncJob, use_advanced_sushi_args: bool = False, parent_queue: JobQueue | None = None) -> None:
+    def _run_sub_sync(cls, job: AudioSyncJob | VideoSyncJob, parent_queue: JobQueue, use_advanced_sushi_args: bool = False) -> None:
         """Run Sushi subtitle sync for a given job."""
         log_prefix = f"[Job {job.id} - Sushi]"
         Sushi.run(job, use_advanced_args=use_advanced_sushi_args, log_prefix=log_prefix)
-        if parent_queue:
-            parent_queue.save()
+        parent_queue.save()
 
     @classmethod
-    def run_jobs(cls, jobs_to_run: list[AudioSyncJob | VideoSyncJob], use_advanced_sushi_args: bool = False, parent_queue: JobQueue | None = None) -> None:
+    def run_jobs(cls, jobs_to_run: list[AudioSyncJob | VideoSyncJob], parent_queue: JobQueue, use_advanced_sushi_args: bool = False) -> None:
         """Orchestrate the execution of sync jobs and optionally merge completed video jobs."""
         try:
             if not jobs_to_run:
@@ -41,7 +38,7 @@ class QueueExecutionService:
 
             completed_video_jobs: list[VideoSyncJob] = []
             for job in jobs_to_run:
-                utils.interrupt_signal_handler(cls._run_sub_sync)(job, use_advanced_sushi_args, parent_queue)
+                utils.interrupt_signal_handler(cls._run_sub_sync)(job, parent_queue, use_advanced_sushi_args)
                 if job.sync.status == Status.COMPLETED and isinstance(job, VideoSyncJob):
                     completed_video_jobs.append(job)
 
@@ -70,7 +67,7 @@ class QueueExecutionService:
         return True
 
     @classmethod
-    def _encode_audio_before_merge(cls, job: VideoSyncJob, spinner: Yaspin | None = None, parent_queue: JobQueue | None = None) -> None:
+    def _encode_audio_before_merge(cls, job: VideoSyncJob, parent_queue: JobQueue, spinner: Yaspin | None = None) -> None:
         """Encode audio before merge if configured and needed. Returns encoded audio paths."""
         selected_codec: AudioEncodeCodec = s.config.merge_workflow["encode_codec"]
         selected_encoder: AudioEncoder = s.config.merge_workflow["encode_codec_settings"][selected_codec.name]["encoder"]
@@ -113,14 +110,15 @@ class QueueExecutionService:
                     output_path: str | None = FFmpeg.encode_lossless_audio(job, stream, spinner=spinner, log_prefix=log_prefix, is_fallback=use_fallback, log_version_info=log_ffmpeg_version_info)
                     log_ffmpeg_version_info = False
             
-            if not output_path:
+            if output_path:
+                parent_queue.save()
+            else:
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Audio track could not be encoded. Merging original audio track instead.", spinner)
                 continue
-            if parent_queue:
-                parent_queue.save()
+          
 
     @classmethod
-    def _run_merge(cls, job: VideoSyncJob, do_resample: bool = False, do_encode_audio: bool = False, parent_queue: JobQueue | None = None) -> None:
+    def _run_merge(cls, job: VideoSyncJob, parent_queue: JobQueue, do_resample: bool = False, do_encode_audio: bool = False) -> None:
         """Execute the merging process for a given job. Handles audio encoding and subtitle resampling if needed."""
         with yaspin(text="", color="cyan", timer=True, ellipsis="...") as sp:
             job.merge.log_path= (
@@ -129,7 +127,7 @@ class QueueExecutionService:
                 else None
             )
 
-            cls._encode_audio_before_merge(job, spinner=sp,parent_queue=parent_queue) if do_encode_audio else []
+            cls._encode_audio_before_merge(job, parent_queue=parent_queue, spinner=sp) if do_encode_audio else []
             use_resampled_sub: bool = cls._resample_before_merge(job, spinner=sp) if do_resample else False
             MKVMerge.run(
                 job,
@@ -137,11 +135,10 @@ class QueueExecutionService:
                 spinner=sp,
                 log_prefix=f"[Job {job.id} - MKVMerge]",
             )
-            if parent_queue:
-                parent_queue.save()
+            parent_queue.save()
 
     @classmethod
-    def merge_completed_video_jobs(cls, selected_jobs: list[VideoSyncJob], parent_queue: JobQueue | None = None, display_confirmation: bool = True) -> None:
+    def merge_completed_video_jobs(cls, selected_jobs: list[VideoSyncJob], parent_queue: JobQueue, display_confirmation: bool = True) -> None:
         """Orchestrate the merging of selected video jobs."""
         if not selected_jobs:
             cu.print_error("No completed jobs to merge!")
@@ -156,13 +153,12 @@ class QueueExecutionService:
             cu.print_error("Aegisub-CLI could not be found. Subtitle resampling will be skipped.")
 
         for job in selected_jobs:
-            utils.interrupt_signal_handler(cls._run_merge)(job, do_resample, do_audio_encode, parent_queue)
+            utils.interrupt_signal_handler(cls._run_merge)(job, parent_queue, do_resample, do_audio_encode)
             print()
 
         if s.config.merge_workflow["delete_generated_files_after_merge"]:
-            if isinstance(parent_queue, JobQueue):
-                successfully_merged_jobs: JobQueueContents = [job for job in selected_jobs if job.merge.done]
-                parent_queue.clean_generated_files(successfully_merged_jobs, confirm_deletion=False)
+            successfully_merged_jobs: JobQueueContents = [job for job in selected_jobs if job.merge.done]
+            parent_queue.clean_generated_files(successfully_merged_jobs, confirm_deletion=False)
 
         if display_confirmation:
             input_prompt.get("Merging process completed. Press Enter to continue... ", success=True, allow_empty=True, nl_before=True)
