@@ -31,7 +31,7 @@ def _get_encode_info_display(job: VideoSyncJob) -> str:
     """Format the display string for the audio encoding information (codec and bitrate)."""
     encoder_name: str = AudioEncoder[job.merge.audio_encode_encoder].value if job.merge.audio_encode_encoder else "Unknown Encoder"
     codec_name: str = AudioEncodeCodec[job.merge.audio_encode_codec].value if job.merge.audio_encode_codec else "Unknown Codec"
-    return f"({codec_name} - {job.merge.audio_encode_bitrate}) [{encoder_name}]"
+    return f"({codec_name}) [{encoder_name}]"
 
 def _get_sync_status_style(status: Status) -> tuple[ConsoleColor, str, str, ConsoleColor]:
     """Return display metadata for a job status."""
@@ -178,9 +178,6 @@ def _show_yaml_like_theme(queued_jobs: JobQueueContents, is_main_queue: bool = T
         
         if isinstance(job, AudioSyncJob):
             print(f"{cu.fore.LIGHTBLACK_EX}  subtitle_file: {cu.fore.LIGHTCYAN_EX}{job.sub_filepath}")
-
-
-    
 
         if is_main_queue:
             if isinstance(job, VideoSyncJob):

@@ -15,6 +15,8 @@ class AudioStream(BaseStream):
     channel_layout: str
     selected: bool = False
     encoded: bool = False
+    encode_path: str | None = None
+    encode_bitrate: str | None = None
 
 @dataclass
 class SubtitleStream(BaseStream):

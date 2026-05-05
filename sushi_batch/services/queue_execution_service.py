@@ -67,7 +67,7 @@ class QueueExecutionService:
         return True
 
     @classmethod
-    def _encode_audio_before_merge(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_path: str | None = None) -> list[tuple[int, str]]:
+    def _encode_audio_before_merge(cls, job: VideoSyncJob, spinner: Yaspin | None = None, log_path: str | None = None) -> None:
         """Encode audio before merge if configured and needed. Returns encoded audio paths."""
         selected_codec: AudioEncodeCodec = s.config.merge_workflow["encode_codec"]
         selected_encoder: AudioEncoder = s.config.merge_workflow["encode_codec_settings"][selected_codec.name]["encoder"]
@@ -87,13 +87,11 @@ class QueueExecutionService:
         tracks_to_encode: list[AudioStream] = [
             stream
             for stream in stream_list
-            if not stream.encoded
-            and FFmpeg.is_audio_encode_needed(stream, spinner=spinner, log_prefix=log_prefix, log_path=log_path)
+            if  FFmpeg.is_audio_encode_needed(stream, spinner=spinner, log_prefix=log_prefix, log_path=log_path)
         ]
         if not tracks_to_encode:
-            return []
+            return
 
-        encoded_streams: list[tuple[int, str]] = []
         use_fallback: bool = False
         for stream in tracks_to_encode:
             match selected_encoder:
@@ -111,8 +109,6 @@ class QueueExecutionService:
             if not output_path:
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Audio track could not be encoded. Merging original audio track instead.", spinner)
                 continue
-            encoded_streams.append((stream.id, output_path))
-        return encoded_streams
 
     @classmethod
     def _run_merge(cls, job: VideoSyncJob, do_resample: bool = False, do_encode_audio: bool = False, parent_queue: JobQueue | None = None) -> None:
@@ -123,12 +119,11 @@ class QueueExecutionService:
                 if s.config.general["save_merge_logs"]
                 else None
             )
-            encoded_audio_streams: list[tuple[int, str]] = cls._encode_audio_before_merge(job, spinner=sp, log_path=log_path) if do_encode_audio else []
+            cls._encode_audio_before_merge(job, spinner=sp, log_path=log_path) if do_encode_audio else []
             use_resampled_sub: bool = cls._resample_before_merge(job, spinner=sp, log_path=log_path) if do_resample else False
             MKVMerge.run(
                 job,
                 use_resampled_sub=use_resampled_sub,
-                encoded_audio_streams=encoded_audio_streams,
                 spinner=sp,
                 log_prefix=f"[Job {job.id} - MKVMerge]",
                 log_path=log_path,

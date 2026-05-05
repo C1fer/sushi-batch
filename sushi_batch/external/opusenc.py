@@ -102,10 +102,12 @@ class XiphOpusEncoder:
             cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Track {track_info} successfully encoded to {out_info}.", spinner)
 
             stream.encoded = True
+            stream.encode_path = output_path
+            stream.encode_bitrate = bitrate_display
+
             job.merge.audio_encode_done = True
             job.merge.audio_encode_codec = AudioEncodeCodec.OPUS.name
             job.merge.audio_encode_encoder = AudioEncoder.XIPH_OPUSENC.name
-            job.merge.audio_encode_bitrate = bitrate_display
             return output_path
         except Exception as e:
             _message: str = f"An error occurred while encoding audio track {track_info}: {e}"

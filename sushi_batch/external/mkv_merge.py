@@ -65,14 +65,13 @@ class MKVMerge:
         ]
     
     @classmethod
-    def _add_dst_audio_tracks(cls, args: list[str], job: VideoSyncJob, encoded_audio_streams: list[tuple[int, str]] = []) -> None:
+    def _add_dst_audio_tracks(cls, args: list[str], job: VideoSyncJob) -> None:
         """Add tracks to include in the merged file."""
         if s.config.merge_dst_file["copy_only_selected_sync_audio_track"]:
             sync_target_stream: AudioStream = job.dst_streams.get_selected_audio_stream()
-            if sync_target_stream.encoded:
-                encode_path: str = encoded_audio_streams[0][1]
+            if sync_target_stream.encoded and sync_target_stream.encode_path:
                 args.extend([
-                    *cls._get_encoded_audio_track_args(sync_target_stream, encode_path),
+                    *cls._get_encoded_audio_track_args(sync_target_stream, sync_target_stream.encode_path),
                     "--no-audio", # Discard all original audio tracks from dst file since we're adding the encoded track as a new source
                 ])
             else:
@@ -80,9 +79,8 @@ class MKVMerge:
         else:
             streams_to_copy: list[str] = []
             for stream in job.dst_streams.audio:
-                if stream.encoded:
-                    encode_path: str = next((path for id, path in encoded_audio_streams if id == stream.id))
-                    args.extend(cls._get_encoded_audio_track_args(stream, encode_path))
+                if stream.encoded and stream.encode_path:
+                    args.extend(cls._get_encoded_audio_track_args(stream, stream.encode_path))
                 else: 
                     streams_to_copy.append(str(stream.id))
             if streams_to_copy:
@@ -139,12 +137,12 @@ class MKVMerge:
         ])
 
     @classmethod
-    def _get_merge_args(cls, job: VideoSyncJob, use_resampled_sub: bool = False, encoded_audio_streams: list[tuple[int, str]] = []) -> list[str]:
+    def _get_merge_args(cls, job: VideoSyncJob, use_resampled_sub: bool = False) -> list[str]:
         output_file: str = MKVMerge._get_out_filepath(job.dst_filepath)
         args: list[str] = ["mkvmerge", "--output", output_file]
 
         cls._add_source_file_args(args, job.src_filepath)
-        cls._add_dst_audio_tracks(args, job, encoded_audio_streams)
+        cls._add_dst_audio_tracks(args, job)
         cls._add_destination_file_args(args, job.dst_filepath)
         cls._add_subtitle_args(args, job, use_resampled_sub)
         return args
@@ -161,14 +159,13 @@ class MKVMerge:
         cls,
         job: VideoSyncJob,
         use_resampled_sub: bool = False,
-        encoded_audio_streams: list[tuple[int, str]] = [],
         spinner: Yaspin | None = None,
         log_prefix="[MKVMerge]",
         log_path: str | None = None,
     ) -> None:
         """Run MKVMerge and handle output logging. log_path can be provided to skip automatic log file creation."""
         try:     
-            args: list[str] = cls._get_merge_args(job, use_resampled_sub, encoded_audio_streams)
+            args: list[str] = cls._get_merge_args(job, use_resampled_sub)
             output_file: str = str(Path(args[2]).resolve())
 
             file_display = f"{cu.fore.LIGHTMAGENTA_EX}{output_file}{cu.Style.RESET_ALL}"
@@ -191,7 +188,7 @@ class MKVMerge:
             stdout, _ = mkv_merge.communicate()
 
             if log_path:
-                args_log: str = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(args))}\n\n" + stdout
+                args_log: str = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(args))}\n\n"
                 cls._try_save_log_content(content=args_log + stdout, log_path=log_path, section_name=cls.log_section_name)
 
             match (mkv_merge.returncode):

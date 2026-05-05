@@ -13,7 +13,6 @@ class JobMerge:
     audio_encode_done: bool = False
     audio_encode_codec: str | None = None
     audio_encode_encoder: str | None = None
-    audio_encode_bitrate: str | None = None
 
 
 @dataclass

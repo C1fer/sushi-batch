@@ -1,4 +1,5 @@
 import subprocess
+from pathlib import Path
 
 from yaspin.core import Yaspin
 
@@ -71,7 +72,7 @@ class FFmpeg:
         settings_encoder: AudioEncoder,
         log_prefix: str,
     ) -> tuple[list[str], str]:
-        ffmpeg_codec_params: dict[str, str] = LOSSY_AUDIO_CODEC_PARAMS.get(settings_codec, {})
+        ffmpeg_codec_params: dict[str, str] = dict(LOSSY_AUDIO_CODEC_PARAMS.get(settings_codec, {}))
         if not ffmpeg_codec_params:
             raise ValueError(f"Unsupported audio codec selected for encoding: {settings_codec.name}")
 
@@ -94,6 +95,9 @@ class FFmpeg:
             raise ValueError(f"No FFmpeg library mapping for encoder: {settings_encoder.name}")
         if not selected_bitrate:
             raise ValueError(f"No bitrate configured for {settings_codec.name} / layout {layout_enum.name}")
+
+        if settings_codec == AudioEncodeCodec.OPUS and layout_enum in (AudioChannelLayout.SURROUND_5_1, AudioChannelLayout.SURROUND_7_1):
+            ffmpeg_codec_params.update({"-mapping_family": "1"})
 
         ffmpeg_codec_params.update({LIB_KEY: encoder_lib, BITRATE_KEY: selected_bitrate})
 
@@ -186,9 +190,9 @@ class FFmpeg:
             )
             _, stderr = ffmpeg_encode.communicate()
 
-            ffmpeg_log: str = cls.get_clean_audio_encode_log(stderr)
+            # ffmpeg_log: str = cls.get_clean_audio_encode_log(stderr)
             args_log = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(args))}\n\n"
-            cls._try_save_log_content(log_path, args_log + ffmpeg_log)
+            cls._try_save_log_content(log_path, args_log + stderr)
 
             if ffmpeg_encode.returncode != 0:
                 return None
@@ -196,9 +200,11 @@ class FFmpeg:
             cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Track {track_info} successfully encoded to {out_info}.", spinner)
            
             stream.encoded = True
+            stream.encode_path = output_path
+            stream.encode_bitrate = bitrate_display
+
             job.merge.audio_encode_done = True
             job.merge.audio_encode_codec = settings_codec.name
-            job.merge.audio_encode_bitrate = bitrate_display
             job.merge.audio_encode_encoder = selected_encoder.name
            
             return output_path
@@ -218,6 +224,12 @@ class FFmpeg:
     ) -> bool:
         """Determines if audio encoding is needed based on the selected codec and source audio format."""
         try:
+            if stream.encoded and stream.encode_path and Path(stream.encode_path).is_file():
+                _message = f"Encoding not needed. Audio track {stream.display_label} is already encoded at {stream.encode_path}."
+                cu.try_print_spinner_message(f"{cu.fore.LIGHTBLACK_EX}{log_prefix} {_message}", spinner)
+                cls._try_save_log_content(log_path, _message, is_internal=True)
+                return False
+
             if not stream.codec:
                 _message = f"Destination audio codec is unknown. Skipping encode for track {stream.display_label}."
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} {_message}", spinner)
