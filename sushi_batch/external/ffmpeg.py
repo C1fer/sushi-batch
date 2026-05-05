@@ -276,14 +276,14 @@ class FFmpeg:
             return False
     
     @staticmethod
-    def get_pcm_pipe_args(job: VideoSyncJob) -> list[str]:
+    def get_pcm_pipe_args(input_filepath: str, stream_id: int) -> list[str]:
         """Constructs ffmpeg arguments for piping the selected audio track in pcm format to stdout"""
         return [
             'ffmpeg',
             "-hide_banner",
             "-v", "error",
-            '-i', job.dst_filepath,
-            '-map', f'0:{job.dst_streams.get_selected_audio_stream().id}',
+            '-i', input_filepath,
+            '-map', f'0:{stream_id}',
             "-f", "wav",  # Output format for piping (uncompressed PCM)
             "-" # Pipe to stdout
         ]
