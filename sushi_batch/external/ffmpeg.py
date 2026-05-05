@@ -20,11 +20,10 @@ LOSSY_AUDIO_CODEC_PARAMS: dict[AudioEncodeCodec, dict[str, str]] = {
         LIB_KEY: "",
         BITRATE_KEY: "",
         "-vbr": "on",
-        "-af": "asetpts=N/SR/TB", # Ensure proper timestamp handling, soxr: high quality resampling to opus standard freq. rate (48kHz)
+        "-af": "asetpts=N/SR/TB", # Ensure proper timestamp handling
         "-compression_level": "10",
         "-application": "audio",
         "-frame_duration": "20",
-        "-map_chapters": "-1", # Exclude chapters to avoid issues when merging back with mkvmerge
     },
     AudioEncodeCodec.AAC: {
         LIB_KEY: "",
@@ -63,8 +62,17 @@ class FFmpeg:
         if s.config.general["save_merge_logs"] and log_path:
             _section_name: str = section_name or cls.log_section_name
             ExecutionLogger.save_log_output(log_path, content, section_name= _section_name, is_internal=is_internal)
-
     
+    @classmethod
+    def _apply_libopus_surround_correction(cls, ffmpeg_codec_params: dict[str, str], layout_enum: AudioChannelLayout) -> None:
+        """Normalizes surround audio layout for libopus encoding."""
+        ffmpeg_codec_params["-mapping_family"] = "1"
+        desired_layout = "5.1" if layout_enum == AudioChannelLayout.SURROUND_5_1 else "7.1"
+        layout_filter = f"aformat=channel_layouts={desired_layout}"
+        
+        existing_filter = ffmpeg_codec_params.get("-af")
+        ffmpeg_codec_params["-af"] = f"{existing_filter},{layout_filter}" if existing_filter else layout_filter
+
     @classmethod
     def _get_codec_params(
         cls,
@@ -73,6 +81,7 @@ class FFmpeg:
         settings_encoder: AudioEncoder,
         log_prefix: str,
     ) -> tuple[list[str], str]:
+        """Constructs ffmpeg parameters for encoding audio with the selected codec."""
         ffmpeg_codec_params: dict[str, str] = dict(LOSSY_AUDIO_CODEC_PARAMS.get(settings_codec, {}))
         if not ffmpeg_codec_params:
             raise ValueError(f"Unsupported audio codec selected for encoding: {settings_codec.name}")
@@ -97,8 +106,8 @@ class FFmpeg:
         if not selected_bitrate:
             raise ValueError(f"No bitrate configured for {settings_codec.name} / layout {layout_enum.name}")
 
-        if settings_codec == AudioEncodeCodec.OPUS and layout_enum in (AudioChannelLayout.SURROUND_5_1, AudioChannelLayout.SURROUND_7_1):
-            ffmpeg_codec_params.update({"-mapping_family": "1"})
+        if settings_codec == AudioEncodeCodec.OPUS and layout_enum in { AudioChannelLayout.SURROUND_5_1,AudioChannelLayout.SURROUND_7_1 }:
+          cls._apply_libopus_surround_correction(ffmpeg_codec_params, layout_enum)
 
         ffmpeg_codec_params.update({LIB_KEY: encoder_lib, BITRATE_KEY: selected_bitrate})
 
