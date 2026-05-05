@@ -80,21 +80,19 @@ def clean_generated_files(job_list: list[AudioSyncJob | VideoSyncJob]) -> None:
             if job.sync.status is not Status.COMPLETED: 
                 continue
             
-            suffixes: list[str] = []
+            paths: list[str] = []
             if isinstance(job, AudioSyncJob):
-                suffixes.append(f".sushi{Path(job.sub_filepath).suffix}")
+                sub_file: Path = Path(job.sub_filepath)
+                paths.append(f"{job.dst_filepath}.sushi{sub_file.suffix}")
             elif isinstance(job, VideoSyncJob):
-                sub_ext = job.src_streams.get_selected_subtitle_stream().extension
-                suffixes.extend(filter(None, [
-                        f".sushi{sub_ext}",
-                        f".sushi_resampled{sub_ext}" if job.merge.resample_done else None,
-                        f"_encode.{job.merge.audio_encode_codec.lower()}" if job.merge.audio_encode_done and job.merge.audio_encode_codec else None,
-                    ]
-                ))
-
-            for suffix in suffixes:
-                generated_file = Path(f"{job.dst_filepath}{suffix}")
-                generated_file.unlink(missing_ok=True)
+                sub_ext: str = job.src_streams.get_selected_subtitle_stream().extension
+                paths.extend(filter(None, [
+                    f"{job.dst_filepath}.sushi{sub_ext}",
+                    f"{job.dst_filepath}.sushi_resampled{sub_ext}" if job.merge.resample_done else None,
+                    *[s.encode_path for s in job.dst_streams.audio if s.encoded and s.encode_path]
+                ]))
+            for path in paths:
+                    Path(path).unlink(missing_ok=True)
         cu.print_success("Generated files deleted successfully.")
     except OSError as e:
         cu.print_error(f"Error deleting generated files: {e}")
