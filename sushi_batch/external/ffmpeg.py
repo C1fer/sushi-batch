@@ -49,7 +49,7 @@ FALLBACK_ENCODERS: dict[AudioEncoder, AudioEncoder] = { AudioEncoder.XIPH_OPUSEN
 
 class FFmpeg:
     is_installed: bool = utils.is_app_installed("ffmpeg")
-    log_section_name = "Audio Encode (FFmpeg)"
+    log_section_name = "Audio Encode"
     version_info: str = ""
 
     @classmethod

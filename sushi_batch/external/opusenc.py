@@ -16,7 +16,7 @@ from .ffmpeg import FFmpeg
 
 class XiphOpusEncoder:
     is_available: bool = utils.is_app_installed("opusenc")
-    log_section_name: str = "Audio Encode (Opusenc)"
+    log_section_name: str = "Audio Encode"
 
     @classmethod
     def encode(
