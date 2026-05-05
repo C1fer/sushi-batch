@@ -13,8 +13,9 @@ def show_help_screen() -> None:
 
         f"\n{cu.fore.YELLOW}Main Features{cu.style_reset}",
         "- Sync subtitle timing between different releases of the same media (e.g., WEB-DL to Blu-Ray) without the need for manual adjustments. Ideal for anime fansub releases but can be used for any media with existing subtitles.",
-        "- For video sync jobs, you can merge the synced subtitles back into the target video file after syncing (requires MKVMerge).",
-        "- Video sync jobs also allow for resampling of the synced subtitles to match the resolution of the target video (requires Aegisub-CLI).",
+        "- [Video Sync Jobs] Merge the synced subtitles back into the target video file after syncing (requires MKVMerge).",
+        "- [Video Sync Jobs] Resample synced subtitles to match the resolution of the target video (requires Aegisub-CLI).",
+        "- [Video Sync Jobs] Encode lossless audio tracks from target file to a lossy format (e.g., AAC, OPUS) during merge.",
 
         f"\n{cu.fore.YELLOW}How to Use{cu.style_reset}",
         "1. Create a new sync job by selecting the source and target files or directories.",
@@ -36,9 +37,9 @@ def show_help_screen() -> None:
         "- Data and logs for all enabled operations are stored in the 'SushiBatchTool' directory inside your Documents folder.",
 
         f"\n{cu.fore.YELLOW}Download Links for Optional Dependencies{cu.style_reset}",
-        f"- MKVMerge (for video merging): {cu.fore.BLUE}https://mkvtoolnix.download/downloads.html{cu.style_reset}",
-        f"- Aegisub-CLI (for subtitle resampling): {cu.fore.BLUE}https://github.com/Myaamori/aegisub-cli{cu.style_reset}",
-        f"- Opus-tools (alternative to FFmpeg for Opus encoding): {cu.fore.BLUE}https://www.videohelp.com/software/OpusTools{cu.style_reset}",
+        f"- MKVMerge (for video merging): {cu.fore.LIGHTBLUE_EX}https://mkvtoolnix.download/downloads.html{cu.style_reset}",
+        f"- Aegisub-CLI (for subtitle resampling): {cu.fore.LIGHTBLUE_EX}https://github.com/Myaamori/aegisub-cli{cu.style_reset}",
+        f"- Opus-tools (alternative to FFmpeg for Opus encoding): {cu.fore.LIGHTBLUE_EX}https://www.videohelp.com/software/OpusTools{cu.style_reset}",
     ]
     print("\n".join(help_lines))
 
