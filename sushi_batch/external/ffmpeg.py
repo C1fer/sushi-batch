@@ -175,7 +175,7 @@ class FFmpeg:
         log_version_info: bool = True,
     ) -> str | None:
         """Encodes audio with the selected codec option and saves to *_encode.<ext>."""
-        track_info: str = f"ID {stream.id}: {stream.title} ({stream.channel_layout})" if not stream.title.isspace() else f"ID {stream.id} ({stream.channel_layout})"
+        track_info: str = f"ID {stream.id}: {stream.title} ({stream.channel_layout})" if not stream.title else f"ID {stream.id} ({stream.channel_layout})"
         try:
             settings_codec: AudioEncodeCodec = s.config.merge_workflow["encode_codec"]
             selected_encoder: AudioEncoder = s.config.merge_workflow["encode_codec_settings"][settings_codec.name]["encoder"]

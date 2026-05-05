@@ -1,4 +1,3 @@
-from typing import Sequence
 import subprocess
 from pathlib import Path
 
@@ -213,6 +212,8 @@ class MKVMerge:
                         spinner.fail("❌")
                         spinner.write(f"{cu.fore.LIGHTRED_EX}{error[0]}\n")
         except Exception as e:
+            if spinner:
+                spinner.fail("❌")
             _message: str = f"Error generating merged file: {e}"
             cls._try_save_log_content(content=_message, log_path=log_path, section_name=cls.log_section_name)
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)
