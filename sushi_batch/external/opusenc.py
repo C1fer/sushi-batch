@@ -9,6 +9,7 @@ from ..models.job.video_sync_job import VideoSyncJob
 from ..models.stream import AudioStream
 from ..utils import console_utils as cu
 from ..utils import utils
+from ..utils.constants import FFPROBE_CHANNEL_LAYOUT_MAP
 from .ffmpeg import FFmpeg
 
 
@@ -32,9 +33,14 @@ class XiphOpusEncoder:
         log_path: str | None = None,
     ) -> str | None:
         """Encodes audio with opusenc using the codec settings. Pipes decoded audio from FFmpeg to opusenc and saves to *_encode.opus."""
-        track_info: str = f"ID {stream.id}: {stream.title}" if not stream.title.isspace() else f"ID {stream.id}"
+        track_info: str = f"ID {stream.id}: {stream.title} ({stream.channel_layout})" if not stream.title.isspace() else f"ID {stream.id} ({stream.channel_layout})"
         try:
-            layout_bitrate: str = s.config.merge_workflow["encode_codec_settings"][AudioEncodeCodec.OPUS.name]["bitrates"][AudioChannelLayout.STEREO.name]
+            layout_enum: AudioChannelLayout | None = next((layout for layout in FFPROBE_CHANNEL_LAYOUT_MAP.keys() if stream.channel_layout in FFPROBE_CHANNEL_LAYOUT_MAP[layout]), None)
+            if not layout_enum:
+                cu.print_warning(f"{log_prefix} Unknown or unsupported channel layout '{stream.channel_layout}'. Defaulting to stereo.", nl_before=False, wait=False)
+                layout_enum = AudioChannelLayout.STEREO
+            layout_bitrate: str = s.config.merge_workflow["encode_codec_settings"][AudioEncodeCodec.OPUS.name]["bitrates"][layout_enum.name]
+            
             output_path: str = f"{job.dst_filepath}_track{stream.id}_encode.opus"
             
             encode_args: list[str] =  [

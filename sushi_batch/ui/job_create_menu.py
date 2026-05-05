@@ -40,8 +40,8 @@ def _handle_option_select(task: Task, file_mode: FileSelectionMode) -> bool:
         src_files, dst_files, sub_files = file_utils.select_files(task)
 
     if JobCreationService.validate_files(src_files, dst_files, sub_files, task):
-        input_prompt.get(f"Found {len(src_files)} files. Press Enter to review pairings...", success=True, nl_before=True, allow_empty=True)
         if len(src_files) > 1:
+            input_prompt.get(f"Found {len(src_files)} files. Press Enter to review pairings... ", success=True, nl_before=True, allow_empty=True)
             pairings: tuple[list[str], list[str], list[str]] | None = show_file_pairings_review_dialog(src_files, dst_files, sub_files)
             if pairings is None:
                 return False

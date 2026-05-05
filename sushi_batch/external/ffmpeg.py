@@ -9,6 +9,7 @@ from ..models.job.video_sync_job import VideoSyncJob
 from ..models.stream import AudioStream
 from ..utils import console_utils as cu
 from ..utils import utils
+from ..utils.constants import FFPROBE_CHANNEL_LAYOUT_MAP
 
 LIB_KEY: str = "-c:a"
 BITRATE_KEY: str = "-b:a"
@@ -37,13 +38,6 @@ LOSSY_AUDIO_CODEC_PARAMS: dict[AudioEncodeCodec, dict[str, str]] = {
 }
 
 LOSSLESS_AUDIO_CODECS: set[str] = {"flac", "pcm", "wav"}
-
-PROBE_CHANNEL_LAYOUT_MAP: dict[str, AudioChannelLayout] = {
-    "mono": AudioChannelLayout.MONO,
-    "stereo": AudioChannelLayout.STEREO,
-    "5.1": AudioChannelLayout.SURROUND_5_1,
-    "7.1": AudioChannelLayout.SURROUND_7_1,
-}
 
 ENCODER_LIB_MAP: dict[AudioEncoder, str]  = {
     AudioEncoder.AAC_FFMPEG: "aac",
@@ -82,7 +76,14 @@ class FFmpeg:
             raise ValueError(f"Unsupported audio codec selected for encoding: {settings_codec.name}")
 
         track_layout: str = stream.channel_layout
-        layout_enum: AudioChannelLayout | None = PROBE_CHANNEL_LAYOUT_MAP.get(track_layout, None)
+        layout_enum: AudioChannelLayout | None = next(
+            (
+                layout
+                for layout in FFPROBE_CHANNEL_LAYOUT_MAP.keys()
+                if track_layout in FFPROBE_CHANNEL_LAYOUT_MAP[layout]
+            ),
+            None,
+        )
         if not layout_enum:
             cu.print_warning(f"{log_prefix} Unknown or unsupported channel layout '{track_layout}'. Defaulting to stereo.", nl_before=False, wait=False)
             layout_enum = AudioChannelLayout.STEREO
@@ -149,7 +150,7 @@ class FFmpeg:
         log_path: str | None = None,
     ) -> str | None:
         """Encodes audio with the selected codec option and saves to *_encode.<ext>."""
-        track_info: str = f"ID {stream.id}: {stream.title}" if not stream.title.isspace() else f"ID {stream.id}"
+        track_info: str = f"ID {stream.id}: {stream.title} ({stream.channel_layout})" if not stream.title.isspace() else f"ID {stream.id} ({stream.channel_layout})"
         try:
             settings_codec: AudioEncodeCodec = s.config.merge_workflow["encode_codec"]
             selected_encoder: AudioEncoder = s.config.merge_workflow["encode_codec_settings"][settings_codec.name]["encoder"]
