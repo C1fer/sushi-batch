@@ -41,9 +41,9 @@ class SubResampler:
             args: list[str] = cls._get_args(job)
 
             if spinner:
-                spinner.text = f"{log_prefix} Resampling subtitle file"
+                spinner.text = f"{log_prefix} Resampling synced subtitle"
             else:
-                cu.print_warning(f"{log_prefix} Resampling subtitle file", nl_before=False, wait=False)
+                cu.print_warning(f"{log_prefix} Resampling synced subtitle", nl_before=False, wait=False)
 
             aegisub_resample = subprocess.Popen(
                 args=args,
@@ -60,12 +60,12 @@ class SubResampler:
                
             if aegisub_resample.returncode == 0:
                 job.merge.resample_done = True
-                cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Resampling completed successfully.", spinner)
+                cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Synced subtitle resampled successfully.", spinner)
                 return True
             return False
             
         except Exception as e:
-            _message: str = f"Error resampling subtitle file: {e}"
+            _message: str = f"Error resampling synced subtitle: {e}"
             cls._try_save_log_content(content=_message, log_path=job.merge.log_path, section_name=cls.log_section_name)
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)
             return False
@@ -121,12 +121,12 @@ class SubResampler:
                 return False
             
             if video_resolution == script_resolution:
-                _message = "Resampling not needed. Script resolution matches video resolution."
+                _message = "Resample not needed. Script resolution matches video resolution."
                 cls._try_save_log_content(content=_message, log_path=job.merge.log_path, is_internal=True)
                 cu.try_print_spinner_message(f"{cu.fore.LIGHTBLACK_EX}{log_prefix} {_message}", spinner)
                 return False
 
-            cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Resampling needed. Script resolution {script_resolution} does not match video resolution {video_resolution}.", spinner)
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Resample needed. Script resolution {script_resolution} does not match video resolution {video_resolution}.", spinner)
             return True
         except Exception as e:
             _message = f"An error occurred while determining if subtitle resampling is needed: {e}"
