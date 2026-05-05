@@ -17,7 +17,7 @@ class MKVMerge:
 
     @classmethod
     def _try_save_log_content(cls, content: str, log_path: str | None = None, section_name: str | None = None, is_internal: bool = False) -> None:
-        if s.config.general["save_merge_logs"]:
+        if s.config.general["save_merge_logs"] and log_path:
             _section_name: str = section_name or cls.log_section_name
             ExecutionLogger.save_log_output(log_path, content, section_name =_section_name, is_internal=is_internal)
     
@@ -160,7 +160,6 @@ class MKVMerge:
         use_resampled_sub: bool = False,
         spinner: Yaspin | None = None,
         log_prefix="[MKVMerge]",
-        log_path: str | None = None,
     ) -> None:
         """Run MKVMerge and handle output logging. log_path can be provided to skip automatic log file creation."""
         try:     
@@ -186,9 +185,9 @@ class MKVMerge:
 
             stdout, _ = mkv_merge.communicate()
 
-            if log_path:
+            if job.merge.log_path:
                 args_log: str = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(args))}\n\n"
-                cls._try_save_log_content(content=args_log + stdout, log_path=log_path, section_name=cls.log_section_name)
+                cls._try_save_log_content(content=args_log + stdout, log_path=job.merge.log_path, section_name=cls.log_section_name)
 
             match (mkv_merge.returncode):
                 case 0:
@@ -203,7 +202,7 @@ class MKVMerge:
                     job.merge.merged_filepath = output_file
                     job.merge.done = True
                     job.merge.has_warnings = True
-                    if not s.config.general["save_merge_logs"]:
+                    if not job.merge.log_path:
                         cls._show_warnings(stdout, log_prefix, spinner)
                 case 2:
                     lines: list[str] = stdout.splitlines()
@@ -215,5 +214,5 @@ class MKVMerge:
             if spinner:
                 spinner.fail("❌")
             _message: str = f"Error generating merged file: {e}"
-            cls._try_save_log_content(content=_message, log_path=log_path, section_name=cls.log_section_name)
+            cls._try_save_log_content(content=_message, log_path=job.merge.log_path, section_name=cls.log_section_name)
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)

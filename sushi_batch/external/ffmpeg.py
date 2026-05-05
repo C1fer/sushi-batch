@@ -221,8 +221,6 @@ class FFmpeg:
             if ffmpeg_encode.returncode != 0:
                 return None
 
-            cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Track {track_info} successfully encoded to {out_info}.", spinner)
-           
             stream.encoded = True
             stream.encode_path = output_path
             stream.encode_bitrate = bitrate_display
@@ -231,6 +229,7 @@ class FFmpeg:
             job.merge.audio_encode_codec = settings_codec.name
             job.merge.audio_encode_encoder = selected_encoder.name
            
+            cu.try_print_spinner_message(f"{cu.fore.LIGHTGREEN_EX}{log_prefix} Track {track_info} successfully encoded to {out_info}.", spinner)
             return output_path
         except Exception as e:
             _message: str = f"An error occurred while encoding audio track {track_info}: {e}"
