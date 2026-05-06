@@ -15,7 +15,7 @@ def show_help_screen() -> None:
         "- Sync subtitle timing between different releases of the same media (e.g., WEB-DL to Blu-Ray) without the need for manual adjustments. Ideal for anime fansub releases but can be used for any media with existing subtitles.",
         "- [Video Sync Jobs] Merge the synced subtitles back into the target video file after syncing (requires MKVMerge).",
         "- [Video Sync Jobs] Resample synced subtitles to match the resolution of the target video (requires Aegisub-CLI).",
-        "- [Video Sync Jobs] Encode lossless audio tracks from target file to a lossy format (e.g., AAC, OPUS) during merge.",
+        "- [Video Sync Jobs] Encode lossless audio tracks (e.g., FLAC, WAV) from target file to a lossy format (e.g., AAC, OPUS) during merge.",
 
         f"\n{cu.fore.YELLOW}How to Use{cu.style_reset}",
         "1. Create a new sync job by selecting the source and target files or directories.",
