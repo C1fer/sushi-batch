@@ -88,7 +88,7 @@ def clean_generated_files(job_list: list[AudioSyncJob | VideoSyncJob]) -> None:
                 sub_ext: str = job.src_streams.get_selected_subtitle_stream().extension
                 paths.extend(filter(None, [
                     f"{job.dst_filepath}.sushi{sub_ext}",
-                    f"{job.dst_filepath}.sushi_resampled{sub_ext}" if job.merge.resample_done else None,
+                    job.merge.resampled_filepath if job.merge.resample_done else None,
                     *[s.encode_path for s in job.dst_streams.audio if s.encoded and s.encode_path]
                 ]))
             for path in paths:

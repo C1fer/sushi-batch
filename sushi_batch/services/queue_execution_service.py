@@ -54,21 +54,22 @@ class QueueExecutionService:
             cu.print_error(f"Error running jobs: {e}")
 
     @classmethod
-    def _resample_before_merge(cls, job: VideoSyncJob, spinner: Yaspin | None = None) -> bool:
-        """Resample subtitle file before merging, when needed."""
+    def _resample_before_merge(cls, job: VideoSyncJob, parent_queue: JobQueue, spinner: Yaspin | None = None) -> bool:
+        """Resample synced subtitle before merging if enabled and needed."""
         log_prefix = f"[Job {job.id} - Sub Resampler]"
         if not SubResampler.is_resample_needed(job, spinner=spinner, log_prefix=log_prefix):
             return False
 
-        resample_done = SubResampler.run(job, spinner=spinner, log_prefix=log_prefix)
+        resample_done: bool = SubResampler.run(job, spinner=spinner, log_prefix=log_prefix)
         if not resample_done:
             cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{log_prefix} Subtitle could not be resampled. Merging synced subtitle instead.", spinner)
             return False
+        parent_queue.save()
         return True
 
     @classmethod
     def _encode_audio_before_merge(cls, job: VideoSyncJob, parent_queue: JobQueue, spinner: Yaspin | None = None) -> None:
-        """Encode audio before merge if configured and needed. Returns encoded audio paths."""
+        """Encode audio before merge if enabled and needed."""
         selected_codec: AudioEncodeCodec = s.config.merge_workflow["encode_codec"]
         selected_encoder: AudioEncoder = s.config.merge_workflow["encode_codec_settings"][selected_codec.name]["encoder"]
         is_new_encoder_for_job: bool = job.merge.audio_encode_encoder != selected_encoder.name
@@ -127,11 +128,13 @@ class QueueExecutionService:
                 else None
             )
 
-            cls._encode_audio_before_merge(job, parent_queue=parent_queue, spinner=sp) if do_encode_audio else []
-            use_resampled_sub: bool = cls._resample_before_merge(job, spinner=sp) if do_resample else False
+            if do_encode_audio:
+                cls._encode_audio_before_merge(job, parent_queue=parent_queue, spinner=sp)
+            if do_resample:
+                cls._resample_before_merge(job, parent_queue=parent_queue, spinner=sp) 
+            
             MKVMerge.run(
                 job,
-                use_resampled_sub=use_resampled_sub,
                 spinner=sp,
                 log_prefix=f"[Job {job.id} - MKVMerge]",
             )
@@ -147,13 +150,13 @@ class QueueExecutionService:
         cu.print_subheader("Merging files")
 
         do_audio_encode: bool = s.config.merge_workflow["encode_lossless_audio_before_merging"]
-        do_resample: bool = True
-        if s.config.merge_workflow["resample_subs_on_merge"] and not SubResampler.is_installed:
+        do_resample: bool = s.config.merge_workflow["resample_subs_on_merge"]
+        if do_resample and not SubResampler.is_installed:
             do_resample = False
             cu.print_error("Aegisub-CLI could not be found. Subtitle resampling will be skipped.")
-
+        
         for job in selected_jobs:
-            utils.interrupt_signal_handler(cls._run_merge)(job, parent_queue, do_resample, do_audio_encode)
+            utils.interrupt_signal_handler(cls._run_merge)(job, parent_queue, do_resample=do_resample, do_encode_audio=do_audio_encode)
             print()
 
         if s.config.merge_workflow["delete_generated_files_after_merge"]:

@@ -100,7 +100,7 @@ class MKVMerge:
         )
 
     @classmethod
-    def _add_subtitle_args(cls, args: list[str], job: VideoSyncJob, use_resampled_sub: bool) -> None:
+    def _add_subtitle_args(cls, args: list[str], job: VideoSyncJob) -> None:
         """Add subtitle specific arguments."""
         selected_subtitle_stream: SubtitleStream = job.src_streams.get_selected_subtitle_stream()
         trackname: str = (
@@ -109,10 +109,10 @@ class MKVMerge:
             else selected_subtitle_stream.title
         )
 
-        sub_suffix: str = (
-            f".sushi_resampled{selected_subtitle_stream.extension}"
-            if use_resampled_sub
-            else f".sushi{selected_subtitle_stream.extension}"
+        sub_file: str = (
+            job.merge.resampled_filepath
+            if job.merge.resample_done and job.merge.resampled_filepath
+            else f"{job.dst_filepath}.sushi{selected_subtitle_stream.extension}"
         )
 
         set_default_flag: bool = (
@@ -132,18 +132,18 @@ class MKVMerge:
             "--track-name", f"0:{trackname}",
             *(["--default-track-flag", "0:1"] if set_default_flag else []),
             *(["--forced-display-flag", "0:1"] if set_forced_flag else []),
-            f"{job.dst_filepath}{sub_suffix}"
+            sub_file
         ])
 
     @classmethod
-    def _get_merge_args(cls, job: VideoSyncJob, use_resampled_sub: bool = False) -> list[str]:
+    def _get_merge_args(cls, job: VideoSyncJob) -> list[str]:
         output_file: str = MKVMerge._get_out_filepath(job.dst_filepath)
         args: list[str] = ["mkvmerge", "--output", output_file]
 
         cls._add_source_file_args(args, job.src_filepath)
         cls._add_dst_audio_tracks(args, job)
         cls._add_destination_file_args(args, job.dst_filepath)
-        cls._add_subtitle_args(args, job, use_resampled_sub)
+        cls._add_subtitle_args(args, job)
         return args
 
     @classmethod 
@@ -157,13 +157,12 @@ class MKVMerge:
     def run(
         cls,
         job: VideoSyncJob,
-        use_resampled_sub: bool = False,
         spinner: Yaspin | None = None,
         log_prefix="[MKVMerge]",
     ) -> None:
-        """Run MKVMerge and handle output logging. log_path can be provided to skip automatic log file creation."""
+        """Run MKVMerge and handle output logging"""
         try:     
-            args: list[str] = cls._get_merge_args(job, use_resampled_sub)
+            args: list[str] = cls._get_merge_args(job)
             output_file: str = str(Path(args[2]).resolve())
 
             file_display = f"{cu.fore.LIGHTMAGENTA_EX}{output_file}{cu.Style.RESET_ALL}"

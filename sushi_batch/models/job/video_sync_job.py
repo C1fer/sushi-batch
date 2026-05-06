@@ -11,6 +11,7 @@ class JobMerge:
     log_path: str | None = None
     has_warnings: bool = False
     resample_done: bool = False
+    resampled_filepath: str | None = None
     audio_encode_done: bool = False
     audio_encode_codec: str | None = None
     audio_encode_encoder: str | None = None
