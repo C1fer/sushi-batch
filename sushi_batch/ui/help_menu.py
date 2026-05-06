@@ -35,6 +35,7 @@ def show_help_screen() -> None:
 
         f"\n{cu.fore.YELLOW}App Information{cu.style_reset}",
         "- Data and logs for all enabled operations are stored in the 'SushiBatchTool' directory inside your Documents folder.",
+        f"- Find out what's new in the latest version at {cu.fore.LIGHTBLUE_EX}https://github.com/C1fer/sushi-batch/releases/latest{cu.style_reset}",
 
         f"\n{cu.fore.YELLOW}Download Links for Optional Dependencies{cu.style_reset}",
         f"- MKVMerge (for video merging): {cu.fore.LIGHTBLUE_EX}https://mkvtoolnix.download/downloads.html{cu.style_reset}",
