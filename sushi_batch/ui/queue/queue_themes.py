@@ -144,7 +144,7 @@ def _show_card_theme(queued_jobs: JobQueueContents, is_main_queue: bool = True) 
                         "children": [
                             ("Generated File", f"{merged_child_color}{job.merge.merged_filepath}"),
                             ("Warning", MERGE_WARNING_MESSAGE) if job.merge.has_warnings else None,
-                            ("Resampled", f"{cu.fore.GREEN}Yes") if job.merge.resample_done else None,
+                            ("Resampled Sub", f"{cu.fore.GREEN}Yes") if job.merge.resample_done else None,
                             ("Encoded Audio", f"{cu.fore.GREEN}Yes {_get_encode_info_display(job)}") if job.merge.audio_encode_done else None, 
                         ] if job.merge.done and job.merge.merged_filepath and is_main_queue else [],
                     }
@@ -205,7 +205,7 @@ def _show_yaml_like_theme(queued_jobs: JobQueueContents, is_main_queue: bool = T
                         if job.merge.merged_filepath:
                             print(f"{cu.fore.LIGHTBLACK_EX}  merged_file: {merge_child_color}{job.merge.merged_filepath}")
                         if job.merge.resample_done:
-                            print(f"{cu.fore.LIGHTBLACK_EX}  resampled: {cu.fore.GREEN}true")
+                            print(f"{cu.fore.LIGHTBLACK_EX}  sub_resampled: {cu.fore.GREEN}true")
                         if job.merge.audio_encode_done:
                             print(f"{cu.fore.LIGHTBLACK_EX}  audio_encoded: {cu.fore.GREEN}true {_get_encode_info_display(job)}")
                     else:
