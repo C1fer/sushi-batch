@@ -66,9 +66,9 @@ def try_print_spinner_message(message: str, spinner: Yaspin | None = None) -> No
     except Exception:
         print(message)
 
-def print_help_text(subheader: str, description: str | tuple[str, ...]) -> None:
+def print_help_text(subheader: str, description: str | tuple[str, ...], nl_after_subheader: bool = True) -> None:
     """Print help text with a subheader and description."""
-    print_subheader(subheader, nl_after=True)
+    print_subheader(subheader, nl_after=nl_after_subheader)
     if isinstance(description, tuple):
         for text in description:
             print(text)

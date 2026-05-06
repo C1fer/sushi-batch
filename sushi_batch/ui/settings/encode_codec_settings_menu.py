@@ -173,7 +173,7 @@ def _get_visible_options_rows(codec: AudioEncodeCodec) -> list[CodecSettingsRow]
     for row in _get_base_options_rows(codec):
         if row["type"] == AudioEncoder and codec == AudioEncodeCodec.OPUS:
             row["description"] = (
-                "Audio encoder to be used for Opus encoding.", 
+                "Audio encoder use for Opus encoding.", 
                 f"{cu.fore.LIGHTWHITE_EX} - libopus.{cu.style_reset} Default encoder provided by FFmpeg. Suitable for most users.{cu.style_reset}", 
                 f"{cu.fore.LIGHTWHITE_EX} - opusenc.{cu.style_reset} Official Opus encoder. Recommended for users who want to ensure maximum compatibility with the Opus specification.",
                 f"{cu.fore.LIGHTBLACK_EX}   - Requires opus-tools to be installed and added to PATH.{cu.style_reset}"
