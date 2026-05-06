@@ -1,3 +1,4 @@
+from pathlib import Path
 import subprocess
 
 from yaspin import yaspin
@@ -88,7 +89,7 @@ class Sushi:
 
     @classmethod
     def run(cls, job: AudioSyncJob | VideoSyncJob, use_advanced_args: bool = False, log_prefix: str = "[Sushi]") -> None:
-        file_display = f"{cu.fore.MAGENTA}{job.dst_filepath}{cu.Style.RESET_ALL}"
+        file_display = f"{cu.fore.MAGENTA}{Path(job.dst_filepath).name}{cu.Style.RESET_ALL}"
         title = f"{log_prefix} Syncing subtitles to {file_display}"
         with yaspin(text=title, color="cyan", timer=True, ellipsis="...") as sp:
             try: 
