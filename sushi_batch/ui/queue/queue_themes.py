@@ -31,7 +31,7 @@ def _get_encode_info_display(job: VideoSyncJob) -> str:
     """Format the display string for the audio encoding information (codec and bitrate)."""
     encoder_name: str = AudioEncoder[job.merge.audio_encode_encoder].value if job.merge.audio_encode_encoder else "Unknown Encoder"
     codec_name: str = AudioEncodeCodec[job.merge.audio_encode_codec].value if job.merge.audio_encode_codec else "Unknown Codec"
-    return f"({codec_name} - {job.merge.audio_encode_bitrate}) [{encoder_name}]"
+    return f"({codec_name}) [{encoder_name}]"
 
 def _get_sync_status_style(status: Status) -> tuple[ConsoleColor, str, str, ConsoleColor]:
     """Return display metadata for a job status."""
@@ -144,7 +144,7 @@ def _show_card_theme(queued_jobs: JobQueueContents, is_main_queue: bool = True) 
                         "children": [
                             ("Generated File", f"{merged_child_color}{job.merge.merged_filepath}"),
                             ("Warning", MERGE_WARNING_MESSAGE) if job.merge.has_warnings else None,
-                            ("Resampled", f"{cu.fore.GREEN}Yes") if job.merge.resample_done else None,
+                            ("Resampled Sub", f"{cu.fore.GREEN}Yes") if job.merge.resample_done else None,
                             ("Encoded Audio", f"{cu.fore.GREEN}Yes {_get_encode_info_display(job)}") if job.merge.audio_encode_done else None, 
                         ] if job.merge.done and job.merge.merged_filepath and is_main_queue else [],
                     }
@@ -179,9 +179,6 @@ def _show_yaml_like_theme(queued_jobs: JobQueueContents, is_main_queue: bool = T
         if isinstance(job, AudioSyncJob):
             print(f"{cu.fore.LIGHTBLACK_EX}  subtitle_file: {cu.fore.LIGHTCYAN_EX}{job.sub_filepath}")
 
-
-    
-
         if is_main_queue:
             if isinstance(job, VideoSyncJob):
                 print(f"{cu.fore.LIGHTBLACK_EX}  tracks:")
@@ -208,7 +205,7 @@ def _show_yaml_like_theme(queued_jobs: JobQueueContents, is_main_queue: bool = T
                         if job.merge.merged_filepath:
                             print(f"{cu.fore.LIGHTBLACK_EX}  merged_file: {merge_child_color}{job.merge.merged_filepath}")
                         if job.merge.resample_done:
-                            print(f"{cu.fore.LIGHTBLACK_EX}  resampled: {cu.fore.GREEN}true")
+                            print(f"{cu.fore.LIGHTBLACK_EX}  sub_resampled: {cu.fore.GREEN}true")
                         if job.merge.audio_encode_done:
                             print(f"{cu.fore.LIGHTBLACK_EX}  audio_encoded: {cu.fore.GREEN}true {_get_encode_info_display(job)}")
                     else:

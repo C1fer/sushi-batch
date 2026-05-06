@@ -14,6 +14,13 @@ class BaseStream:
 class AudioStream(BaseStream):
     channel_layout: str
     selected: bool = False
+    encoded: bool = False
+    encode_path: str | None = None
+    encode_bitrate: str | None = None
+
+    @property
+    def short_display_label(self) -> str:
+        return f"ID {self.id}: {self.title} ({self.lang}, {self.channel_layout})" if self.title else f"ID {self.id} ({self.lang}, {self.channel_layout})"
 
 @dataclass
 class SubtitleStream(BaseStream):

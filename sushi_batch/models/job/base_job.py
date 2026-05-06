@@ -8,6 +8,7 @@ class JobSync:
     status: Status = Status.PENDING
     has_warnings: bool = False
     result: str | None = None
+    log_path: str | None = None
 
     def to_dct(self) -> dict:
         return {
@@ -15,6 +16,7 @@ class JobSync:
             "status": self.status.name,
             "has_warnings": self.has_warnings,
             "result": self.result,
+            "log_path": self.log_path,
         }
 
     @classmethod
@@ -24,6 +26,7 @@ class JobSync:
             status=Status[dct["status"]],
             has_warnings=dct["has_warnings"],
             result=dct["result"],
+            log_path=dct["log_path"],
         )
 
 

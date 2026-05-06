@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Callable, Literal
 
-from ..models.enums import Task
+from ..models.enums import AudioChannelLayout, Task
 
 type SelectableOption = tuple[int, str]
 type MenuItem = tuple[int, str]
@@ -12,6 +12,45 @@ type SushiAdvancedArgKey = Literal["window", "max_window", "rewind_thresh", "smo
 
 VIDEO_TASKS: set[Task] = {Task.VIDEO_SYNC_DIR, Task.VIDEO_SYNC_FIL}
 AUDIO_TASKS: set[Task] = {Task.AUDIO_SYNC_DIR, Task.AUDIO_SYNC_FIL}
+
+# Maps ffprobe channel_layout strings (`ffmpeg -layouts`) to bitrate tiers selected in settings.
+FFPROBE_CHANNEL_LAYOUT_MAP: dict[AudioChannelLayout, set[str]] = {
+    AudioChannelLayout.MONO: {"mono"},
+    AudioChannelLayout.STEREO: {"stereo", "binaural", "downmix"},
+    AudioChannelLayout.SURROUND_5_1: {
+        "5.0",
+        "5.0(side)",
+        "5.1",
+        "5.1(side)",
+        "3.1",
+        "3.1.2",
+        "quad",
+        "quad(side)",
+        "hexagonal",
+    },
+    AudioChannelLayout.SURROUND_7_1: {
+        "6.0",
+        "6.0(front)",
+        "6.1",
+        "6.1(back)",
+        "6.1(front)",
+        "7.0",
+        "7.0(front)",
+        "7.1",
+        "7.1(wide)",
+        "7.1(wide-side)",
+        "octagonal",
+        "cube",
+        "7.1.2",
+        "7.1.4",
+        "7.2.3",
+        "9.1.4",
+        "9.1.6",
+        "hexadecagonal",
+        "22.2",
+    },
+}
+
 
 class CustomColor(StrEnum):
     ACCENT = "#56b6c2"

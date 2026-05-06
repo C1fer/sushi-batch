@@ -75,14 +75,14 @@ def _handle_run_options(toolbar_stats: StatusToolbarData, pending_count: int, us
     match run_choice:
         case 1 if confirm_prompt.get(bottom_toolbar=toolbar_stats):
             selected_jobs: JobQueueContents = [job for job in qm.main_queue.contents if job.sync.status == Status.PENDING]
-            QueueExecutionService.run_jobs(selected_jobs, use_advanced_sushi_args=use_advanced_sushi_args, parent_queue=qm.main_queue)
+            QueueExecutionService.run_jobs(selected_jobs, parent_queue=qm.main_queue, use_advanced_sushi_args=use_advanced_sushi_args)
         case 2:
             selected_jobs: JobQueueContents = qm.main_queue.select_jobs(
                 prompt_message=qm.TO_RUN_SELECTED_PROMPT,
                 filter_fn=lambda j: j.sync.status == Status.PENDING,
             )
             if selected_jobs and confirm_prompt.get("Run selected jobs?", bottom_toolbar=toolbar_stats):
-                QueueExecutionService.run_jobs(selected_jobs, use_advanced_sushi_args=use_advanced_sushi_args, parent_queue=qm.main_queue)
+                QueueExecutionService.run_jobs(selected_jobs, parent_queue=qm.main_queue, use_advanced_sushi_args=use_advanced_sushi_args)
 
 def _handle_remove_options(toolbar_stats: StatusToolbarData) -> None:
     """Handle 'Remove Jobs' submenu options."""

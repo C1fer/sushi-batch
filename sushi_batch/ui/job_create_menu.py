@@ -5,6 +5,8 @@ from ..models.job.audio_sync_job import AudioSyncJob
 from ..models.job.video_sync_job import VideoSyncJob
 from ..models.job_queue import JobQueue, JobQueueContents
 from ..services.job_creation_service import JobCreationService
+from ..ui.pairings_review_dialog import show_file_pairings_review_dialog
+from ..ui.prompts import input_prompt
 from ..utils import console_utils as cu
 from ..utils import file_utils
 from ..utils.constants import AUDIO_TASKS, MenuItem
@@ -38,6 +40,15 @@ def _handle_option_select(task: Task, file_mode: FileSelectionMode) -> bool:
         src_files, dst_files, sub_files = file_utils.select_files(task)
 
     if JobCreationService.validate_files(src_files, dst_files, sub_files, task):
+        if len(src_files) > 1:
+            input_prompt.get(f"Found {len(src_files)} files. Press Enter to review pairings... ", success=True, nl_before=True, allow_empty=True)
+            pairings: tuple[list[str], list[str], list[str]] | None = show_file_pairings_review_dialog(src_files, dst_files, sub_files)
+            if pairings is None:
+                return False
+            src_files = pairings[0]
+            dst_files = pairings[1]
+            sub_files = pairings[2]
+
         jobs: list[AudioSyncJob] | list[VideoSyncJob] = (
             JobCreationService.create_audio_sync_jobs(src_files, dst_files, sub_files, task)
             if task in AUDIO_TASKS

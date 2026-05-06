@@ -80,3 +80,8 @@ class AudioEncoder(Enum):
     EAC3_FFMPEG = "EAC-3 (FFmpeg)"
     LIBOPUS_FFMPEG = "libopus (FFmpeg)"
     XIPH_OPUSENC = "opusenc (opus-tools)"
+
+
+class TracksToEncode(Enum):
+    ALL = "All Tracks"
+    SYNC_TARGET_ONLY = "Track Used for Sync"

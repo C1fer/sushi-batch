@@ -25,7 +25,7 @@ ADVANCED_SUSHI_ARG_FIELDS: list[AdvancedSushiArgRow] = [
         "type": int,
         "allow_negative": False,
         "default": Sushi.advanced_args_mapping["window"][1],
-        "description": "Defines the secondary time window (in seconds) used to search for a matching audio sample in both directions.\nThe algorithm first searches for matches within a 1.5-second window in both directions. If no matches are found, it expands the search to this broader window."
+        "description": "Secondary time window (in seconds) used to find matching audio samples.\nThe algorithm first searches for matches within a 1.5-second window in both directions. If no matches are found, it expands the search to this broader window."
     },
     {
         "label": "Max Window (--max-window)",
@@ -33,7 +33,7 @@ ADVANCED_SUSHI_ARG_FIELDS: list[AdvancedSushiArgRow] = [
         "type": int,
         "allow_negative": False,
         "default": Sushi.advanced_args_mapping["max_window"][1],
-        "description": "Defines the largest time window (in seconds) used to search for a matching audio sample in both directions.\nIf no matches are found within the secondary window and the rewind threshold is triggered, the algorithm performs a final search using this maximum window as a fallback before giving up on finding a match for a subtitle."
+        "description": "Largest time window (in seconds) used in the search.\nIf no matches are found within the secondary window and the rewind threshold is triggered, the algorithm performs a final search using this window as a fallback before giving up on finding a match."
     },
     {
         "label": "Rewind Threshold (--rewind-thresh)",
@@ -41,7 +41,7 @@ ADVANCED_SUSHI_ARG_FIELDS: list[AdvancedSushiArgRow] = [
         "type": int,
         "allow_negative": False,
         "default": Sushi.advanced_args_mapping["rewind_thresh"][1],
-        "description": "Determines the number of broken search groups in a row that triggers the algorithm to 'rewind' to the first broken group use the defined max-window as the fallback."
+        "description": "Count of consecutive broken search groups before rewinding to the first broken group using the defined max-window as a fallback."
     },
     {
         "label": "Smooth Radius (--smooth-radius)",
@@ -49,7 +49,7 @@ ADVANCED_SUSHI_ARG_FIELDS: list[AdvancedSushiArgRow] = [
         "type": int,
         "allow_negative": False,
         "default": Sushi.advanced_args_mapping["smooth_radius"][1],
-        "description": "Defines the radius of the running median filter used for smoothing subtitle group timings."
+        "description": "Radius of the running median filter used to smooth search group timings."
     },
     {
         "label": "Max Typesetting Duration (--max-ts-duration)",
@@ -57,7 +57,7 @@ ADVANCED_SUSHI_ARG_FIELDS: list[AdvancedSushiArgRow] = [
         "type": float,
         "allow_negative": False,
         "default": Sushi.advanced_args_mapping["max_ts_duration"][1],
-        "description": "Defines the maximum duration (in seconds) of a line to be considered typesetting."
+        "description": "Maximum duration (in seconds) of a line to be considered typesetting."
     },
     {
         "label": "Max Typesetting Distance (--max-ts-distance)",
@@ -65,7 +65,7 @@ ADVANCED_SUSHI_ARG_FIELDS: list[AdvancedSushiArgRow] = [
         "type": float,
         "allow_negative": False,
         "default": Sushi.advanced_args_mapping["max_ts_distance"][1],
-        "description": "Defines the maximum distance (in seconds) between two adjacent typesetting lines to be merged."
+        "description": "Maximum distance (in seconds) between two adjacent typesetting lines to merge them"
     }
 ]
 

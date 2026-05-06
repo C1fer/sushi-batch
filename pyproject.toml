@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sushi-batch"
-version = "1.0.0"
+version = "1.1.0"
 description = "Batch Subtitle Synchronization Tool"
 readme = "README.md"
 requires-python = ">=3.13,<4.0"
@@ -26,6 +26,7 @@ dependencies = [
     "pyqt6>=6.5.2,<7",
     "prompt-toolkit>=3.0.52",
 ]
+
 
 [project.urls]
 Repository = "https://github.com/C1fer/sushi-batch"

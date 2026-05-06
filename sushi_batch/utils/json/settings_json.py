@@ -1,7 +1,7 @@
 from copy import deepcopy
 from json import JSONDecoder, JSONEncoder
 
-from ...models.enums import AudioEncodeCodec, AudioEncoder, QueueTheme
+from ...models.enums import AudioEncodeCodec, AudioEncoder, QueueTheme, TracksToEncode
 from ..utils import pop_many
 
 
@@ -12,6 +12,7 @@ class SettingsEncoder(JSONEncoder):
             dct = deepcopy(o.__dict__)
             dct["general"]["queue_theme"] = o.general["queue_theme"].name
             dct["merge_workflow"]["encode_codec"] = o.merge_workflow["encode_codec"].name
+            dct["merge_workflow"]["tracks_to_encode_before_merging"] = o.merge_workflow["tracks_to_encode_before_merging"].name
             for _, codec_settings in dct["merge_workflow"]["encode_codec_settings"].items():
                 codec_settings["encoder"] = codec_settings["encoder"].name
             return dct
@@ -101,12 +102,14 @@ class SettingsDecoder(JSONDecoder):
             dct["queue_theme"] = QueueTheme[dct["queue_theme"]]
             return dct
 
-        if dct.get("encode_codec", None):
-            dct["encode_codec"] = AudioEncodeCodec[dct["encode_codec"]]
+        if dct.get("encode_codec", None) and dct.get("tracks_to_encode_before_merging", None):
+            dct.update({
+                "encode_codec": AudioEncodeCodec[dct["encode_codec"]],
+                "tracks_to_encode_before_merging": TracksToEncode[dct["tracks_to_encode_before_merging"]]
+            })
             return dct
         
-        if dct.get("encoder", None):
+        if dct.get("encoder", None) :
             dct["encoder"] = AudioEncoder[dct["encoder"]]
             return dct
-        
         return dct

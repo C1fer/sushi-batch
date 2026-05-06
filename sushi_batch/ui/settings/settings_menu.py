@@ -1,8 +1,9 @@
-from typing import NotRequired, TypedDict
+from enum import Enum
+from typing import Iterable, NotRequired, TypedDict
 
 from prettytable import PrettyTable
 
-from ...models.enums import AudioEncodeCodec, QueueTheme, Section
+from ...models.enums import AudioEncodeCodec, QueueTheme, Section, TracksToEncode
 from ...models.settings import Settings
 from ...utils import console_utils as cu
 from ...utils import file_utils as fu
@@ -13,7 +14,7 @@ from ..settings.sushi_advanced_args_menu import configure_advanced_sushi_args
 
 GO_BACK_OPTION_LABEL: str = "Go Back"
 
-type OptionValue = bool | QueueTheme | AudioEncodeCodec | str | None
+type OptionValue = bool | QueueTheme | AudioEncodeCodec | TracksToEncode | str | None
 class SettingsRow(TypedDict):
     section: Section
     label: str
@@ -52,7 +53,7 @@ def _get_formatted_value(value: OptionValue) -> str:
             return f"{cu.Fore.GREEN}Enabled{cu.style_reset}"
         case False:
             return f"{cu.Fore.RED}Disabled{cu.style_reset}"
-        case QueueTheme() | AudioEncodeCodec():
+        case QueueTheme() | AudioEncodeCodec() | TracksToEncode():
             return f"{cu.Fore.MAGENTA}{value.value}{cu.style_reset}"
         case _:
             _color = cu.Fore.YELLOW if value else cu.Fore.LIGHTBLACK_EX
@@ -73,15 +74,15 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
         },
         {
             "section": Section.GEN,
-            "label": "Save Sushi sync logs",
+            "label": "Save Sushi Sync Logs",
             "attr": "general.save_sushi_logs",
             "value": obj.general["save_sushi_logs"],
-            "description": "Saves logs for each subtitle sync operation.",
+            "description": "Save logs for each subtitle sync operation.",
             "show": True,
         },
         {
             "section": Section.GEN,
-            "label": "Save Merge logs",
+            "label": "Save Merge Logs",
             "attr": "general.save_merge_logs",
             "value": obj.general["save_merge_logs"],
             "divider": True,
@@ -92,15 +93,15 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
         # Subtitle Sync Section
         {
             "section": Section.SYNC,
-            "label": "Use high quality resampling (better sync accuracy)",
+            "label": "Use High Quality Resampling (Improved Accuracy)",
             "attr": "sync_workflow.use_high_quality_resample",
             "value": obj.sync_workflow["use_high_quality_resample"],
-            "description": "Uses a higher quality audio resampling method that can improve sync accuracy.",
+            "description": "Use 24 kHz resampling during sync for potentially better timing accuracy. Can increase processing time.",
             "show": True,
         },
         {
             "section": Section.SYNC,
-            "label": "Allow advanced Sushi arguments",
+            "label": "Allow Advanced Sushi Arguments",
             "attr": "sync_workflow.enable_sushi_advanced_args",
             "value": obj.sync_workflow["enable_sushi_advanced_args"],
             "divider": True,
@@ -111,163 +112,171 @@ def _get_settings_rows(obj: Settings) -> list[SettingsRow]:
         # Merge - Workflow Section
         {
             "section": Section.MERGE_WRK,
-            "label": "Merge automatically on sync completion",
+            "label": "Merge Automatically on Sync Completion",
             "attr": "merge_workflow.merge_files_after_execution",
             "value": obj.merge_workflow["merge_files_after_execution"],
-            "description": "Automatically starts file merge after a sync job finishes successfully.",
+            "description": "Starts merge automatically after sync completes successfully (Requires MKVMerge).",
             "show": True,
         },
         {
             "section": Section.MERGE_WRK,
-            "label": "Encode lossless sync target audio track before merge",
+            "label": "Encode Lossless Sync Target Audio Track Before Merge",
             "attr": "merge_workflow.encode_lossless_audio_before_merging",
             "value": obj.merge_workflow["encode_lossless_audio_before_merging"],
-            "description": "Encodes the selected sync audio track from the sync target file to a configured lossy codec before merging.",
+            "description": "Re-encode selected lossless tracks to the chosen codec before merging.",
             "show": True,
+        },
+        {
+            "section": Section.MERGE_WRK,
+            "label": "Tracks to Encode Before Merging",
+            "attr": "merge_workflow.tracks_to_encode_before_merging",
+            "value": obj.merge_workflow["tracks_to_encode_before_merging"],
+            "description": "Defines which audio tracks to encode before merging when pre-merge audio encoding is enabled.",
+            "show":bool(obj.merge_workflow["encode_lossless_audio_before_merging"] and not obj.merge_dst_file["copy_only_selected_sync_audio_track"]),
         },
         {
             "section": Section.MERGE_WRK,
             "label": "Audio Encode Codec",
             "attr": "merge_workflow.encode_codec",
             "value": obj.merge_workflow["encode_codec"],
-            "description": "Selects which lossy audio codec to use when pre-merge audio encoding is enabled.",
+            "description": "Target lossy codec for re-encoding when pre-merge audio encoding is enabled. Current supported codecs are AAC, EAC-3 and Opus.",
             "show": obj.merge_workflow["encode_lossless_audio_before_merging"],
         },
         {
             "section": Section.MERGE_WRK,
-            "label": "Resample synced sub before merge",
+            "label": "Resample Synced Sub Before Merge",
             "attr": "merge_workflow.resample_subs_on_merge",
             "value": obj.merge_workflow["resample_subs_on_merge"],
-            "description": "Resamples the synced subtitle to match target video resolution before merging.",
+            "description": "Resample synced subtitle to match target video resolution before merging (Requires Aegisub-CLI).",
             "show": True,
         },
         {
             "section": Section.MERGE_WRK,
-            "label": "Delete generated audio/subtitle files after merge",
+            "label": "Delete Generated Audio/Subtitle Files After Merge",
             "attr": "merge_workflow.delete_generated_files_after_merge",
             "value": obj.merge_workflow["delete_generated_files_after_merge"],
             "divider": True,
-            "description": "Removes temporary generated subtitle/audio files after merge completes.",
+            "description": "Remove temporary generated subtitle/audio files automatically after merge completes.",
             "show": True,
         },
 
         # Merge: Source File Section
         {
             "section": Section.MERGE_SRC,
-            "label": "Copy attachments",
+            "label": "Copy Attachments",
             "attr": "merge_src_file.copy_attachments",
             "value": obj.merge_src_file["copy_attachments"],
-            "description": "Copies attachments from the source file into the merged output.",
+            "description": "Copy attachments (fonts, cover art) from the source file into the merged output.",
             "show": True,
         },
         {
             "section": Section.MERGE_SRC,
-            "label": "Copy chapters",
+            "label": "Copy Chapters",
             "attr": "merge_src_file.copy_chapters",
             "value": obj.merge_src_file["copy_chapters"],
-            "description": "Copies chapter entries from the source file into the merged output.",
+            "description": "Copy chapter entries from the source file into the merged output.",
             "show": True,
         },
         {
             "section": Section.MERGE_SRC,
-            "label": "Copy global tags",
+            "label": "Copy Global Tags",
             "attr": "merge_src_file.copy_global_tags",
             "value": obj.merge_src_file["copy_global_tags"],
-            "description": "Copies container-level tags from the source file into the merged output.",
+            "description": "Copy container-level tags from the source file into the merged output.",
             "show": True,
         },
         {
             "section": Section.MERGE_SRC,
-            "label": "Copy track tags",
+            "label": "Copy Track Tags",
             "attr": "merge_src_file.copy_track_tags",
             "value": obj.merge_src_file["copy_track_tags"],
             "divider": True,
-            "description": "Copies per-track metadata tags from the source file into the merged output.",
+            "description": "Copy per-track metadata tags from the source file into the merged output.",
             "show": True,
         },
 
         # Merge: Sync Target File Section
         {
             "section": Section.MERGE_DST,
-            "label": "Copy only selected sync audio track",
+            "label": "Only Include Track Used for Sync",
             "attr": "merge_dst_file.copy_only_selected_sync_audio_track",
             "value": obj.merge_dst_file["copy_only_selected_sync_audio_track"],
-            "description": "Copies only the selected sync audio track from the target file into the merged output.",
+            "description": "Exclude all audio tracks from the target file except the one used for sync.",
             "show": True,
         },
         {
             "section": Section.MERGE_DST,
-            "label": "Copy attachments",
+            "label": "Copy Attachments",
             "attr": "merge_dst_file.copy_attachments",
             "value": obj.merge_dst_file["copy_attachments"],
-            "description": "Copies attachments from the target file into the merged output.",
+            "description": "Copy attachments (fonts, cover art) from the target file into the merged output.",
             "show": True,
         },
         {
             "section": Section.MERGE_DST,
-            "label": "Copy chapters",
+            "label": "Copy Chapters",
             "attr": "merge_dst_file.copy_chapters",
             "value": obj.merge_dst_file["copy_chapters"],
-            "description": "Copies chapter entries from the target file into the merged output.",
+            "description": "Copy chapter entries from the target file into the merged output.",
             "show": True,
         },
         {
             "section": Section.MERGE_DST,
-            "label": "Copy subtitles",
+            "label": "Copy Subtitles",
             "attr": "merge_dst_file.copy_subtitle_tracks",
             "value": obj.merge_dst_file["copy_subtitle_tracks"],
-            "description": "Copies subtitle tracks from the target file in addition to the synced subtitle.",
+            "description": "Copy subtitle tracks from the target file in addition to the synced subtitle.",
             "show": True,
         },
         {
             "section": Section.MERGE_DST,
-            "label": "Copy global tags",
+            "label": "Copy Global Tags",
             "attr": "merge_dst_file.copy_global_tags",
             "value": obj.merge_dst_file["copy_global_tags"],
-            "description": "Copies container-level tags from the target file into the merged output.",
+            "description": "Copy container-level tags from the target file into the merged output.",
             "show": True,
         },
         {
             "section": Section.MERGE_DST,
-            "label": "Copy track tags",
+            "label": "Copy Track Tags",
             "attr": "merge_dst_file.copy_track_tags",
             "value": obj.merge_dst_file["copy_track_tags"],
             "divider": True,
-            "description": "Copies per-track metadata tags from the target file into the merged output.",
+            "description": "Copy per-track metadata tags from the target file into the merged output.",
             "show": True,
         },
 
         # Merge: Synced Subtitle Section
         {
             "section": Section.MERGE_SUB,
-            "label": "Set default flag",
+            "label": "Set as Default Track",
             "attr": "merge_synced_sub_file.default_flag",
             "value": obj.merge_synced_sub_file["default_flag"],
-            "description": "Sets the merged synced subtitle track as default in the output file.",
+            "description": "Mark the merged synced subtitle track as default in the merged output.",
             "show": True,
         },
         {
             "section": Section.MERGE_SUB,
-            "label": "Set forced flag",
+            "label": "Set as Forced Track",
             "attr": "merge_synced_sub_file.forced_flag",
             "value": obj.merge_synced_sub_file["forced_flag"],
-            "description": "Marks the merged synced subtitle track as forced in the output file.",
+            "description": "Mark the merged synced subtitle track as forced in the merged output.",
             "show": True,
         },
         {
             "section": Section.MERGE_SUB,
-            "label": "Use custom track name",
+            "label": "Override Track Title",
             "attr": "merge_synced_sub_file.custom_trackname",
             "value": obj.merge_synced_sub_file["custom_trackname"],
-            "description": "Enables a custom name for the merged synced subtitle track.",
+            "description": "Enables overriding the default track title for the merged synced subtitle track.",
             "show": True,
         },
         {
             "section": Section.MERGE_SUB,
-            "label": "Default track name",
+            "label": "Custom Track Title",
             "attr": "merge_synced_sub_file.trackname",
             "value": obj.merge_synced_sub_file["trackname"],
-            "description": "Sets the subtitle track name used when custom track naming is enabled.",
+            "description": "Custom title for the merged synced subtitle track when override is enabled.",
             "show": obj.merge_synced_sub_file["custom_trackname"],
         },
     ]
@@ -290,27 +299,16 @@ def _render_settings_table(rows: list[SettingsRow]) -> PrettyTable:
     
     return tb
 
-def _select_queue_theme() -> QueueTheme | None:
-    """Display queue theme options and update setting based on user selection"""
-    options: list[SelectableOption] = [(idx, theme.value) for idx, theme in enumerate(QueueTheme, 1)]
+def _select_from_enum[T:Enum](enum: Iterable[T]) -> T | None:
+    """Display options for an enum and return the selected item"""
+    options: list[SelectableOption] = [(idx, item.value) for idx, item in enumerate(enum, 1)]
     options.append((len(options) + 1, GO_BACK_OPTION_LABEL))
 
     choice_idx: int = choice_prompt.get(options=options, nl_before=False, nl_after=False)
-    if choice_idx == len(options):
+    if choice_idx == len(options): # Go Back option selected
         return None
 
-    return next(theme for theme in QueueTheme if theme.value == options[choice_idx - 1][1])
-
-def _select_audio_codec() -> AudioEncodeCodec | None:
-    """Display audio codec options and update setting based on user selection"""
-    options: list[SelectableOption] = [(idx, codec.value) for idx, codec in enumerate(AudioEncodeCodec, 1)]
-    options.append((len(options) + 1, GO_BACK_OPTION_LABEL))
-
-    choice_idx: int = choice_prompt.get(options=options, nl_before=False, nl_after=False)
-    if choice_idx == len(options):
-        return None
-
-    return next(codec for codec in AudioEncodeCodec if codec.value == options[choice_idx - 1][1])
+    return next(item for item in enum if item.value == options[choice_idx - 1][1])
 
 def _update_value(obj: Settings, option: str) -> None:
     """Update value for selected option (handles both direct attributes and nested dict options)"""
@@ -325,9 +323,11 @@ def _update_value(obj: Settings, option: str) -> None:
     
     match curr_val:
         case QueueTheme():
-            new_val: QueueTheme | None = _select_queue_theme()
+            new_val: QueueTheme | None = _select_from_enum(QueueTheme)
         case AudioEncodeCodec():
-            new_val: AudioEncodeCodec | None = _select_audio_codec()
+            new_val: AudioEncodeCodec | None = _select_from_enum(AudioEncodeCodec)
+        case TracksToEncode():
+            new_val: TracksToEncode | None = _select_from_enum(TracksToEncode)
         case bool():
             prompt: str = "Disable" if curr_val else "Enable"
             if confirm_prompt.get(f"{prompt} option?"):

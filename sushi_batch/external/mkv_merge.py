@@ -17,7 +17,7 @@ class MKVMerge:
 
     @classmethod
     def _try_save_log_content(cls, content: str, log_path: str | None = None, section_name: str | None = None, is_internal: bool = False) -> None:
-        if s.config.general["save_merge_logs"]:
+        if s.config.general["save_merge_logs"] and log_path:
             _section_name: str = section_name or cls.log_section_name
             ExecutionLogger.save_log_output(log_path, content, section_name =_section_name, is_internal=is_internal)
     
@@ -38,10 +38,10 @@ class MKVMerge:
         return str(output_filepath)
     
     @classmethod
-    def _add_source_file_args(cls, args, job: VideoSyncJob) -> None:
+    def _add_source_file_args(cls, args: list[str], src_filepath: str) -> None:
         """Add source file specific arguments."""
-        args.extend(filter(lambda v: v is not None,
-            [
+        args.extend(
+            arg for arg in [
                 "--no-audio",
                 "--no-video",
                 "--no-subtitles",
@@ -49,43 +49,58 @@ class MKVMerge:
                 "--no-chapters" if not s.config.merge_src_file["copy_chapters"] else None,
                 "--no-global-tags" if not s.config.merge_src_file["copy_global_tags"] else None,
                 "--no-track-tags" if not s.config.merge_src_file["copy_track_tags"] else None,
-                job.src_filepath
-            ]
-        ))
+                src_filepath
+            ] if arg is not None
+        )
 
     @classmethod
-    def _add_destination_file_args(cls, args, job: VideoSyncJob, encoded_audio_path: str | None = None) -> None:
-        """Add destination file specific arguments."""
-        audio_track_arg: list[str] = []
-        selected_audio_stream: AudioStream = job.dst_streams.get_selected_audio_stream()
+    def _get_encoded_audio_track_args(cls, stream: AudioStream, encode_filepath: str) -> list[str]:
+        return [
+            *(["--default-track", "0:1"] if stream.default else []),
+            *(["--forced-display-flag", "0:1"] if stream.forced else []),
+            "--track-name", f"0:{stream.title}",
+            "--language", f"0:{stream.lang}",
+            encode_filepath,
+        ]
+    
+    @classmethod
+    def _add_dst_audio_tracks(cls, args: list[str], job: VideoSyncJob) -> None:
+        """Add tracks to include in the merged file."""
         if s.config.merge_dst_file["copy_only_selected_sync_audio_track"]:
-            if encoded_audio_path:
-                _track_lang: str = selected_audio_stream.lang if selected_audio_stream.lang else "und"
-                audio_track_arg: list[str] = [
-                    "--default-track",
-                    "0:1",
-                    "--language",
-                    f"0:{_track_lang}",
-                    encoded_audio_path,
+            sync_target_stream: AudioStream = job.dst_streams.get_selected_audio_stream()
+            if sync_target_stream.encoded and sync_target_stream.encode_path:
+                args.extend([
+                    *cls._get_encoded_audio_track_args(sync_target_stream, sync_target_stream.encode_path),
                     "--no-audio", # Discard all original audio tracks from dst file since we're adding the encoded track as a new source
-                ]
-            elif selected_audio_stream.id is not None:
-                audio_track_arg: list[str] = ["--audio-tracks", str(selected_audio_stream.id)]
-        
-        args.extend(filter(lambda v: v is not None,
-            [
-                *audio_track_arg,
+                ])
+            else:
+                args.extend(["--audio-tracks", str(sync_target_stream.id)])
+        else:
+            streams_to_copy: list[str] = []
+            for stream in job.dst_streams.audio:
+                if stream.encoded and stream.encode_path:
+                    args.extend(cls._get_encoded_audio_track_args(stream, stream.encode_path))
+                else: 
+                    streams_to_copy.append(str(stream.id))
+            if streams_to_copy:
+                args.extend(["--audio-tracks", ",".join(streams_to_copy)])
+
+    @classmethod
+    def _add_destination_file_args(cls, args: list[str], dst_filepath: str) -> None:
+        """Add destination file specific arguments."""
+        args.extend(
+            arg for arg in [
                 "--no-attachments" if not s.config.merge_dst_file["copy_attachments"] else None,
                 "--no-chapters" if not s.config.merge_dst_file["copy_chapters"] else None,
                 "--no-global-tags" if not s.config.merge_dst_file["copy_global_tags"] else None,
                 "--no-subtitles" if not s.config.merge_dst_file["copy_subtitle_tracks"] else None,
                 "--no-track-tags" if not s.config.merge_dst_file["copy_track_tags"] else None,
-                job.dst_filepath
-            ]
-        ))
+                dst_filepath
+            ] if arg is not None
+        )
 
     @classmethod
-    def _add_subtitle_args(cls, args, job: VideoSyncJob, use_resampled_sub: bool) -> None:
+    def _add_subtitle_args(cls, args: list[str], job: VideoSyncJob) -> None:
         """Add subtitle specific arguments."""
         selected_subtitle_stream: SubtitleStream = job.src_streams.get_selected_subtitle_stream()
         trackname: str = (
@@ -94,35 +109,41 @@ class MKVMerge:
             else selected_subtitle_stream.title
         )
 
-        sub_suffix: str = (
-            f".sushi_resampled{selected_subtitle_stream.extension}"
-            if use_resampled_sub
-            else f".sushi{selected_subtitle_stream.extension}"
+        sub_file: str = (
+            job.merge.resampled_filepath
+            if job.merge.resample_done and job.merge.resampled_filepath
+            else f"{job.dst_filepath}.sushi{selected_subtitle_stream.extension}"
+        )
+
+        set_default_flag: bool = (
+            selected_subtitle_stream.default
+            if not s.config.merge_synced_sub_file["default_flag"]
+            else True
+        )
+        
+        set_forced_flag: bool = (
+            selected_subtitle_stream.forced
+            if not s.config.merge_synced_sub_file["forced_flag"]
+            else True
         )
 
         args.extend([
-            "--language", f"0:{job.src_streams.get_selected_subtitle_stream().lang}",
+            "--language", f"0:{selected_subtitle_stream.lang}",
             "--track-name", f"0:{trackname}",
-            "--default-track-flag",
-            "0:0" if not s.config.merge_synced_sub_file["default_flag"] else "0:1",
-            "--forced-display-flag",
-            "0:0" if not s.config.merge_synced_sub_file["forced_flag"] else "0:1",
-            f"{job.dst_filepath}{sub_suffix}"
+            *(["--default-track-flag", "0:1"] if set_default_flag else []),
+            *(["--forced-display-flag", "0:1"] if set_forced_flag else []),
+            sub_file
         ])
 
     @classmethod
-    def _get_merge_args(cls, job: VideoSyncJob, use_resampled_sub: bool = False, encoded_audio_path: str | None = None) -> list[str]:
+    def _get_merge_args(cls, job: VideoSyncJob) -> list[str]:
         output_file: str = MKVMerge._get_out_filepath(job.dst_filepath)
+        args: list[str] = ["mkvmerge", "--output", output_file]
 
-        args: list[str] = [
-            "mkvmerge",
-            "--output",
-            output_file,
-        ]
-
-        cls._add_source_file_args(args, job)
-        cls._add_destination_file_args(args, job, encoded_audio_path)
-        cls._add_subtitle_args(args, job, use_resampled_sub)
+        cls._add_source_file_args(args, job.src_filepath)
+        cls._add_dst_audio_tracks(args, job)
+        cls._add_destination_file_args(args, job.dst_filepath)
+        cls._add_subtitle_args(args, job)
         return args
 
     @classmethod 
@@ -133,10 +154,15 @@ class MKVMerge:
             cu.try_print_spinner_message(f"{cu.fore.LIGHTYELLOW_EX}{warnings}\n", spinner)
            
     @classmethod
-    def run(cls, job: VideoSyncJob, use_resampled_sub: bool = False, encoded_audio_path: str | None = None, spinner: Yaspin | None = None, log_prefix="[MKVMerge]", log_path: str | None = None) -> None:
-        """Run MKVMerge and handle output logging. log_path can be provided to skip automatic log file creation."""
+    def run(
+        cls,
+        job: VideoSyncJob,
+        spinner: Yaspin | None = None,
+        log_prefix="[MKVMerge]",
+    ) -> None:
+        """Run MKVMerge and handle output logging"""
         try:     
-            args: list[str] = cls._get_merge_args(job, use_resampled_sub, encoded_audio_path)
+            args: list[str] = cls._get_merge_args(job)
             output_file: str = str(Path(args[2]).resolve())
 
             file_display = f"{cu.fore.LIGHTMAGENTA_EX}{output_file}{cu.Style.RESET_ALL}"
@@ -158,9 +184,9 @@ class MKVMerge:
 
             stdout, _ = mkv_merge.communicate()
 
-            if log_path:
-                args_log: str = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(args))}\n\n" + stdout
-                cls._try_save_log_content(content=args_log + stdout, log_path=log_path, section_name=cls.log_section_name)
+            if job.merge.log_path:
+                args_log: str = f"{ExecutionLogger.internal_log_indicator}Running with arguments: {(' '.join(args))}\n\n"
+                cls._try_save_log_content(content=args_log + stdout, log_path=job.merge.log_path, section_name=cls.log_section_name)
 
             match (mkv_merge.returncode):
                 case 0:
@@ -175,7 +201,7 @@ class MKVMerge:
                     job.merge.merged_filepath = output_file
                     job.merge.done = True
                     job.merge.has_warnings = True
-                    if not s.config.general["save_merge_logs"]:
+                    if not job.merge.log_path:
                         cls._show_warnings(stdout, log_prefix, spinner)
                 case 2:
                     lines: list[str] = stdout.splitlines()
@@ -184,6 +210,8 @@ class MKVMerge:
                         spinner.fail("❌")
                         spinner.write(f"{cu.fore.LIGHTRED_EX}{error[0]}\n")
         except Exception as e:
+            if spinner:
+                spinner.fail("❌")
             _message: str = f"Error generating merged file: {e}"
-            cls._try_save_log_content(content=_message, log_path=log_path, section_name=cls.log_section_name)
+            cls._try_save_log_content(content=_message, log_path=job.merge.log_path, section_name=cls.log_section_name)
             cu.try_print_spinner_message(f"{cu.fore.LIGHTRED_EX}{log_prefix} {_message}", spinner)
